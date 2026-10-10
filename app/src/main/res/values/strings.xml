@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">KashApp</string>
+    <string name="app_slogan">Tu vida financiera, en tus manos</string>
+    <string name="welcome_back">Bienvenido de nuevo</string>
+    <string name="welcome_subtitle">Accede a tu cuenta y continúa gestionando tus finanzas de forma segura.</string>
+    <string name="continue_with_google">Continuar con Google</string>
+    <string name="login_with_fingerprint">Iniciar con huella</string>
+    <string name="login_with_fingerprint_desc">Usa tu huella dactilar para acceder rápidamente a KashApp.</string>
+    <string name="login_with_pin">Iniciar con PIN</string>
+    <string name="login_with_pin_desc">Ingresa tu código de seguridad para acceder a tu cuenta.</string>
+    <string name="security_protected">Tu información está protegida</string>
+    <string name="security_e2e">Cifrado de extremo a extremo</string>
+</resources>

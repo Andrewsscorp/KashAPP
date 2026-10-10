@@ -1,0 +1,6 @@
+{
+  "name": "KashApp",
+  "description": "Aplicación financiera segura con autenticación por Google, Huella y PIN cifrado.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

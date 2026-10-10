@@ -1,0 +1,237 @@
+package com.example.feature.informes.data.repository
+
+import android.content.Context
+import com.example.data.local.dao.FinancialDao
+import com.example.data.local.dao.FixedAssetDao
+import com.example.feature.informes.data.document.DocumentSupportManager
+import com.example.feature.informes.data.export.FinancialReportExportEngine
+import com.example.feature.informes.data.export.PdfReportGenerator
+import com.example.feature.informes.domain.engine.CalculationTraceEngine
+import com.example.feature.informes.domain.engine.FinancialCalculationEngine
+import com.example.feature.informes.domain.engine.PredictiveExpenseEngine
+import com.example.feature.informes.domain.model.*
+import com.example.feature.informes.domain.repository.FinancialReportsRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import java.io.File
+
+class FinancialReportsRepositoryImpl(
+    private val context: Context,
+    private val financialDao: FinancialDao,
+    private val fixedAssetDao: FixedAssetDao,
+    private val calculationEngine: FinancialCalculationEngine = FinancialCalculationEngine(),
+    private val predictiveEngine: PredictiveExpenseEngine = PredictiveExpenseEngine(),
+    private val traceEngine: CalculationTraceEngine = CalculationTraceEngine(),
+    private val documentSupportManager: DocumentSupportManager = DocumentSupportManager(),
+    private val exportEngine: FinancialReportExportEngine = FinancialReportExportEngine(),
+    private val pdfGenerator: PdfReportGenerator = PdfReportGenerator(context)
+) : FinancialReportsRepository {
+
+    override fun observeSummary(
+        userId: String,
+        filter: FinancialPeriodFilter
+    ): Flow<FinancialSummaryData> {
+        return combine(
+            financialDao.getAccountsFlow(userId),
+            financialDao.getTransactionsFlow(userId),
+            fixedAssetDao.observeAssets(userId),
+            financialDao.getInvestmentsFlow(userId),
+            financialDao.getAllAccountCreditCardsFlow()
+        ) { accounts, transactions, assets, investments, creditCards ->
+            calculationEngine.computeSummary(
+                accounts = accounts,
+                transactions = transactions,
+                assets = assets,
+                investments = investments,
+                creditCards = creditCards,
+                filter = filter
+            )
+        }
+    }
+
+    override fun observeBalanceSheet(
+        userId: String,
+        filter: FinancialPeriodFilter
+    ): Flow<BalanceSheetData> {
+        return combine(
+            observeSummary(userId, filter),
+            financialDao.getAccountsFlow(userId),
+            fixedAssetDao.observeAssets(userId),
+            financialDao.getInvestmentsFlow(userId),
+            financialDao.getAllAccountCreditCardsFlow()
+        ) { summary, accounts, assets, investments, creditCards ->
+            calculationEngine.computeBalanceSheet(
+                summary = summary,
+                accounts = accounts,
+                assets = assets,
+                investments = investments,
+                creditCards = creditCards
+            )
+        }
+    }
+
+    override fun observeIncomeStatement(
+        userId: String,
+        filter: FinancialPeriodFilter
+    ): Flow<IncomeStatementData> {
+        return observeSummary(userId, filter).map { summary ->
+            calculationEngine.computeIncomeStatement(summary)
+        }
+    }
+
+    override fun observeCashFlowStatement(
+        userId: String,
+        filter: FinancialPeriodFilter
+    ): Flow<CashFlowStatementData> {
+        return observeSummary(userId, filter).map { summary ->
+            calculationEngine.computeCashFlow(summary)
+        }
+    }
+
+    override fun observeEquityStatement(
+        userId: String,
+        filter: FinancialPeriodFilter
+    ): Flow<EquityStatementData> {
+        return combine(
+            observeSummary(userId, filter),
+            observeBalanceSheet(userId, filter)
+        ) { summary, balanceSheet ->
+            calculationEngine.computeEquityStatement(summary, balanceSheet)
+        }
+    }
+
+    override fun observeSpecializedReports(
+        userId: String,
+        filter: FinancialPeriodFilter
+    ): Flow<SpecializedReportsBundle> {
+        return combine(
+            financialDao.getAccountsFlow(userId),
+            fixedAssetDao.observeAssets(userId),
+            financialDao.getInvestmentsFlow(userId),
+            financialDao.getAllAccountCreditCardsFlow(),
+            observeIncomeStatement(userId, filter)
+        ) { accounts, assets, investments, creditCards, incomeStatement ->
+            calculationEngine.computeSpecializedReports(
+                accounts = accounts,
+                assets = assets,
+                investments = investments,
+                creditCards = creditCards,
+                incomeStatement = incomeStatement
+            )
+        }
+    }
+
+    override fun observeFinancialAnalysis(
+        userId: String,
+        filter: FinancialPeriodFilter
+    ): Flow<FinancialAnalysisData> {
+        return combine(
+            observeSummary(userId, filter),
+            observeBalanceSheet(userId, filter)
+        ) { summary, balanceSheet ->
+            calculationEngine.computeFinancialAnalysis(summary, balanceSheet)
+        }
+    }
+
+    override fun observeAdvancedProjections(
+        userId: String,
+        filter: FinancialPeriodFilter
+    ): Flow<AdvancedProjectionsBundle> {
+        return combine(
+            financialDao.getAccountsFlow(userId),
+            financialDao.getTransactionsFlow(userId),
+            observeSummary(userId, filter)
+        ) { accounts, transactions, summary ->
+            predictiveEngine.computeAdvancedProjections(
+                accounts = accounts,
+                transactions = transactions,
+                currentNetWorth = summary.netWorth,
+                currentIncome = summary.totalIncome,
+                currentExpenses = summary.totalExpenses
+            )
+        }
+    }
+
+    override fun observeDocumentSupports(userId: String): Flow<List<DocumentSupportItem>> {
+        return documentSupportManager.documents
+    }
+
+    override suspend fun addDocumentSupport(doc: DocumentSupportItem) {
+        documentSupportManager.addDocument(doc)
+    }
+
+    override suspend fun deleteDocumentSupport(docId: String) {
+        documentSupportManager.deleteDocument(docId)
+    }
+
+    override suspend fun updateDocumentStatus(docId: String, status: SupportVerificationStatus) {
+        documentSupportManager.updateStatus(docId, status)
+    }
+
+    override suspend fun getCalculationTrace(
+        metricKey: String,
+        userId: String,
+        filter: FinancialPeriodFilter
+    ): CalculationTraceDetail {
+        val accounts = financialDao.getAccounts(userId)
+        val transactions = financialDao.getTransactions(userId)
+        val assets = emptyList<com.example.data.local.entity.FixedAssetEntity>()
+        val investments = emptyList<com.example.data.local.entity.InvestmentEntity>()
+        val creditCards = financialDao.getAllAccountCreditCards()
+
+        val summary = calculationEngine.computeSummary(accounts, transactions, assets, investments, creditCards, filter)
+        val balanceSheet = calculationEngine.computeBalanceSheet(summary, accounts, assets, investments, creditCards)
+        val incomeStatement = calculationEngine.computeIncomeStatement(summary)
+        val cashFlow = calculationEngine.computeCashFlow(summary)
+        val analysis = calculationEngine.computeFinancialAnalysis(summary, balanceSheet)
+
+        return traceEngine.getTraceForMetric(metricKey, summary, balanceSheet, incomeStatement, cashFlow, analysis)
+    }
+
+    override suspend fun exportReport(
+        config: ExportReportConfig,
+        filter: FinancialPeriodFilter,
+        userId: String
+    ): String {
+        val accounts = financialDao.getAccounts(userId)
+        val transactions = financialDao.getTransactions(userId)
+        val assets = emptyList<com.example.data.local.entity.FixedAssetEntity>()
+        val investments = emptyList<com.example.data.local.entity.InvestmentEntity>()
+        val creditCards = financialDao.getAllAccountCreditCards()
+
+        val summary = calculationEngine.computeSummary(accounts, transactions, assets, investments, creditCards, filter)
+        val balanceSheet = calculationEngine.computeBalanceSheet(summary, accounts, assets, investments, creditCards)
+        val incomeStatement = calculationEngine.computeIncomeStatement(summary)
+        val cashFlow = calculationEngine.computeCashFlow(summary)
+        val equityStatement = calculationEngine.computeEquityStatement(summary, balanceSheet)
+        val specialized = calculationEngine.computeSpecializedReports(accounts, assets, investments, creditCards, incomeStatement)
+        val analysis = calculationEngine.computeFinancialAnalysis(summary, balanceSheet)
+
+        return if (config.format == ExportReportFormat.EXCEL_CSV) {
+            exportEngine.generateCsv(summary, balanceSheet, incomeStatement, specialized)
+        } else {
+            exportEngine.generateReportText(config, filter, summary, balanceSheet, incomeStatement, cashFlow, equityStatement, specialized, analysis)
+        }
+    }
+
+    override suspend fun generatePdfReport(
+        config: ExportReportConfig,
+        filter: FinancialPeriodFilter,
+        userId: String
+    ): File {
+        val accounts = financialDao.getAccounts(userId)
+        val transactions = financialDao.getTransactions(userId)
+        val assets = emptyList<com.example.data.local.entity.FixedAssetEntity>()
+        val investments = emptyList<com.example.data.local.entity.InvestmentEntity>()
+        val creditCards = financialDao.getAllAccountCreditCards()
+
+        val summary = calculationEngine.computeSummary(accounts, transactions, assets, investments, creditCards, filter)
+        val balanceSheet = calculationEngine.computeBalanceSheet(summary, accounts, assets, investments, creditCards)
+        val incomeStatement = calculationEngine.computeIncomeStatement(summary)
+        val cashFlow = calculationEngine.computeCashFlow(summary)
+        val analysis = calculationEngine.computeFinancialAnalysis(summary, balanceSheet)
+
+        return pdfGenerator.generateExecutivePdf(config, filter, summary, balanceSheet, incomeStatement, cashFlow, analysis)
+    }
+}

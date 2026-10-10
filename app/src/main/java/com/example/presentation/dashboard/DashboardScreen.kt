@@ -1,0 +1,730 @@
+package com.example.presentation.dashboard
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import com.example.KashAppApplication
+import com.example.data.local.entity.AccountEntity
+import com.example.features.settings.presentation.SettingsScreen
+import com.example.features.settings.presentation.SettingsViewModel
+import com.example.presentation.account.CreateAccountScreen
+import com.example.presentation.account.components.SelectAccountTypeBottomSheet
+import com.example.presentation.budget.CreateBudgetScreen
+import com.example.presentation.budget.state.BudgetFormViewModel
+import com.example.presentation.credit_cards.AddCreditCardScreen
+import com.example.presentation.credit_cards.CreateCardPurchaseScreen
+import com.example.presentation.credit_cards.state.CreditCardFormViewModel
+import com.example.presentation.dashboard.components.accounts.MisCuentasBancariasCard
+import com.example.presentation.dashboard.components.activity.UltimosMovimientosCard
+import com.example.presentation.dashboard.components.ai.PreguntaKashAiCard
+import com.example.presentation.dashboard.components.alerts.AlertasYNotificacionesCard
+import com.example.presentation.dashboard.components.bottombar.DashboardBottomNavBar
+import com.example.presentation.dashboard.components.calendar.ProximosPagosCard
+import com.example.presentation.dashboard.components.cards.TarjetasDeCreditoCard
+import com.example.presentation.dashboard.components.charts.FlujoDeCajaCard
+import com.example.presentation.dashboard.components.charts.GastosPorCategoriaCard
+import com.example.presentation.dashboard.components.dialogs.QuickAddModal
+import com.example.presentation.dashboard.components.goals.MisObjetivosCard
+import com.example.presentation.dashboard.components.health.TuSaludFinancieraCard
+import com.example.presentation.dashboard.components.position.TuPosicionGrid
+import com.example.presentation.dashboard.components.pulse.ElPulsoDeTuMesCard
+import com.example.presentation.dashboard.components.topbar.DashboardHeroHeader
+import com.example.presentation.dashboard.detail.FinancialRubroDetailScreen
+import com.example.domain.models.FinancialRubroType
+import com.example.presentation.dashboard.model.DashboardEvent
+import com.example.presentation.expense.CreateExpenseScreen
+import com.example.presentation.goals.CreateGoalScreen
+import com.example.presentation.goals.state.GoalFormViewModel
+import com.example.presentation.income.CreateIncomeScreen
+import com.example.presentation.trm.CurrencyTrmScreen
+import com.example.presentation.trm.CurrencyTrmViewModel
+import com.example.presentation.trm.CurrencyTrmViewModelFactory
+import com.example.presentation.transfer.CreateTransferScreen
+import com.example.presentation.fixedassets.FixedAssetsScreen
+import com.example.presentation.fixedassets.FixedAssetsViewModel
+
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import com.example.presentation.dashboard.components.drawer.DashboardDrawerContent
+
+/**
+ * Main Enterprise Dashboard Screen for KashApp.
+ * Implements:
+ * - Parte 1: Hero Header
+ * - Parte 2: Tu Posición & Tu Salud Financiera
+ * - Parte 3: El Pulso de tu mes, Flujo de caja & Gastos por categoría
+ * - Continuación Imagen 1: Mis cuentas bancarias & ACTIVIDAD (Últimos movimientos)
+ * - Continuación Imagen 2: CALENDARIO (Próximos pagos), Mis objetivos, Tarjetas de crédito & Alertas y notificaciones
+ * - Continuación Imagen 3: Pregunta a KashAI (Asistente RAG interactivo)
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DashboardScreen(
+    viewModel: DashboardViewModel,
+    onLogoutClick: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    val scrollState = rememberScrollState()
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val coroutineScope = rememberCoroutineScope()
+
+    // Navigation and sub-flow dialog states
+    var showQuickAddModal by remember { mutableStateOf(false) }
+    var showCreateExpense by remember { mutableStateOf(false) }
+    var showCreateIncome by remember { mutableStateOf(false) }
+    var showCreateTransfer by remember { mutableStateOf(false) }
+    var showSelectAccountTypeModal by remember { mutableStateOf(false) }
+    var showBankAccountsManagementScreen by remember { mutableStateOf(false) }
+    var selectedAccountTypeCodeForCreation by remember { mutableStateOf("SAVINGS") }
+    var showCreateAccount by remember { mutableStateOf(false) }
+    var showCreateGoal by remember { mutableStateOf(false) }
+    var showCreateCreditCard by remember { mutableStateOf(false) }
+    var showCreateCardPurchase by remember { mutableStateOf(false) }
+    var showCreateBudget by remember { mutableStateOf(false) }
+    var showCurrencyTrmScreen by remember { mutableStateOf(false) }
+    var showFixedAssetsModule by remember { mutableStateOf(false) }
+    var showReceiptScannerScreen by remember { mutableStateOf(false) }
+    var showInformesModule by remember { mutableStateOf(false) }
+    var showObjetivosModule by remember { mutableStateOf(false) }
+    var activeFinancialRubro by remember { mutableStateOf<FinancialRubroType?>(null) }
+    var currentBottomNavRoute by remember { mutableStateOf("kashapp://dashboard") }
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            DashboardDrawerContent(
+                uiState = uiState,
+                onCloseDrawer = {
+                    coroutineScope.launch { drawerState.close() }
+                },
+                onNavigateHome = {
+                    coroutineScope.launch {
+                        drawerState.close()
+                        scrollState.animateScrollTo(0)
+                    }
+                },
+                onOpenAccounts = {
+                    showBankAccountsManagementScreen = true
+                },
+                onOpenCreateExpense = {
+                    showCreateExpense = true
+                },
+                onOpenCreateIncome = {
+                    showCreateIncome = true
+                },
+                onOpenCreateTransfer = {
+                    showCreateTransfer = true
+                },
+                onOpenCardPurchase = {
+                    showCreateCardPurchase = true
+                },
+                onOpenBudgets = {
+                    showCreateBudget = true
+                },
+                onOpenGoals = {
+                    showObjetivosModule = true
+                },
+                onOpenCreditCards = {
+                    showCreateCreditCard = true
+                },
+                onOpenCurrencyTrm = {
+                    showCurrencyTrmScreen = true
+                },
+                onOpenFixedAssets = {
+                    showFixedAssetsModule = true
+                },
+                onOpenReceiptScanner = {
+                    showReceiptScannerScreen = true
+                },
+                onOpenInformes = {
+                    showInformesModule = true
+                },
+                onOpenSettings = {
+                    viewModel.onEvent(DashboardEvent.OpenSettingsClick)
+                },
+                onLogoutClick = {
+                    onLogoutClick()
+                }
+            )
+        }
+    ) {
+        Scaffold(
+            bottomBar = {
+                DashboardBottomNavBar(
+                    currentRoute = currentBottomNavRoute,
+                    onNavigate = { route ->
+                        currentBottomNavRoute = route
+                        if (route.startsWith("kashapp://finances")) {
+                            showInformesModule = true
+                        } else if (route.startsWith("kashapp://settings")) {
+                            viewModel.onEvent(DashboardEvent.OpenSettingsClick)
+                        }
+                    },
+                    onFabClick = { showQuickAddModal = true }
+                )
+            },
+            containerColor = Color(0xFFF8FAFC),
+            modifier = modifier.fillMaxSize()
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = paddingValues.calculateBottomPadding())
+                    .verticalScroll(scrollState)
+            ) {
+                // ==========================================
+                // PARTE 1: HERO HEADER (image.png)
+                // ==========================================
+                DashboardHeroHeader(
+                    userName = uiState.userName,
+                    periodState = uiState.period,
+                    totalNetWorth = uiState.netWorth.totalNetWorth,
+                    isPrivacyMode = uiState.isPrivacyMode,
+                    displayCurrency = uiState.displayCurrency,
+                    isConvertedToUsd = uiState.isConvertedToUsd,
+                    usdExchangeRate = uiState.usdExchangeRate,
+                    onToggleUsdConversion = { viewModel.onEvent(DashboardEvent.ToggleUsdConversion) },
+                    onOpenTrmRateClick = { showCurrencyTrmScreen = true },
+                    onPeriodSelected = { viewModel.onEvent(DashboardEvent.ChangePeriod(it)) },
+                    onMenuClick = {
+                        coroutineScope.launch { drawerState.open() }
+                    },
+                    onNotificationClick = {
+                        viewModel.onEvent(DashboardEvent.OpenSettingsClick)
+                    },
+                    onProfileClick = {
+                        viewModel.onEvent(DashboardEvent.OpenSettingsClick)
+                    },
+                    onExpenseClick = { showCreateExpense = true },
+                    onIncomeClick = { showCreateIncome = true },
+                    onTransferClick = { showCreateTransfer = true },
+                    onCardPaymentClick = { showCreateExpense = true },
+                    onCardPurchaseClick = { showCreateCardPurchase = true },
+                    onCreateAccountClick = { showSelectAccountTypeModal = true },
+                    onGoalClick = { showCreateGoal = true },
+                    onBudgetClick = { showCreateBudget = true },
+                    onAddClick = { showQuickAddModal = true },
+                    onScanClick = { showCreateExpense = true },
+                    onMoreClick = { showQuickAddModal = true }
+                )
+
+            // ==========================================
+            // DASHBOARD BODY (Parte 2, Parte 3 y Continuación de Imágenes)
+            // ==========================================
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
+
+                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    // PARTE 2: TU POSICIÓN — Así está tu dinero (2x2 Grid con apertura a análisis completo)
+                    TuPosicionGrid(
+                        netWorthState = uiState.netWorth,
+                        isPrivacyMode = uiState.isPrivacyMode,
+                        currencyCode = uiState.displayCurrency,
+                        onViewDetailClick = { showInformesModule = true },
+                        onCashClick = { activeFinancialRubro = FinancialRubroType.AVAILABLE_CASH },
+                        onInvestmentsClick = { activeFinancialRubro = FinancialRubroType.INVESTMENTS },
+                        onDebtsClick = { activeFinancialRubro = FinancialRubroType.DEBTS },
+                        onAssetsClick = { showFixedAssetsModule = true }
+                    )
+                }
+
+                // PARTE 2: TU SALUD FINANCIERA (Gauge Donut 66/100)
+                TuSaludFinancieraCard(
+                    healthScore = uiState.healthScore,
+                    onViewRecommendationsClick = {
+                        viewModel.onEvent(DashboardEvent.SubmitAiQuery("¿Cómo puedo mejorar mi salud financiera?"))
+                    }
+                )
+
+                // PARTE 3: SEPTIEMBRE / OCTUBRE — El pulso de tu mes (Ingresos, Gastos, Ahorro, Presupuesto)
+                ElPulsoDeTuMesCard(
+                    currentMonth = uiState.period.currentMonth,
+                    kpiState = uiState.kpi,
+                    isPrivacyMode = uiState.isPrivacyMode
+                )
+
+                // PARTE 3: Flujo de caja (Dark Blue Translucent Card with Dual Bézier Wave lines)
+                FlujoDeCajaCard(
+                    cashFlowEntries = uiState.cashFlowEntries,
+                    savingsAmount = uiState.kpi.savings,
+                    isPrivacyMode = uiState.isPrivacyMode
+                )
+
+                // PARTE 3: Gastos por categoría (Donut Ring Breakdown)
+                GastosPorCategoriaCard(
+                    categorySpends = uiState.categorySpends,
+                    totalExpense = uiState.kpi.expenses,
+                    isPrivacyMode = uiState.isPrivacyMode
+                )
+
+                // ==========================================
+                // CONTINUACIÓN IMAGEN 1: Mis cuentas bancarias & ACTIVIDAD
+                // ==========================================
+                MisCuentasBancariasCard(
+                    accounts = uiState.accounts,
+                    onAccountClick = { viewModel.onEvent(DashboardEvent.SelectAccount(it)) },
+                    onTransferClick = { showCreateTransfer = true },
+                    onMoreAccountOptions = { viewModel.onEvent(DashboardEvent.SelectAccount(it)) },
+                    onToggleAllowNegative = { accId, allowNeg ->
+                        viewModel.onEvent(DashboardEvent.ToggleAccountAllowNegative(accId, allowNeg))
+                    },
+                    isPrivacyMode = uiState.isPrivacyMode
+                )
+
+                UltimosMovimientosCard(
+                    transactions = uiState.recentTransactions,
+                    onTransactionClick = { /* View transaction */ },
+                    onSeeAllClick = { /* Navigate to full history */ },
+                    isPrivacyMode = uiState.isPrivacyMode
+                )
+
+                // ==========================================
+                // CONTINUACIÓN IMAGEN 2: Calendario, Objetivos, Tarjetas & Alertas
+                // ==========================================
+                ProximosPagosCard(
+                    payments = uiState.upcomingPayments,
+                    onCalendarIconClick = { showCreateExpense = true },
+                    isPrivacyMode = uiState.isPrivacyMode
+                )
+
+                MisObjetivosCard(
+                    goals = uiState.goals,
+                    onAddGoalClick = { showCreateGoal = true },
+                    onSeeAllClick = { showObjetivosModule = true },
+                    isPrivacyMode = uiState.isPrivacyMode
+                )
+
+                TarjetasDeCreditoCard(
+                    creditCards = uiState.creditCards,
+                    onAddCreditCardClick = { showCreateCreditCard = true },
+                    onManageCardsClick = { showCreateCreditCard = true },
+                    onRecordPurchaseClick = { showCreateCardPurchase = true },
+                    isPrivacyMode = uiState.isPrivacyMode
+                )
+
+                AlertasYNotificacionesCard(
+                    insights = uiState.insights,
+                    onCardClick = {
+                        viewModel.onEvent(DashboardEvent.SubmitAiQuery("Explícame mis alertas financieras actuales"))
+                    }
+                )
+
+                // ==========================================
+                // CONTINUACIÓN IMAGEN 3: Pregunta a KashAI
+                // ==========================================
+                PreguntaKashAiCard(
+                    aiState = uiState.aiPrompt,
+                    onInputChange = { viewModel.onEvent(DashboardEvent.UpdateAiInput(it)) },
+                    onSubmitQuery = { viewModel.onEvent(DashboardEvent.SubmitAiQuery(it)) }
+                )
+
+                Spacer(modifier = Modifier.height(72.dp))
+            }
+        }
+    }
+    }
+
+    // Modal: Quick Add Options Sheet
+    if (showQuickAddModal) {
+        QuickAddModal(
+            onDismiss = { showQuickAddModal = false },
+            onOpenCreateExpense = {
+                showQuickAddModal = false
+                showCreateExpense = true
+            },
+            onOpenCreateIncome = {
+                showQuickAddModal = false
+                showCreateIncome = true
+            },
+            onOpenCreateTransfer = {
+                showQuickAddModal = false
+                showCreateTransfer = true
+            },
+            onOpenCreateCardPurchase = {
+                showQuickAddModal = false
+                showCreateCardPurchase = true
+            },
+            onOpenSelectAccountType = {
+                showQuickAddModal = false
+                showSelectAccountTypeModal = true
+            },
+            onOpenCreateCreditCard = {
+                showQuickAddModal = false
+                showCreateCreditCard = true
+            },
+            onOpenCreateGoal = {
+                showQuickAddModal = false
+                showCreateGoal = true
+            },
+            onOpenCreateBudget = {
+                showQuickAddModal = false
+                showCreateBudget = true
+            },
+            onOpenReceiptScanner = {
+                showQuickAddModal = false
+                showReceiptScannerScreen = true
+            },
+            onAddTransaction = { _, _, _, _, _ ->
+                showQuickAddModal = false
+                viewModel.onEvent(DashboardEvent.Refresh)
+            }
+        )
+    }
+
+    // Modal: Settings / Control Plane
+    if (uiState.isSettingsOpen) {
+        val context = LocalContext.current
+        val appContainer = (context.applicationContext as KashAppApplication).appContainer
+        val settingsViewModel: SettingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+            factory = SettingsViewModel.Factory(appContainer.settingsRepository)
+        )
+        SettingsScreen(
+            viewModel = settingsViewModel,
+            onNavigateBack = { viewModel.onEvent(DashboardEvent.CloseSettingsClick) },
+            onNavigateToHome = { viewModel.onEvent(DashboardEvent.CloseSettingsClick) },
+            onNavigateToTransactions = { viewModel.onEvent(DashboardEvent.CloseSettingsClick) },
+            onNavigateToSummary = { viewModel.onEvent(DashboardEvent.CloseSettingsClick) },
+            onFabAddClick = {
+                viewModel.onEvent(DashboardEvent.CloseSettingsClick)
+                showQuickAddModal = true
+            },
+            onLogoutSuccess = {
+                viewModel.onEvent(DashboardEvent.CloseSettingsClick)
+                onLogoutClick()
+            }
+        )
+    }
+
+    // Flow: Create Expense
+    if (showCreateExpense) {
+        CreateExpenseScreen(
+            onDismiss = { showCreateExpense = false },
+            onSaveExpense = { _, _, _, _, _, _, _, _, _, _, _, _ ->
+                showCreateExpense = false
+                viewModel.onEvent(DashboardEvent.Refresh)
+            },
+            financialRepository = viewModel.financialRepository,
+            userId = viewModel.userId
+        )
+    }
+
+    // Flow: Create Income
+    if (showCreateIncome) {
+        CreateIncomeScreen(
+            onDismiss = { showCreateIncome = false },
+            onSaveIncome = { _, _, _, _, _, _, _, _, _, _, _, _, _ ->
+                showCreateIncome = false
+                viewModel.onEvent(DashboardEvent.Refresh)
+            },
+            financialRepository = viewModel.financialRepository,
+            userId = viewModel.userId
+        )
+    }
+
+    // Flow: Create Transfer
+    if (showCreateTransfer && viewModel.financialRepository != null) {
+        CreateTransferScreen(
+            onNavigateBack = { showCreateTransfer = false },
+            financialRepository = viewModel.financialRepository,
+            userId = viewModel.userId,
+            onTransferSuccess = { _, _, _, _, _, _, _, _, _, _, _, _, _ ->
+                showCreateTransfer = false
+                viewModel.onEvent(DashboardEvent.Refresh)
+            }
+        )
+    }
+
+    // Flow: Select Account Type Bottom Sheet (Popup inicial tipo de cuenta estilo iPhone)
+    if (showSelectAccountTypeModal) {
+        SelectAccountTypeBottomSheet(
+            onDismiss = { showSelectAccountTypeModal = false },
+            onOpenDetailedCreateAccount = { typeCode ->
+                showSelectAccountTypeModal = false
+                if (typeCode == "CREDIT_CARD") {
+                    showCreateCreditCard = true
+                } else {
+                    selectedAccountTypeCodeForCreation = typeCode
+                    showCreateAccount = true
+                }
+            },
+            onCreateAccount = { name, typeCode, initialBal, curr ->
+                showSelectAccountTypeModal = false
+                if (typeCode == "CREDIT_CARD") {
+                    showCreateCreditCard = true
+                } else {
+                    coroutineScope.launch {
+                        viewModel.financialRepository?.createAccount(
+                            name = name,
+                            type = typeCode,
+                            balance = initialBal,
+                            currency = curr,
+                            userId = viewModel.userId,
+                            bankName = "Bancolombia",
+                            isFavorite = true
+                        )
+                        viewModel.onEvent(DashboardEvent.Refresh)
+                    }
+                }
+            }
+        )
+    }
+
+    // Flow: Create Account (Formulario detallado con tipo pre-seleccionado)
+    if (showCreateAccount) {
+        CreateAccountScreen(
+            initialTypeCode = selectedAccountTypeCodeForCreation,
+            onDismiss = { showCreateAccount = false },
+            onAccountCreated = { _, _ ->
+                showCreateAccount = false
+                viewModel.onEvent(DashboardEvent.Refresh)
+            },
+            financialRepository = viewModel.financialRepository,
+            userId = viewModel.userId
+        )
+    }
+
+
+    // Flow: Add Credit Card
+    if (showCreateCreditCard && viewModel.financialRepository != null) {
+        val context = LocalContext.current
+        val appContainer = (context.applicationContext as KashAppApplication).appContainer
+        val ccViewModel: CreditCardFormViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+            factory = CreditCardFormViewModel.provideFactory(
+                createCreditCardUseCase = appContainer.createCreditCardUseCase,
+                validateCreditLimitsUseCase = appContainer.validateCreditLimitsUseCase,
+                calculateNextBillingDatesUseCase = appContainer.calculateNextBillingDatesUseCase,
+                financialRepository = viewModel.financialRepository
+            )
+        )
+        AddCreditCardScreen(
+            viewModel = ccViewModel,
+            onNavigateBack = { showCreateCreditCard = false },
+            onCreditCardCreated = {
+                showCreateCreditCard = false
+                viewModel.onEvent(DashboardEvent.Refresh)
+            },
+            financialRepository = viewModel.financialRepository
+        )
+    }
+
+    // Flow: Create Budget
+    if (showCreateBudget && viewModel.financialRepository != null) {
+        val budgetViewModel: BudgetFormViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+            factory = BudgetFormViewModel.provideFactory(viewModel.financialRepository)
+        )
+        CreateBudgetScreen(
+            viewModel = budgetViewModel,
+            onNavigateBack = { showCreateBudget = false },
+            onBudgetCreatedSuccessfully = {
+                showCreateBudget = false
+                viewModel.onEvent(DashboardEvent.Refresh)
+            }
+        )
+    }
+
+    // Flow: Create Card Purchase (Compra con Tarjeta)
+    if (showCreateCardPurchase) {
+        CreateCardPurchaseScreen(
+            onDismiss = { showCreateCardPurchase = false },
+            onPurchaseSuccess = { _, _, _, _, _, _, _, _ ->
+                showCreateCardPurchase = false
+                viewModel.onEvent(DashboardEvent.Refresh)
+            },
+            financialRepository = viewModel.financialRepository,
+            userId = viewModel.userId,
+            onNavigateToAddCard = {
+                showCreateCardPurchase = false
+                showCreateCreditCard = true
+            }
+        )
+    }
+
+    // Window / Screen: Financial Rubro Complete Analysis Detail View
+    if (activeFinancialRubro != null) {
+        FinancialRubroDetailScreen(
+            rubroType = activeFinancialRubro!!,
+            netWorthState = uiState.netWorth,
+            financialRepository = viewModel.financialRepository,
+            fixedAssetRepository = viewModel.fixedAssetRepository,
+            userId = viewModel.userId,
+            isPrivacyMode = uiState.isPrivacyMode,
+            onOpenFixedAssetsModule = {
+                activeFinancialRubro = null
+                showFixedAssetsModule = true
+            },
+            onDismiss = { activeFinancialRubro = null }
+        )
+    }
+
+    // Screen: Módulo de Activos Fijos (Depreciación NIIF, Proyecciones y Exportación)
+    if (showFixedAssetsModule) {
+        val context = LocalContext.current
+        val appContainer = (context.applicationContext as KashAppApplication).appContainer
+        val fixedAssetsViewModel: FixedAssetsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+            factory = FixedAssetsViewModel.Factory(
+                fixedAssetRepository = appContainer.fixedAssetRepository,
+                calculateDepreciationUseCase = appContainer.calculateAssetDepreciationUseCase,
+                projectAssetValuesUseCase = appContainer.projectAssetValuesUseCase,
+                userId = viewModel.userId
+            )
+        )
+        FixedAssetsScreen(
+            viewModel = fixedAssetsViewModel,
+            onDismiss = {
+                showFixedAssetsModule = false
+                viewModel.onEvent(DashboardEvent.Refresh)
+            }
+        )
+    }
+
+    // Screen: Moneda y TRM (Frankfurter API, +200 Divisas, Conversor, Histórico, Tasa Manual y Pruebas)
+    if (showCurrencyTrmScreen) {
+        val context = LocalContext.current
+        val appContainer = (context.applicationContext as KashAppApplication).appContainer
+        val trmViewModel: CurrencyTrmViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+            factory = CurrencyTrmViewModelFactory(
+                exchangeRateRepository = appContainer.exchangeRateRepository,
+                settingsRepository = appContainer.settingsRepository,
+                testSuite = appContainer.exchangeRateTestSuite
+            )
+        )
+        androidx.activity.compose.BackHandler {
+            showCurrencyTrmScreen = false
+        }
+        CurrencyTrmScreen(
+            viewModel = trmViewModel,
+            onBack = {
+                showCurrencyTrmScreen = false
+                viewModel.onEvent(DashboardEvent.Refresh)
+            }
+        )
+    }
+
+    // Screen: Mis Cuentas Bancarias (Gestión, Modificación, Estadísticas y Movimientos)
+    if (showBankAccountsManagementScreen) {
+        androidx.activity.compose.BackHandler {
+            showBankAccountsManagementScreen = false
+        }
+        com.example.presentation.account.BankAccountsManagementScreen(
+            onNavigateBack = {
+                showBankAccountsManagementScreen = false
+                viewModel.onEvent(DashboardEvent.Refresh)
+            },
+            onOpenCreateAccount = {
+                showSelectAccountTypeModal = true
+            },
+            userId = viewModel.userId
+        )
+    }
+
+    // Screen: Escáner OCR de Facturas (:feature-ocr)
+    if (showReceiptScannerScreen) {
+        androidx.activity.compose.BackHandler {
+            showReceiptScannerScreen = false
+        }
+        com.example.feature.ocr.ui.ReceiptScannerScreen(
+            onNavigateBack = { showReceiptScannerScreen = false },
+            onApplyToExpense = { _, _, _, _ ->
+                showReceiptScannerScreen = false
+                showCreateExpense = true
+            }
+        )
+    }
+
+    // Screen: Informes Financieros Central (:feature-informes)
+    if (showInformesModule) {
+        val context = LocalContext.current
+        val appContainer = (context.applicationContext as KashAppApplication).appContainer
+        val informesViewModel: com.example.feature.informes.presentation.InformesViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+            factory = com.example.feature.informes.presentation.InformesViewModelFactory(
+                repository = appContainer.financialReportsRepository,
+                userId = viewModel.userId
+            )
+        )
+        androidx.activity.compose.BackHandler {
+            showInformesModule = false
+        }
+        com.example.feature.informes.ui.InformesScreen(
+            viewModel = informesViewModel,
+            onNavigateBack = {
+                showInformesModule = false
+                viewModel.onEvent(DashboardEvent.Refresh)
+            }
+        )
+    }
+
+    // Screen: Módulo de Objetivos Financieros (:feature-objetivos)
+    val dashContext = LocalContext.current
+    val appContainer = (dashContext.applicationContext as KashAppApplication).appContainer
+    val objetivosViewModel: com.example.feature.objetivos.presentation.ObjetivosViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+        factory = com.example.feature.objetivos.presentation.ObjetivosViewModelFactory(
+            financialDao = appContainer.financialDao,
+            userId = viewModel.userId
+        )
+    )
+
+    if (showObjetivosModule) {
+        androidx.activity.compose.BackHandler {
+            showObjetivosModule = false
+        }
+        com.example.feature.objetivos.ui.ObjetivosScreen(
+            viewModel = objetivosViewModel,
+            onNavigateBack = {
+                showObjetivosModule = false
+                viewModel.onEvent(DashboardEvent.Refresh)
+            },
+            onOpenCreateGoalForm = {
+                showCreateGoal = true
+            }
+        )
+    }
+
+    // Flow: Create Goal (Placed after showObjetivosModule so it renders on top when opened from either Dashboard or ObjetivosScreen)
+    if (showCreateGoal && viewModel.financialRepository != null) {
+        val goalViewModel: GoalFormViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+            key = "goal_form_vm_${System.currentTimeMillis() / 60000}",
+            factory = GoalFormViewModel.provideFactory(
+                financialRepository = viewModel.financialRepository,
+                userId = viewModel.userId
+            )
+        )
+        CreateGoalScreen(
+            viewModel = goalViewModel,
+            onNavigateBack = { showCreateGoal = false },
+            onGoalCreatedSuccessfully = {
+                showCreateGoal = false
+                viewModel.onEvent(DashboardEvent.Refresh)
+                objetivosViewModel.syncFromDashboard()
+            }
+        )
+    }
+}
