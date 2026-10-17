@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.AutoMode
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileDownload
@@ -52,12 +53,14 @@ import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -195,6 +198,7 @@ fun FixedAssetsScreen(
     var selectedTopTab by remember { mutableIntStateOf(0) }
     val topTabs = listOf("Resumen", "Activos", "Depreciación", "Mantenimientos", "Auditoría")
     var showTopOverflowMenu by remember { mutableStateOf(false) }
+    var assetToDeleteForConfirm by remember { mutableStateOf<FixedAssetEntity?>(null) }
 
     // Paleta corporativa Dark Navy
     val bgDark = Color(0xFF07101E)
@@ -748,15 +752,41 @@ fun FixedAssetsScreen(
                             }
                         }
 
-                        // Muestra de activos
-                        items(uiState.allAssets.take(3), key = { "resumen_${it.id}" }) { asset ->
-                            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                                ResponsiveDarkNavyAssetCard(
-                                    asset = asset,
-                                    moneyFmt = moneyFmt,
-                                    onClick = { viewModel.selectAssetForDetail(asset) },
-                                    onEdit = { viewModel.openEditAsset(asset) }
-                                )
+                        // Muestra de todos los activos registrados
+                        if (uiState.allAssets.isEmpty()) {
+                            item {
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = cardBg,
+                                    border = BorderStroke(1.dp, cardBorder),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(24.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(Icons.Default.Inventory2, contentDescription = null, tint = accentCyan, modifier = Modifier.size(36.dp))
+                                        Text("Sin activos registrados", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = textPrimary)
+                                        Text("Agrega tus vehículos, inmuebles o equipos pulsando '+ Nuevo'", fontSize = 12.sp, color = textSecondary)
+                                    }
+                                }
+                            }
+                        } else {
+                            items(uiState.allAssets, key = { "resumen_${it.id}" }) { asset ->
+                                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                    ResponsiveDarkNavyAssetCard(
+                                        asset = asset,
+                                        moneyFmt = moneyFmt,
+                                        onClick = { viewModel.selectAssetForDetail(asset) },
+                                        onEdit = { viewModel.openEditAsset(asset) },
+                                        onDelete = { assetToDeleteForConfirm = asset }
+                                    )
+                                }
                             }
                         }
                     }
@@ -775,6 +805,7 @@ fun FixedAssetsScreen(
                                 onResetFilters = { viewModel.resetFilters() },
                                 onSelectAsset = { viewModel.selectAssetForDetail(it) },
                                 onEditAsset = { viewModel.openEditAsset(it) },
+                                onDeleteAsset = { assetToDeleteForConfirm = it },
                                 onCreateAsset = { viewModel.openCreateAsset() }
                             )
                         }
@@ -956,6 +987,50 @@ fun FixedAssetsScreen(
             title = "Reporte de Activos Fijos",
             context = context,
             onDismiss = { viewModel.dismissExportSuccessDialog() }
+        )
+    }
+
+    if (assetToDeleteForConfirm != null) {
+        val target = assetToDeleteForConfirm!!
+        AlertDialog(
+            onDismissRequest = { assetToDeleteForConfirm = null },
+            icon = {
+                Icon(Icons.Default.Delete, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(28.dp))
+            },
+            title = {
+                Text(
+                    text = "Eliminar Activo Definitivamente",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp
+                )
+            },
+            text = {
+                Text(
+                    text = "¿Estás seguro de que deseas eliminar permanentemente '${target.name}' (${target.assetCode})? Esta acción purgará el activo y su historial contable de la base de datos.",
+                    color = Color(0xFFCBD5E1),
+                    fontSize = 13.sp
+                )
+            },
+            containerColor = Color(0xFF0F172A),
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteAsset(target.id)
+                        assetToDeleteForConfirm = null
+                        android.widget.Toast.makeText(context, "Activo eliminado exitosamente", android.widget.Toast.LENGTH_SHORT).show()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Eliminar definitivamente", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { assetToDeleteForConfirm = null }) {
+                    Text("Cancelar", color = Color(0xFF94A3B8))
+                }
+            }
         )
     }
 }
@@ -1246,7 +1321,8 @@ internal fun ResponsiveDarkNavyAssetCard(
     asset: FixedAssetEntity,
     moneyFmt: DecimalFormat,
     onClick: () -> Unit,
-    onEdit: () -> Unit = {}
+    onEdit: () -> Unit = {},
+    onDelete: () -> Unit = {}
 ) {
     val category = AssetCategory.fromString(asset.category)
     val state = AssetStateMachine.resolveState(asset.status)
@@ -1445,6 +1521,27 @@ internal fun ResponsiveDarkNavyAssetCard(
                         Icon(Icons.Default.Edit, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(13.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Editar", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(9.dp),
+                    color = Color(0xFF2D1515),
+                    border = BorderStroke(1.dp, Color(0xFF7F1D1D)),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(9.dp))
+                        .clickable { onDelete() }
+                        .testTag("btn_eliminar_${asset.id}")
+                ) {
+                    Row(
+                        modifier = Modifier.padding(vertical = 6.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = null, tint = Color(0xFFF87171), modifier = Modifier.size(13.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Eliminar", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFFCA5A5))
                     }
                 }
             }

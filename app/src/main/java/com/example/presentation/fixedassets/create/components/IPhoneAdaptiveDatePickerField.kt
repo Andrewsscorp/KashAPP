@@ -73,7 +73,9 @@ fun IPhoneAdaptiveDatePickerField(
     onValueChange: (String) -> Unit,
     label: String,
     modifier: Modifier = Modifier,
-    placeholder: String = "AAAA-MM-DD"
+    placeholder: String = "AAAA-MM-DD",
+    title: String = label,
+    isDarkTheme: Boolean = true
 ) {
     var showPickerDialog by remember { mutableStateOf(false) }
 
@@ -85,12 +87,20 @@ fun IPhoneAdaptiveDatePickerField(
         }
     }
 
+    val labelColor = if (isDarkTheme) Color(0xFF38BDF8) else Color(0xFF0284C7)
+    val focusedBorder = if (isDarkTheme) Color(0xFF38BDF8) else Color(0xFF0284C7)
+    val unfocusedBorder = if (isDarkTheme) Color(0xFF1E3A8A).copy(alpha = 0.5f) else Color(0xFFCBD5E1)
+    val textColor = if (isDarkTheme) Color.White else Color(0xFF0F172A)
+    val containerColor = if (isDarkTheme) Color(0xFF071221) else Color.White
+    val iconColor = if (isDarkTheme) Color(0xFF38BDF8) else Color(0xFF0284C7)
+    val cursorColor = if (isDarkTheme) Color(0xFF38BDF8) else Color(0xFF0284C7)
+
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
             text = label,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF38BDF8)
+            color = labelColor
         )
 
         OutlinedTextField(
@@ -108,7 +118,7 @@ fun IPhoneAdaptiveDatePickerField(
                     Icon(
                         imageVector = Icons.Default.CalendarMonth,
                         contentDescription = "Abrir calendario",
-                        tint = Color(0xFF38BDF8),
+                        tint = iconColor,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -116,13 +126,13 @@ fun IPhoneAdaptiveDatePickerField(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color(0xFF38BDF8),
-                unfocusedBorderColor = Color(0xFF1E3A8A).copy(alpha = 0.5f),
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedContainerColor = Color(0xFF071221),
-                unfocusedContainerColor = Color(0xFF071221),
-                cursorColor = Color(0xFF38BDF8)
+                focusedBorderColor = focusedBorder,
+                unfocusedBorderColor = unfocusedBorder,
+                focusedTextColor = textColor,
+                unfocusedTextColor = textColor,
+                focusedContainerColor = containerColor,
+                unfocusedContainerColor = containerColor,
+                cursorColor = cursorColor
             ),
             modifier = Modifier.fillMaxWidth()
         )
@@ -135,7 +145,8 @@ fun IPhoneAdaptiveDatePickerField(
             onDateSelected = { newDate ->
                 onValueChange(newDate.toString())
                 showPickerDialog = false
-            }
+            },
+            title = title
         )
     }
 }
@@ -147,16 +158,18 @@ fun IPhoneAdaptiveDatePickerField(
 fun IPhoneWheelDatePickerDialog(
     initialDate: LocalDate,
     onDismiss: () -> Unit,
-    onDateSelected: (LocalDate) -> Unit
+    onDateSelected: (LocalDate) -> Unit,
+    title: String = "Seleccionar Fecha"
 ) {
-    AdaptiveWheelDatePickerDialog(initialDate, onDismiss, onDateSelected)
+    AdaptiveWheelDatePickerDialog(initialDate, onDismiss, onDateSelected, title)
 }
 
 @Composable
 fun AdaptiveWheelDatePickerDialog(
     initialDate: LocalDate,
     onDismiss: () -> Unit,
-    onDateSelected: (LocalDate) -> Unit
+    onDateSelected: (LocalDate) -> Unit,
+    title: String = "Seleccionar Fecha"
 ) {
     var selectedYear by remember { mutableIntStateOf(initialDate.year) }
     var selectedMonth by remember { mutableIntStateOf(initialDate.monthValue) }
@@ -219,7 +232,7 @@ fun AdaptiveWheelDatePickerDialog(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "Fecha de Compra",
+                                text = title,
                                 color = Color.White,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold

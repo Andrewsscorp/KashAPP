@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -538,21 +539,27 @@ fun CreateTransferScreen(
                     onToggleGmf = { formState = formState.copy(applyGmf = it) }
                 )
 
-                // 5. FECHA CARD
+                // 5. FECHA CARD (iPhone Wheel Picker + Escritura Directa)
                 Surface(
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(18.dp)).clickable { showDatePicker = true },
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(18.dp)),
                     color = Color.White
                 ) {
-                    Row(modifier = Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFFEDE9FE)), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = Color(0xFF7C3AED), modifier = Modifier.size(20.dp))
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(text = "Fecha", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = Color(0xFF64748B))
-                            Text(text = formState.selectedDate.format(spanishDateFormatter), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
-                        }
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color(0xFF94A3B8), modifier = Modifier.size(18.dp))
+                    Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                        com.example.ui.components.IPhoneAdaptiveDatePickerField(
+                            value = formState.selectedDate.toString(),
+                            onValueChange = { str ->
+                                try {
+                                    if (str.length >= 10) {
+                                        formState = formState.copy(selectedDate = LocalDate.parse(str.take(10)))
+                                    }
+                                } catch (_: Exception) {}
+                            },
+                            label = "Fecha de transferencia",
+                            title = "Fecha de Transferencia",
+                            placeholder = "AAAA-MM-DD",
+                            isDarkTheme = false,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
 
@@ -724,24 +731,30 @@ fun CreateTransferScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // 8. ACTION BUTTON "TRANSFERIR AHORA"
-                Button(
-                    onClick = onPerformTransfer,
-                    enabled = formState.isFormValid,
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7), disabledContainerColor = Color(0xFFCBD5E1)),
-                    modifier = Modifier.fillMaxWidth().height(52.dp).testTag("confirm_transfer_btn")
-                ) {
-                    if (formState.isSubmitting) {
-                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = "Transfiriendo...", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    } else {
-                        Text(
-                            text = if (formState.numericAmount > 0) "Transferir ${formatTransferMoney(formState.numericAmount, formState.selectedCurrency)}" else "Transferir ahora",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Button(
+                        onClick = onPerformTransfer,
+                        enabled = formState.isFormValid,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7), disabledContainerColor = Color(0xFFCBD5E1)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = 440.dp)
+                            .height(52.dp)
+                            .testTag("confirm_transfer_btn")
+                    ) {
+                        if (formState.isSubmitting) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = "Transfiriendo...", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        } else {
+                            Text(
+                                text = if (formState.numericAmount > 0) "Transferir ${formatTransferMoney(formState.numericAmount, formState.selectedCurrency)}" else "Transferir ahora",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
 
@@ -848,21 +861,15 @@ fun CreateTransferScreen(
     }
 
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = formState.selectedDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-        )
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        formState = formState.copy(selectedDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate())
-                    }
-                    showDatePicker = false
-                }) { Text("Seleccionar", fontWeight = FontWeight.Bold, color = Color(0xFF0284C7)) }
+        com.example.ui.components.AdaptiveWheelDatePickerDialog(
+            initialDate = formState.selectedDate,
+            onDismiss = { showDatePicker = false },
+            onDateSelected = { newDate ->
+                formState = formState.copy(selectedDate = newDate)
+                showDatePicker = false
             },
-            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancelar", color = Color(0xFF64748B)) } }
-        ) { DatePicker(state = datePickerState) }
+            title = "Fecha de Transferencia"
+        )
     }
 
     if (showAddTagDialog) {

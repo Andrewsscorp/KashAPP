@@ -392,6 +392,7 @@ fun CreateExpenseScreen(
                 ExpenseRecurrenceOptions(
                     selectedDate = formState.selectedDate,
                     onOpenDatePicker = { showDatePicker = true },
+                    onDateChange = { formState = formState.copy(selectedDate = it) },
                     isRecurring = formState.isRecurring,
                     onRecurringChange = { formState = formState.copy(isRecurring = it) },
                     recurrenceFrequency = formState.recurrenceFrequency,
@@ -460,12 +461,15 @@ fun CreateExpenseScreen(
         onDismiss = { showStrategySelectionModal = false }
     )
     if (showDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = { TextButton(onClick = { dateState.selectedDateMillis?.let { millis -> formState = formState.copy(selectedDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()) }; showDatePicker = false }) { Text("Seleccionar", fontWeight = FontWeight.Bold, color = Color(0xFF0284C7)) } },
-            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancelar", color = Color(0xFF64748B)) } },
-            colors = DatePickerDefaults.colors(containerColor = Color.White)
-        ) { DatePicker(state = dateState) }
+        com.example.ui.components.AdaptiveWheelDatePickerDialog(
+            initialDate = formState.selectedDate,
+            onDismiss = { showDatePicker = false },
+            onDateSelected = { newDate ->
+                formState = formState.copy(selectedDate = newDate)
+                showDatePicker = false
+            },
+            title = "Fecha del Gasto"
+        )
     }
     if (showTagInputDialog) {
         AlertDialog(

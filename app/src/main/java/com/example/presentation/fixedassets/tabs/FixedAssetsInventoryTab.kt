@@ -66,6 +66,7 @@ fun FixedAssetsInventoryTab(
     onResetFilters: () -> Unit,
     onSelectAsset: (FixedAssetEntity) -> Unit,
     onEditAsset: (FixedAssetEntity) -> Unit,
+    onDeleteAsset: (FixedAssetEntity) -> Unit = {},
     onCreateAsset: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -429,7 +430,8 @@ fun FixedAssetsInventoryTab(
                         asset = asset,
                         moneyFmt = moneyFmt,
                         onClick = { onSelectAsset(asset) },
-                        onEdit = { onEditAsset(asset) }
+                        onEdit = { onEditAsset(asset) },
+                        onDelete = { onDeleteAsset(asset) }
                     )
                 }
             }

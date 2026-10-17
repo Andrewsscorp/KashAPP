@@ -68,6 +68,9 @@ interface FinancialDao {
     @Query("DELETE FROM accounts WHERE id = :accountId")
     suspend fun deleteAccountById(accountId: String)
 
+    @Query("DELETE FROM transactions WHERE accountId = :accountId")
+    suspend fun deleteTransactionsByAccountId(accountId: String)
+
     @Query("DELETE FROM accounts WHERE userId = :userId")
     suspend fun deleteAccountsByUserId(userId: String)
 

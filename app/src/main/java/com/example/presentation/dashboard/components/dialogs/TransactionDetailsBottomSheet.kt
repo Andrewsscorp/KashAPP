@@ -37,11 +37,36 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.models.TransactionItemDto
+import com.example.presentation.dashboard.model.Transaction
+import com.example.presentation.dashboard.model.TransactionType
 import com.example.ui.theme.KashBlue
 import com.example.ui.theme.KashCyan
 import com.example.ui.theme.KashNavy
 import com.example.ui.theme.KashSuccess
 import java.util.Locale
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TransactionDetailsBottomSheet(
+    transaction: Transaction,
+    onDismiss: () -> Unit,
+    onDelete: (String) -> Unit = {}
+) {
+    val dto = TransactionItemDto(
+        id = transaction.id.toString(),
+        description = transaction.concept,
+        amount = transaction.amount.toDouble(),
+        dateFormatted = transaction.dateFormatted,
+        category = transaction.categoryName,
+        account = transaction.accountName,
+        isIncome = transaction.type == TransactionType.INCOME
+    )
+    TransactionDetailsBottomSheet(
+        transaction = dto,
+        onDismiss = onDismiss,
+        onDelete = onDelete
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

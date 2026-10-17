@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -562,23 +563,22 @@ fun CreateCardPurchaseScreen(
                     Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text("FECHA Y DETALLES ADICIONALES", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B), letterSpacing = 0.8.sp)
 
-                        // Date Picker Row
-                        Surface(
-                            shape = RoundedCornerShape(14.dp),
-                            color = Color(0xFFF8FAFC),
-                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                            modifier = Modifier.fillMaxWidth().clickable { showDatePickerDialog = true }
-                        ) {
-                            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = KashBlue, modifier = Modifier.size(20.dp))
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text("Fecha de la compra", fontSize = 10.sp, color = Color(0xFF64748B))
-                                    Text(formState.selectedDate.format(spanishDateFormatter), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
-                                }
-                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color(0xFF94A3B8))
-                            }
-                        }
+                        // Date Picker Field (iPhone Wheel + Manual input)
+                        com.example.ui.components.IPhoneAdaptiveDatePickerField(
+                            value = formState.selectedDate.toString(),
+                            onValueChange = { str ->
+                                try {
+                                    if (str.length >= 10) {
+                                        formState = formState.copy(selectedDate = LocalDate.parse(str.take(10)))
+                                    }
+                                } catch (_: Exception) {}
+                            },
+                            label = "Fecha de la compra",
+                            title = "Fecha de Compra con Tarjeta",
+                            placeholder = "AAAA-MM-DD",
+                            isDarkTheme = false,
+                            modifier = Modifier.fillMaxWidth()
+                        )
 
                         // Notes TextField
                         OutlinedTextField(
@@ -613,24 +613,30 @@ fun CreateCardPurchaseScreen(
                 }
 
                 // BOTTOM ACTION BUTTON
-                Button(
-                    onClick = onPerformSavePurchase,
-                    enabled = formState.isFormValid,
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = KashBlue, disabledContainerColor = Color(0xFFCBD5E1)),
-                    modifier = Modifier.fillMaxWidth().height(52.dp).testTag("save_card_purchase_bottom_btn")
-                ) {
-                    if (formState.isSubmitting) {
-                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Registrando compra...", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    } else {
-                        Text(
-                            text = if (formState.numericAmount > 0) "Registrar compra (${formatCardMoney(formState.numericAmount, formState.selectedCurrency)})" else "Registrar compra",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Button(
+                        onClick = onPerformSavePurchase,
+                        enabled = formState.isFormValid,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = KashBlue, disabledContainerColor = Color(0xFFCBD5E1)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = 440.dp)
+                            .height(52.dp)
+                            .testTag("save_card_purchase_bottom_btn")
+                    ) {
+                        if (formState.isSubmitting) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Registrando compra...", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        } else {
+                            Text(
+                                text = if (formState.numericAmount > 0) "Registrar compra (${formatCardMoney(formState.numericAmount, formState.selectedCurrency)})" else "Registrar compra",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
 
@@ -774,27 +780,15 @@ fun CreateCardPurchaseScreen(
     }
 
     if (showDatePickerDialog) {
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = formState.selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        )
-        DatePickerDialog(
-            onDismissRequest = { showDatePickerDialog = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        formState = formState.copy(selectedDate = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate())
-                    }
-                    showDatePickerDialog = false
-                }) {
-                    Text("Aceptar", fontWeight = FontWeight.Bold, color = KashBlue)
-                }
+        com.example.ui.components.AdaptiveWheelDatePickerDialog(
+            initialDate = formState.selectedDate,
+            onDismiss = { showDatePickerDialog = false },
+            onDateSelected = { newDate ->
+                formState = formState.copy(selectedDate = newDate)
+                showDatePickerDialog = false
             },
-            dismissButton = {
-                TextButton(onClick = { showDatePickerDialog = false }) { Text("Cancelar", color = Color(0xFF64748B)) }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+            title = "Fecha de Compra con Tarjeta"
+        )
     }
 
     if (showQuotaBlockedPopup) {

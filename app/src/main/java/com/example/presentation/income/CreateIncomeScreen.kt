@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -473,47 +474,53 @@ fun CreateIncomeScreen(
                     onOpenCreateCategory = { showNewCategoryDialog = true }
                 )
 
-                // 4. Date & Recurrence Row
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Card(
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                        modifier = Modifier.weight(1.1f).clickable { showDatePicker = true }.testTag("fecha_income_selector_card")
-                    ) {
-                        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(38.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFFFAF5FF)), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = Color(0xFF9333EA), modifier = Modifier.size(20.dp))
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(text = "Fecha", fontSize = 11.sp, color = Color(0xFF94A3B8))
-                                Text(text = dateDisplayString, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            }
-                        }
+                // 4. Date & Recurrence
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
+                    modifier = Modifier.fillMaxWidth().testTag("fecha_income_selector_card")
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                        com.example.ui.components.IPhoneAdaptiveDatePickerField(
+                            value = formState.selectedDate.toString(),
+                            onValueChange = { inputStr ->
+                                try {
+                                    if (inputStr.length >= 10) {
+                                        formState = formState.copy(selectedDate = LocalDate.parse(inputStr.take(10)))
+                                    }
+                                } catch (_: Exception) {}
+                            },
+                            label = "Fecha del ingreso",
+                            title = "Fecha del Ingreso",
+                            placeholder = "AAAA-MM-DD",
+                            isDarkTheme = false,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
+                }
 
-                    Card(
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFFDCFCE7)), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.Sync, contentDescription = null, tint = Color(0xFF16A34A), modifier = Modifier.size(20.dp))
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(text = "Recurrente", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
-                                Text(text = "Opcional", fontSize = 9.sp, color = Color(0xFF94A3B8))
-                            }
-                            Switch(
-                                checked = formState.isRecurring,
-                                onCheckedChange = { formState = formState.copy(isRecurring = it) },
-                                colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF10B981))
-                            )
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFFDCFCE7)), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.Sync, contentDescription = null, tint = Color(0xFF16A34A), modifier = Modifier.size(20.dp))
                         }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(text = "Ingreso recurrente", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
+                            Text(text = "Se repetirá periódicamente según tu preferencia", fontSize = 11.sp, color = Color(0xFF94A3B8))
+                        }
+                        Switch(
+                            checked = formState.isRecurring,
+                            onCheckedChange = { formState = formState.copy(isRecurring = it) },
+                            colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF10B981))
+                        )
                     }
                 }
 
@@ -613,21 +620,27 @@ fun CreateIncomeScreen(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                Button(
-                    onClick = onPerformSaveIncome,
-                    enabled = formState.isAmountValid && !formState.isSubmitting,
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981), disabledContainerColor = Color(0xFFCBD5E1)),
-                    modifier = Modifier.fillMaxWidth().height(54.dp).testTag("registrar_ingreso_btn")
-                ) {
-                    if (formState.isSubmitting) {
-                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.5.dp)
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(text = "Guardando...", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    } else {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Default.TrendingUp, contentDescription = null, tint = Color.White)
-                            Text(text = "Registrar ingreso", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Button(
+                        onClick = onPerformSaveIncome,
+                        enabled = formState.isAmountValid && !formState.isSubmitting,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981), disabledContainerColor = Color(0xFFCBD5E1)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = 440.dp)
+                            .height(52.dp)
+                            .testTag("registrar_ingreso_btn")
+                    ) {
+                        if (formState.isSubmitting) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.5.dp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(text = "Guardando...", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        } else {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Icon(Icons.Default.TrendingUp, contentDescription = null, tint = Color.White)
+                                Text(text = "Registrar ingreso", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            }
                         }
                     }
                 }
@@ -670,18 +683,15 @@ fun CreateIncomeScreen(
     }
 
     if (showDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    dateState.selectedDateMillis?.let { millis ->
-                        formState = formState.copy(selectedDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate())
-                    }
-                    showDatePicker = false
-                }) { Text("Seleccionar", fontWeight = FontWeight.Bold, color = Color(0xFF10B981)) }
+        com.example.ui.components.AdaptiveWheelDatePickerDialog(
+            initialDate = formState.selectedDate,
+            onDismiss = { showDatePicker = false },
+            onDateSelected = { newDate ->
+                formState = formState.copy(selectedDate = newDate)
+                showDatePicker = false
             },
-            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancelar", color = Color(0xFF64748B)) } }
-        ) { DatePicker(state = dateState) }
+            title = "Fecha del Ingreso"
+        )
     }
 
     if (showTagInputDialog) {

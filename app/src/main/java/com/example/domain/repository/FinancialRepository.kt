@@ -126,6 +126,7 @@ interface FinancialRepository {
     suspend fun updateAccountAllowNegative(accountId: String, allowNegative: Boolean)
     suspend fun updateAccount(account: AccountEntity): Result<Unit>
     suspend fun deleteAccount(accountId: String): Result<Unit>
+    suspend fun deleteAccountWithAudit(accountId: String, preserveAuditTrail: Boolean = true): Result<Unit>
     fun getTransactionsByAccount(accountId: String): Flow<List<TransactionEntity>>
     suspend fun createIncomeSource(
         userId: String,

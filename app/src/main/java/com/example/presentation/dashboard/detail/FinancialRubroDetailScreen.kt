@@ -563,14 +563,22 @@ private fun buildRawRubroItems(
             }
         }
         FinancialRubroType.ASSETS -> {
-            val activeAssets = roomFixedAssets.filter { it.status == "ACTIVE" }
+            val activeAssets = roomFixedAssets.filter {
+                it.deletedAt == null && (
+                    it.status.equals("ACTIVE", ignoreCase = true) ||
+                    it.status.equals("ACTIVO", ignoreCase = true) ||
+                    it.status.equals("OPERATIONAL", ignoreCase = true) ||
+                    it.status.equals("EN_USO", ignoreCase = true) ||
+                    it.status.isBlank()
+                )
+            }
             if (activeAssets.isNotEmpty()) {
                 activeAssets.map { asset ->
-                    val netVal = (asset.acquisitionValue - asset.accumulatedDepreciation).coerceAtLeast(0.0)
+                    val netVal = (asset.acquisitionValue - asset.accumulatedDepreciation).coerceAtLeast(asset.residualValue)
                     RubroItemDisplay(
                         id = asset.id,
                         name = asset.name,
-                        institution = "${if (asset.type == "TANGIBLE") "Tangible" else "Intangible"} • ${asset.category}",
+                        institution = "${if (asset.type.equals("TANGIBLE", ignoreCase = true)) "Tangible" else "Intangible"} • ${asset.category}",
                         category = asset.category,
                         amount = BigDecimal.valueOf(netVal),
                         currency = asset.currency,
@@ -578,12 +586,22 @@ private fun buildRawRubroItems(
                         colorHex = asset.colorHex.ifBlank { "#10B981" }
                     )
                 }
+            } else if (roomFixedAssets.isNotEmpty()) {
+                roomFixedAssets.filter { it.deletedAt == null }.map { asset ->
+                    val netVal = (asset.acquisitionValue - asset.accumulatedDepreciation).coerceAtLeast(asset.residualValue)
+                    RubroItemDisplay(
+                        id = asset.id,
+                        name = asset.name,
+                        institution = "${asset.type} • ${asset.category}",
+                        category = asset.category,
+                        amount = BigDecimal.valueOf(netVal),
+                        currency = asset.currency,
+                        status = asset.status,
+                        colorHex = asset.colorHex.ifBlank { "#94A3B8" }
+                    )
+                }
             } else {
-                listOf(
-                    RubroItemDisplay("ast_1", "Dinero Líquido y Bancos", "Múltiples Bancos", "Liquidez", netWorthState.availableCash, "COP", status = "Disponible", colorHex = "#0284C7"),
-                    RubroItemDisplay("ast_2", "Portafolio de Inversiones", "Entidades Financieras", "Renta Fija y Fondos", netWorthState.investments, "COP", 12.0, status = "En Rendimiento", colorHex = "#8B5CF6"),
-                    RubroItemDisplay("ast_3", "Vehículos y Propiedades", "Patrimonio Personal", "Bienes Tangibles", netWorthState.assets.coerceAtLeast(BigDecimal.ZERO), "COP", status = "Valorizado", colorHex = "#10B981")
-                )
+                emptyList()
             }
         }
     }

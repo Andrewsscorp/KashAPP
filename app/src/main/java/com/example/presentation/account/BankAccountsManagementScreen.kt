@@ -54,6 +54,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -539,7 +540,7 @@ fun BankAccountsManagementScreen(
                 },
                 title = {
                     Text(
-                        text = "No se puede eliminar esta cuenta",
+                        text = "Eliminar y Reversar Cuenta",
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         fontSize = 17.sp,
@@ -554,12 +555,33 @@ fun BankAccountsManagementScreen(
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold
                         )
+                        val isCredit = targetAcc.type.equals("CREDIT", ignoreCase = true) ||
+                                targetAcc.type.equals("CREDIT_CARD", ignoreCase = true) ||
+                                targetAcc.name.contains("Tarjeta", ignoreCase = true)
+
+                        if (isCredit) {
+                            Text(
+                                text = "Al eliminar esta tarjeta, se cancela la deuda asociada en el pasivo, lo que disminuye tus obligaciones y aumenta tu patrimonio neto en el Dashboard.",
+                                color = Color(0xFF38BDF8),
+                                fontSize = 12.sp,
+                                lineHeight = 17.sp
+                            )
+                        } else {
+                            Text(
+                                text = "Al eliminar esta cuenta, su saldo se desincorpora del dinero disponible y la información se reversa en el Dashboard.",
+                                color = Color(0xFF38BDF8),
+                                fontSize = 12.sp,
+                                lineHeight = 17.sp
+                            )
+                        }
+
                         Text(
-                            text = "Por integridad contable y protección criptográfica del libro mayor (TransactionProtectionEngine), no está permitido eliminar cuentas con transacciones históricas. Esto evita descuadres irreversibles en balances anteriores y reportes patrimoniales.",
+                            text = "Para transparencia y cumplimiento fiscal, puedes conservar el historial en la pista de auditoría contable o purgar todo el registro.",
                             color = Color(0xFF94A3B8),
-                            fontSize = 12.sp,
-                            lineHeight = 17.sp
+                            fontSize = 11.5.sp,
+                            lineHeight = 16.sp
                         )
+
                         Surface(
                             shape = RoundedCornerShape(8.dp),
                             color = Color(0xFF0F172A),
@@ -573,29 +595,61 @@ fun BankAccountsManagementScreen(
                                 Icon(
                                     imageVector = Icons.Default.ReceiptLong,
                                     contentDescription = null,
-                                    tint = Color(0xFF38BDF8),
+                                    tint = Color(0xFF10B981),
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Text(
-                                    text = "$associatedTransactionsCount transacciones protegiendo este registro",
+                                    text = "$associatedTransactionsCount transacciones respaldadas en auditoría",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF38BDF8)
+                                    color = Color(0xFF10B981)
                                 )
                             }
                         }
                     }
                 },
                 confirmButton = {
-                    Button(
-                        onClick = { accountToDelete = null },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007BFF)),
-                        shape = RoundedCornerShape(12.dp)
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("Entendido", fontWeight = FontWeight.Bold, color = Color.White)
+                        Button(
+                            onClick = {
+                                coroutineScope.launch {
+                                    financialRepository.deleteAccountWithAudit(targetAcc.id, preserveAuditTrail = true)
+                                    android.widget.Toast.makeText(context, "Cuenta eliminada y reversada. Auditoría conservada.", android.widget.Toast.LENGTH_SHORT).show()
+                                    accountToDelete = null
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007BFF)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Conservar en Auditoría y Reversar", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.sp)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    financialRepository.deleteAccountWithAudit(targetAcc.id, preserveAuditTrail = false)
+                                    android.widget.Toast.makeText(context, "Cuenta y transacciones purgadas definitivamente.", android.widget.Toast.LENGTH_SHORT).show()
+                                    accountToDelete = null
+                                }
+                            },
+                            border = BorderStroke(1.dp, Color(0xFF7F1D1D)),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFCA5A5)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Purgar todo definitivamente", fontSize = 12.sp)
+                        }
                     }
                 },
-                dismissButton = null,
+                dismissButton = {
+                    TextButton(onClick = { accountToDelete = null }) {
+                        Text("Cancelar", color = Color(0xFF94A3B8))
+                    }
+                },
                 containerColor = Color(0xFF1E293B),
                 shape = RoundedCornerShape(20.dp)
             )

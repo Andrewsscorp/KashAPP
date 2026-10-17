@@ -1907,7 +1907,8 @@ fun FixedAssetDetailScreen(
                             )
                             onRecordMovement(disposalMov)
                             showDeleteConfirmDialog = false
-                            Toast.makeText(context, "Activo dado de baja exitosamente", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Activo dado de baja exitosamente (NIIF)", Toast.LENGTH_SHORT).show()
+                            onDismiss()
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
                     ) {
@@ -1918,11 +1919,13 @@ fun FixedAssetDetailScreen(
                         onClick = {
                             onDeleteAsset(currentAsset.id)
                             showDeleteConfirmDialog = false
+                            Toast.makeText(context, "Activo eliminado definitivamente del sistema", Toast.LENGTH_SHORT).show()
+                            onDismiss()
                         },
                         border = BorderStroke(1.dp, Color(0xFF7F1D1D)),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFCA5A5))
                     ) {
-                        Text("Eliminar Todo", fontSize = 12.sp)
+                        Text("Eliminar Definitivamente", fontSize = 12.sp)
                     }
                 }
             },

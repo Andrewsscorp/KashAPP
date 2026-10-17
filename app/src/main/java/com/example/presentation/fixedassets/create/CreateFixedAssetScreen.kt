@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -1036,32 +1037,35 @@ fun CreateFixedAssetScreen(
             }
 
             // BOTÓN PRINCIPAL DE GUARDADO AMPLIO Y RESPONSIVO
-            Button(
-                onClick = handleSaveAttempt,
-                enabled = formState.isValid,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = primaryBlue,
-                    disabledContainerColor = Color(0xFF132B4F)
-                ),
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-                    .testTag("save_asset_button_bottom")
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Save,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = if (formState.assetId == null) "Registrar Activo Fijo" else "Actualizar Activo Fijo",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Button(
+                    onClick = handleSaveAttempt,
+                    enabled = formState.isValid,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = primaryBlue,
+                        disabledContainerColor = Color(0xFF132B4F)
+                    ),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 440.dp)
+                        .height(52.dp)
+                        .testTag("save_asset_button_bottom")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Save,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (formState.assetId == null) "Registrar Activo Fijo" else "Actualizar Activo Fijo",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))

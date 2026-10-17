@@ -634,6 +634,33 @@ class FinancialRepositoryImpl(
         }
     }
 
+    override suspend fun deleteAccountWithAudit(accountId: String, preserveAuditTrail: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val account = financialDao.getAccountById(accountId)
+            if (account != null) {
+                try {
+                    auditLogDao.insertLog(
+                        AuditSecurityLog(
+                            eventType = "DELETE_ACCOUNT_REVERSED",
+                            authMethod = "SESSION",
+                            details = "Cuenta eliminada y reversada: '${account.name}' (${account.type}, ${account.currency} ${account.balance}). Preservar auditoría: $preserveAuditTrail"
+                        )
+                    )
+                } catch (e: Exception) {
+                    Log.w("FinancialRepository", "Audit log insert non-critical failure: ${e.message}")
+                }
+            }
+            if (!preserveAuditTrail) {
+                financialDao.deleteTransactionsByAccountId(accountId)
+            }
+            financialDao.deleteAccountById(accountId)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e("FinancialRepositoryImpl", "Error eliminando cuenta con auditoría: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
     override fun getTransactionsByAccount(accountId: String): Flow<List<TransactionEntity>> {
         return financialDao.getTransactionsByAccountFlow(accountId)
     }

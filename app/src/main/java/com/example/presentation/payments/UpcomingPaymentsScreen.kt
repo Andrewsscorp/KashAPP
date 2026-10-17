@@ -1467,12 +1467,13 @@ private fun CreateScheduledPaymentModal(
                     Text("Monto formateado: $ ${moneyFormatter.format(parsedAmount)} COP", color = Color(0xFF38BDF8), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
 
-                OutlinedTextField(
+                com.example.ui.components.IPhoneAdaptiveDatePickerField(
                     value = dueDateInput,
                     onValueChange = { dueDateInput = it },
-                    label = { Text("Fecha límite (AAAA-MM-DD)", color = Color(0xFF94A3B8)) },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF38BDF8), unfocusedBorderColor = Color(0xFF334155), focusedTextColor = Color.White, unfocusedTextColor = Color.White),
+                    label = "Fecha límite de pago",
+                    title = "Fecha Límite de Pago",
+                    placeholder = "AAAA-MM-DD",
+                    isDarkTheme = true,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -1576,12 +1577,13 @@ private fun EditScheduledPaymentModal(
                     Text("Formateado: $ ${moneyFormatter.format(parsedAmount)} COP", color = Color(0xFF38BDF8), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
 
-                OutlinedTextField(
+                com.example.ui.components.IPhoneAdaptiveDatePickerField(
                     value = dueDateInput,
                     onValueChange = { dueDateInput = it },
-                    label = { Text("Fecha límite (AAAA-MM-DD)", color = Color(0xFF94A3B8)) },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF38BDF8), unfocusedBorderColor = Color(0xFF334155), focusedTextColor = Color.White, unfocusedTextColor = Color.White),
+                    label = "Fecha límite de pago",
+                    title = "Fecha Límite de Pago",
+                    placeholder = "AAAA-MM-DD",
+                    isDarkTheme = true,
                     modifier = Modifier.fillMaxWidth()
                 )
 

@@ -72,6 +72,7 @@ import java.util.Locale
 fun ExpenseRecurrenceOptions(
     selectedDate: LocalDate,
     onOpenDatePicker: () -> Unit,
+    onDateChange: (LocalDate) -> Unit = {},
     isRecurring: Boolean,
     onRecurringChange: (Boolean) -> Unit,
     recurrenceFrequency: String,
@@ -105,7 +106,7 @@ fun ExpenseRecurrenceOptions(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         // ------------------------------------------
-        // CARD 4: FECHA
+        // CARD 4: FECHA (iPhone Wheel Picker + Escritura Manual Directa)
         // ------------------------------------------
         Card(
             shape = RoundedCornerShape(20.dp),
@@ -114,59 +115,28 @@ fun ExpenseRecurrenceOptions(
             elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { onOpenDatePicker() }
                 .testTag("fecha_selector_card")
         ) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(16.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFFEF3C7)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CalendarMonth,
-                        contentDescription = null,
-                        tint = Color(0xFFD97706),
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(14.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Fecha del gasto",
-                        fontSize = 11.sp,
-                        color = Color(0xFF94A3B8),
-                        fontWeight = FontWeight.Medium
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = if (selectedDate == LocalDate.now()) "Hoy, $dateDisplayString" else dateDisplayString,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "Toca para seleccionar otra fecha",
-                        fontSize = 11.sp,
-                        color = Color(0xFF64748B)
-                    )
-                }
-
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = Color(0xFF94A3B8),
-                    modifier = Modifier.size(20.dp)
+                com.example.ui.components.IPhoneAdaptiveDatePickerField(
+                    value = selectedDate.toString(),
+                    onValueChange = { inputStr ->
+                        try {
+                            if (inputStr.length >= 10) {
+                                val parsed = LocalDate.parse(inputStr.take(10))
+                                onDateChange(parsed)
+                            }
+                        } catch (_: Exception) {}
+                    },
+                    label = "Fecha del gasto",
+                    title = "Fecha del Gasto",
+                    placeholder = "AAAA-MM-DD",
+                    isDarkTheme = false,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }

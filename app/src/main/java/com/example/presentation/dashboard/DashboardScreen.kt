@@ -53,6 +53,7 @@ import com.example.presentation.dashboard.components.position.TuPosicionGrid
 import com.example.presentation.dashboard.components.pulse.ElPulsoDeTuMesCard
 import com.example.presentation.dashboard.components.topbar.DashboardHeroHeader
 import com.example.presentation.dashboard.detail.FinancialRubroDetailScreen
+import com.example.presentation.dashboard.components.dialogs.TransactionDetailsBottomSheet
 import com.example.domain.models.FinancialRubroType
 import com.example.presentation.dashboard.model.DashboardEvent
 import com.example.presentation.expense.CreateExpenseScreen
@@ -122,6 +123,7 @@ fun DashboardScreen(
     var showSharedExpensesSettings by remember { mutableStateOf(false) }
     var activeFinancialRubro by remember { mutableStateOf<FinancialRubroType?>(null) }
     var currentBottomNavRoute by remember { mutableStateOf("kashapp://dashboard") }
+    var selectedTxForModal by remember { mutableStateOf<com.example.presentation.dashboard.model.Transaction?>(null) }
 
     val currentActivity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity
     LaunchedEffect(Unit) {
@@ -335,8 +337,10 @@ fun DashboardScreen(
 
                 UltimosMovimientosCard(
                     transactions = uiState.recentTransactions,
-                    onTransactionClick = { /* View transaction */ },
-                    onSeeAllClick = { /* Navigate to full history */ },
+                    onTransactionClick = { txId ->
+                        selectedTxForModal = uiState.recentTransactions.find { it.id == txId }
+                    },
+                    onSeeAllClick = { showInformesModule = true },
                     isPrivacyMode = uiState.isPrivacyMode
                 )
 
@@ -996,6 +1000,17 @@ fun DashboardScreen(
             },
             onDismiss = {
                 sharedVm.onIntent(com.example.feature.gastoscompartidos.presentation.SharedExpensesIntent.DismissParticipantEditor)
+            }
+        )
+    }
+
+    if (selectedTxForModal != null) {
+        TransactionDetailsBottomSheet(
+            transaction = selectedTxForModal!!,
+            onDismiss = { selectedTxForModal = null },
+            onDelete = {
+                selectedTxForModal = null
+                viewModel.onEvent(DashboardEvent.Refresh)
             }
         )
     }
