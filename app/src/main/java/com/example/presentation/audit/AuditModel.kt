@@ -68,5 +68,6 @@ data class AuditVaultUiState(
     val isVerifyingIntegrity: Boolean = false,
     val integrityVerificationResult: String? = null,
     val exportSuccessMessage: String? = null,
-    val exportPdfResult: com.example.util.FinancialReportExporter.ExportResult? = null
+    val exportPdfResult: com.example.util.FinancialReportExporter.ExportResult? = null,
+    val exportSiemResult: com.example.util.FinancialReportExporter.ExportResult? = null
 )

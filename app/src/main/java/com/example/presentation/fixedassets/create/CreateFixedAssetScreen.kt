@@ -420,16 +420,22 @@ fun CreateFixedAssetScreen(
             Card(
                 shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (formState.includeInNetWorth) Color(0xFF0D1E36) else cardBg
+                    containerColor = if (formState.noAffectDashboard) Color(0xFF1E293B) else Color(0xFF0D1E36)
                 ),
                 border = BorderStroke(
                     1.dp,
-                    if (formState.includeInNetWorth) Color(0xFF0284C7).copy(alpha = 0.55f) else cardBorder
+                    if (formState.noAffectDashboard) Color(0xFFF59E0B).copy(alpha = 0.55f) else Color(0xFF0284C7).copy(alpha = 0.55f)
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(18.dp))
-                    .clickable { formState = formState.copy(includeInNetWorth = !formState.includeInNetWorth) }
+                    .clickable {
+                        val newNoAffect = !formState.noAffectDashboard
+                        formState = formState.copy(
+                            noAffectDashboard = newNoAffect,
+                            includeInNetWorth = !newNoAffect
+                        )
+                    }
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -452,39 +458,44 @@ fun CreateFixedAssetScreen(
                                 modifier = Modifier
                                     .size(38.dp)
                                     .background(
-                                        if (formState.includeInNetWorth) Color(0xFF0284C7).copy(alpha = 0.22f) else Color(0xFF1E293B),
+                                        if (formState.noAffectDashboard) Color(0xFFF59E0B).copy(alpha = 0.22f) else Color(0xFF0284C7).copy(alpha = 0.22f),
                                         CircleShape
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.AccountBalance,
+                                    imageVector = if (formState.noAffectDashboard) Icons.Default.VisibilityOff else Icons.Default.AccountBalance,
                                     contentDescription = null,
-                                    tint = if (formState.includeInNetWorth) Color(0xFF38BDF8) else Color(0xFF94A3B8),
+                                    tint = if (formState.noAffectDashboard) Color(0xFFFBBF24) else Color(0xFF38BDF8),
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
                             Column {
                                 Text(
-                                    text = "Afectar Patrimonio del Dashboard",
+                                    text = "No Afecta Dashboard",
                                     fontSize = 14.5.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
                                 )
                                 Text(
-                                    text = if (formState.includeInNetWorth) "Impacto activo en Patrimonio Total" else "Excluido del cálculo patrimonial",
+                                    text = if (formState.noAffectDashboard) "Excluido: No suma al total del dashboard" else "Afecta: Suma al total del dashboard",
                                     fontSize = 11.5.sp,
-                                    color = if (formState.includeInNetWorth) Color(0xFF38BDF8) else Color(0xFF94A3B8)
+                                    color = if (formState.noAffectDashboard) Color(0xFFFBBF24) else Color(0xFF38BDF8)
                                 )
                             }
                         }
 
                         Switch(
-                            checked = formState.includeInNetWorth,
-                            onCheckedChange = { formState = formState.copy(includeInNetWorth = it) },
+                            checked = formState.noAffectDashboard,
+                            onCheckedChange = { checked ->
+                                formState = formState.copy(
+                                    noAffectDashboard = checked,
+                                    includeInNetWorth = !checked
+                                )
+                            },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
-                                checkedTrackColor = Color(0xFF0284C7),
+                                checkedTrackColor = Color(0xFFF59E0B),
                                 uncheckedThumbColor = Color(0xFF94A3B8),
                                 uncheckedTrackColor = Color(0xFF1E293B)
                             )
@@ -494,10 +505,10 @@ fun CreateFixedAssetScreen(
                     // Estado Visual Responsivo
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = if (formState.includeInNetWorth) Color(0xFF00C853).copy(alpha = 0.12f) else Color(0xFF1E293B).copy(alpha = 0.6f),
+                        color = if (formState.noAffectDashboard) Color(0xFFF59E0B).copy(alpha = 0.12f) else Color(0xFF00C853).copy(alpha = 0.12f),
                         border = BorderStroke(
                             1.dp,
-                            if (formState.includeInNetWorth) Color(0xFF00E676).copy(alpha = 0.3f) else Color(0xFF334155)
+                            if (formState.noAffectDashboard) Color(0xFFFBBF24).copy(alpha = 0.3f) else Color(0xFF00E676).copy(alpha = 0.3f)
                         ),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -507,19 +518,19 @@ fun CreateFixedAssetScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(
-                                imageVector = if (formState.includeInNetWorth) Icons.Default.TrendingUp else Icons.Default.VisibilityOff,
+                                imageVector = if (formState.noAffectDashboard) Icons.Default.Info else Icons.Default.TrendingUp,
                                 contentDescription = null,
-                                tint = if (formState.includeInNetWorth) Color(0xFF00E676) else Color(0xFF94A3B8),
+                                tint = if (formState.noAffectDashboard) Color(0xFFFBBF24) else Color(0xFF00E676),
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = if (formState.includeInNetWorth) {
-                                    "El valor en libros neto se sumará a los activos y al Patrimonio Neto global del Dashboard."
+                                text = if (formState.noAffectDashboard) {
+                                    "Activado: El valor de este activo (ej. \$100.000.000) NO afectará ni sumará al total de activos ni patrimonio en el Dashboard."
                                 } else {
-                                    "Se registrará para cálculo de depreciación NIIF sin alterar el saldo del Dashboard."
+                                    "Desactivado: El valor neto del activo se sumará a los activos y al Patrimonio Neto global del Dashboard."
                                 },
                                 fontSize = 11.5.sp,
-                                color = if (formState.includeInNetWorth) Color(0xFFE2E8F0) else Color(0xFF94A3B8),
+                                color = Color(0xFFE2E8F0),
                                 lineHeight = 16.sp
                             )
                         }

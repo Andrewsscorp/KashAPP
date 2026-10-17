@@ -19,5 +19,8 @@ interface SettingsRepository {
     suspend fun isAccountExcluded(userId: String, accountId: String): Boolean
     suspend fun setAutoNoAffectInventoryForAssets(userId: String, enabled: Boolean): Result<Unit>
     suspend fun applyNoAffectInventoryToAllAssets(userId: String, noAffect: Boolean): Result<Int>
+    suspend fun setAutoNoAffectDashboardForAssets(userId: String, enabled: Boolean): Result<Unit>
+    suspend fun applyNoAffectDashboardToAllAssets(userId: String, noAffect: Boolean): Result<Int>
+    suspend fun setExcludeAllFixedAssetsFromDashboard(userId: String, excluded: Boolean): Result<Unit>
     suspend fun executeProtocolLogout(userId: String): Result<Unit>
 }

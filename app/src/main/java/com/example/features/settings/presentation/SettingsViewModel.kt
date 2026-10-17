@@ -144,6 +144,53 @@ class SettingsViewModel(
         }
     }
 
+    fun toggleAutoNoAffectDashboard(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setAutoNoAffectDashboardForAssets(userId, enabled)
+            _uiState.update {
+                it.copy(
+                    statusMessage = if (enabled)
+                        "Nuevos activos fijos se marcarán automáticamente como 'No afecta dashboard'"
+                    else
+                        "Nuevos activos fijos afectarán el dashboard por defecto"
+                )
+            }
+        }
+    }
+
+    fun toggleExcludeAllFixedAssetsFromDashboard(excluded: Boolean) {
+        viewModelScope.launch {
+            repository.setExcludeAllFixedAssetsFromDashboard(userId, excluded)
+            _uiState.update {
+                it.copy(
+                    statusMessage = if (excluded)
+                        "Se excluyeron todos los activos fijos del Dashboard principal"
+                    else
+                        "Los activos fijos se incluyen en el Dashboard principal"
+                )
+            }
+        }
+    }
+
+    fun applyNoAffectDashboardToAllAssets(noAffect: Boolean) {
+        viewModelScope.launch {
+            repository.applyNoAffectDashboardToAllAssets(userId, noAffect)
+                .onSuccess { count ->
+                    _uiState.update {
+                        it.copy(
+                            statusMessage = if (noAffect)
+                                "Se aplicó 'No afecta dashboard' a $count activos fijos existentes"
+                            else
+                                "Se habilitó afectación al dashboard para $count activos fijos"
+                        )
+                    }
+                }
+                .onFailure { err ->
+                    _uiState.update { it.copy(statusMessage = "Error al actualizar activos: ${err.message}") }
+                }
+        }
+    }
+
     fun executeLogout(onLogoutSuccess: () -> Unit) {
         _uiState.update { it.copy(isLoggingOut = true, showLogoutConfirmationDialog = false) }
         viewModelScope.launch {

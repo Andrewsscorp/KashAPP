@@ -45,6 +45,7 @@ data class FixedAssetFormState(
     val allowResidualChange: Boolean = false,
     val allowMethodChange: Boolean = false,
     val noAffectInventory: Boolean = false,
+    val noAffectDashboard: Boolean = false,
     val status: String = "ACTIVE",
     val stateNotes: String? = null,
     val accumulatedDepreciation: Double = 0.0,
@@ -102,7 +103,7 @@ data class FixedAssetFormState(
             stateNotes = stateNotes,
             imageUrl = imageUrl?.ifBlank { null },
             colorHex = categoryColorHex.ifBlank { colorHex },
-            includeInNetWorth = includeInNetWorth,
+            includeInNetWorth = !noAffectDashboard && includeInNetWorth,
             depreciableBase = depreciableBase,
             startConvention = startConvention,
             frequency = frequency,
@@ -113,6 +114,7 @@ data class FixedAssetFormState(
             allowResidualChange = allowResidualChange,
             allowMethodChange = allowMethodChange,
             noAffectInventory = noAffectInventory,
+            noAffectDashboard = noAffectDashboard,
             updatedAt = System.currentTimeMillis()
         )
     }
@@ -159,6 +161,7 @@ data class FixedAssetFormState(
                 allowResidualChange = entity.allowResidualChange,
                 allowMethodChange = entity.allowMethodChange,
                 noAffectInventory = entity.noAffectInventory,
+                noAffectDashboard = entity.noAffectDashboard || !entity.includeInNetWorth,
                 status = entity.status,
                 stateNotes = entity.stateNotes,
                 accumulatedDepreciation = entity.accumulatedDepreciation,

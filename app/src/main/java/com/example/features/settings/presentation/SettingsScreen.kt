@@ -116,26 +116,30 @@ fun SettingsScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = Color(0xFFF8FAFC),
         topBar = {
-            SettingsTopBar(
-                title = if (uiState.currentSubRoute == SettingsSubRoute.MAIN) "Ajustes" else getSubRouteTitle(uiState.currentSubRoute),
-                subtitle = if (uiState.currentSubRoute == SettingsSubRoute.MAIN) "Personaliza tu experiencia en KashApp" else null,
-                onBackClick = {
-                    if (uiState.currentSubRoute != SettingsSubRoute.MAIN) {
-                        viewModel.navigateBackToMain()
-                    } else {
-                        onNavigateBack()
+            if (uiState.currentSubRoute != SettingsSubRoute.AUDITORIA) {
+                SettingsTopBar(
+                    title = if (uiState.currentSubRoute == SettingsSubRoute.MAIN) "Ajustes" else getSubRouteTitle(uiState.currentSubRoute),
+                    subtitle = if (uiState.currentSubRoute == SettingsSubRoute.MAIN) "Personaliza tu experiencia en KashApp" else null,
+                    onBackClick = {
+                        if (uiState.currentSubRoute != SettingsSubRoute.MAIN) {
+                            viewModel.navigateBackToMain()
+                        } else {
+                            onNavigateBack()
+                        }
                     }
-                }
-            )
+                )
+            }
         },
         bottomBar = {
-            SettingsBottomNavBar(
-                onHomeClick = onNavigateToHome,
-                onTransactionsClick = onNavigateToTransactions,
-                onFabClick = onFabAddClick,
-                onSummaryClick = onNavigateToSummary,
-                onSettingsClick = { viewModel.navigateBackToMain() }
-            )
+            if (uiState.currentSubRoute != SettingsSubRoute.AUDITORIA) {
+                SettingsBottomNavBar(
+                    onHomeClick = onNavigateToHome,
+                    onTransactionsClick = onNavigateToTransactions,
+                    onFabClick = onFabAddClick,
+                    onSummaryClick = onNavigateToSummary,
+                    onSettingsClick = { viewModel.navigateBackToMain() }
+                )
+            }
         }
     ) { paddingValues ->
         Box(
@@ -154,8 +158,13 @@ fun SettingsScreen(
                             userName = uiState.userName,
                             userEmail = uiState.userEmail,
                             autoNoAffectInventoryForAssets = uiState.preferences.autoNoAffectInventoryForAssets,
+                            autoNoAffectDashboardForAssets = uiState.preferences.autoNoAffectDashboardForAssets,
+                            excludeAllFixedAssetsFromDashboard = uiState.preferences.excludeAllFixedAssetsFromDashboard,
                             onToggleAutoNoAffectInventory = { viewModel.toggleAutoNoAffectInventory(it) },
                             onApplyNoAffectInventoryToAll = { viewModel.applyNoAffectInventoryToAllAssets(it) },
+                            onToggleAutoNoAffectDashboard = { viewModel.toggleAutoNoAffectDashboard(it) },
+                            onToggleExcludeAllFixedAssetsFromDashboard = { viewModel.toggleExcludeAllFixedAssetsFromDashboard(it) },
+                            onApplyNoAffectDashboardToAll = { viewModel.applyNoAffectDashboardToAllAssets(it) },
                             onNavigateTo = { viewModel.navigateToSubRoute(it) },
                             onRequestLogout = { viewModel.showLogoutDialog(true) },
                             onRequestDeleteAccount = { viewModel.showDeleteAccountDialog(true) }

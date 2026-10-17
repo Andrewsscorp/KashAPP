@@ -73,7 +73,7 @@ import com.example.data.local.entity.UserSessionEntity
         com.example.data.local.entity.SharedExpenseLineItemEntity::class,
         com.example.data.local.entity.SharedSettlementPaymentEntity::class
     ],
-    version = 34,
+    version = 35,
     exportSchema = false
 )
 abstract class SecurityDatabase : RoomDatabase() {

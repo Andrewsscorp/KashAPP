@@ -28,6 +28,15 @@ interface FixedAssetDao {
     @Query("UPDATE fixed_assets SET noAffectInventory = :noAffectInventory WHERE id = :assetId")
     suspend fun updateAssetNoAffectInventory(assetId: String, noAffectInventory: Boolean): Int
 
+    @Query("UPDATE fixed_assets SET noAffectDashboard = :noAffectDashboard WHERE (userId = :userId OR userId = 'user_default' OR :userId = '')")
+    suspend fun updateNoAffectDashboardAll(userId: String, noAffectDashboard: Boolean): Int
+
+    @Query("UPDATE fixed_assets SET noAffectDashboard = :noAffectDashboard")
+    suspend fun updateNoAffectDashboardGlobal(noAffectDashboard: Boolean): Int
+
+    @Query("UPDATE fixed_assets SET noAffectDashboard = :noAffectDashboard WHERE id = :assetId")
+    suspend fun updateAssetNoAffectDashboard(assetId: String, noAffectDashboard: Boolean): Int
+
     @Query("SELECT * FROM fixed_assets WHERE id = :assetId LIMIT 1")
     suspend fun getAssetById(assetId: String): FixedAssetEntity?
 

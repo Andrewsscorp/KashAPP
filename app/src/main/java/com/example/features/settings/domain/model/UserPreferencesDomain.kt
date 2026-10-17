@@ -21,6 +21,8 @@ data class UserPreferencesDomain(
     val excludeAllAccountsFromDashboard: Boolean = false,
     val excludedAccountIds: Set<String> = emptySet(),
     val autoNoAffectInventoryForAssets: Boolean = false,
+    val autoNoAffectDashboardForAssets: Boolean = false,
+    val excludeAllFixedAssetsFromDashboard: Boolean = false,
     val updatedAt: Long = System.currentTimeMillis(),
     val version: Long = 1L
 )

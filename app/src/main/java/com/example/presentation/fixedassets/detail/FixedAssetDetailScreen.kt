@@ -556,13 +556,17 @@ fun FixedAssetDetailScreen(
                                 }
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = if (currentAsset.noAffectInventory) Color(0xFF0E2849) else Color(0xFF0C1F38),
-                                    border = BorderStroke(1.dp, if (currentAsset.noAffectInventory) Color(0xFF38BDF8).copy(alpha = 0.5f) else Color(0xFF334155)),
+                                    color = if (currentAsset.noAffectDashboard) Color(0xFF2D1F08) else Color(0xFF0C1F38),
+                                    border = BorderStroke(1.dp, if (currentAsset.noAffectDashboard) Color(0xFFF59E0B).copy(alpha = 0.5f) else Color(0xFF334155)),
                                     modifier = Modifier.clickable {
-                                        val updated = currentAsset.copy(noAffectInventory = !currentAsset.noAffectInventory)
+                                        val newNoAffect = !currentAsset.noAffectDashboard
+                                        val updated = currentAsset.copy(
+                                            noAffectDashboard = newNoAffect,
+                                            includeInNetWorth = !newNoAffect
+                                        )
                                         currentAsset = updated
                                         onUpdateAsset(updated)
-                                        Toast.makeText(context, if (updated.noAffectInventory) "Marcado: No afecta inventarios" else "Marcado: Afecta inventarios", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, if (updated.noAffectDashboard) "Marcado: No afecta el Dashboard" else "Marcado: Afecta el Dashboard", Toast.LENGTH_SHORT).show()
                                     }
                                 ) {
                                     Row(
@@ -571,16 +575,16 @@ fun FixedAssetDetailScreen(
                                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.Inventory2,
+                                            imageVector = if (currentAsset.noAffectDashboard) Icons.Default.Warning else Icons.Default.CheckCircle,
                                             contentDescription = null,
-                                            tint = if (currentAsset.noAffectInventory) Color(0xFF38BDF8) else Color(0xFF94A3B8),
+                                            tint = if (currentAsset.noAffectDashboard) Color(0xFFFBBF24) else Color(0xFF38BDF8),
                                             modifier = Modifier.size(11.dp)
                                         )
                                         Text(
-                                            text = if (currentAsset.noAffectInventory) "No Afecta Inv." else "En Inventario",
+                                            text = if (currentAsset.noAffectDashboard) "No Afecta Dash." else "En Dashboard",
                                             fontSize = 10.5.sp,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = if (currentAsset.noAffectInventory) Color(0xFF38BDF8) else Color(0xFF94A3B8)
+                                            color = if (currentAsset.noAffectDashboard) Color(0xFFFBBF24) else Color(0xFF38BDF8)
                                         )
                                     }
                                 }
@@ -636,13 +640,17 @@ fun FixedAssetDetailScreen(
                                 }
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = if (currentAsset.noAffectInventory) Color(0xFF0E2849) else Color(0xFF0C1F38),
-                                    border = BorderStroke(1.dp, if (currentAsset.noAffectInventory) Color(0xFF38BDF8).copy(alpha = 0.5f) else Color(0xFF334155)),
+                                    color = if (currentAsset.noAffectDashboard) Color(0xFF2D1F08) else Color(0xFF0C1F38),
+                                    border = BorderStroke(1.dp, if (currentAsset.noAffectDashboard) Color(0xFFF59E0B).copy(alpha = 0.5f) else Color(0xFF334155)),
                                     modifier = Modifier.clickable {
-                                        val updated = currentAsset.copy(noAffectInventory = !currentAsset.noAffectInventory)
+                                        val newNoAffect = !currentAsset.noAffectDashboard
+                                        val updated = currentAsset.copy(
+                                            noAffectDashboard = newNoAffect,
+                                            includeInNetWorth = !newNoAffect
+                                        )
                                         currentAsset = updated
                                         onUpdateAsset(updated)
-                                        Toast.makeText(context, if (updated.noAffectInventory) "Marcado: No afecta inventarios" else "Marcado: Afecta inventarios", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, if (updated.noAffectDashboard) "Marcado: No afecta el Dashboard" else "Marcado: Afecta el Dashboard", Toast.LENGTH_SHORT).show()
                                     }
                                 ) {
                                     Row(
@@ -651,16 +659,16 @@ fun FixedAssetDetailScreen(
                                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.Inventory2,
+                                            imageVector = if (currentAsset.noAffectDashboard) Icons.Default.Warning else Icons.Default.CheckCircle,
                                             contentDescription = null,
-                                            tint = if (currentAsset.noAffectInventory) Color(0xFF38BDF8) else Color(0xFF94A3B8),
+                                            tint = if (currentAsset.noAffectDashboard) Color(0xFFFBBF24) else Color(0xFF38BDF8),
                                             modifier = Modifier.size(11.dp)
                                         )
                                         Text(
-                                            text = if (currentAsset.noAffectInventory) "No Afecta Inv." else "En Inventario",
+                                            text = if (currentAsset.noAffectDashboard) "No Afecta Dash." else "En Dashboard",
                                             fontSize = 10.5.sp,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = if (currentAsset.noAffectInventory) Color(0xFF38BDF8) else Color(0xFF94A3B8)
+                                            color = if (currentAsset.noAffectDashboard) Color(0xFFFBBF24) else Color(0xFF38BDF8)
                                         )
                                     }
                                 }

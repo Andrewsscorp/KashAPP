@@ -154,7 +154,9 @@ fun FixedAssetsScreen(
     // Sub-pantallas
     if (uiState.isCreatingAsset) {
         val initialForm = uiState.assetToEdit?.let { FixedAssetFormState.fromEntity(it) } ?: FixedAssetFormState(
-            noAffectInventory = userPrefs.autoNoAffectInventoryForAssets
+            noAffectInventory = userPrefs.autoNoAffectInventoryForAssets,
+            noAffectDashboard = userPrefs.autoNoAffectDashboardForAssets,
+            includeInNetWorth = !userPrefs.autoNoAffectDashboardForAssets
         )
         CreateFixedAssetScreen(
             initialState = initialForm,

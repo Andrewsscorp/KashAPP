@@ -83,8 +83,13 @@ fun SettingsMainContent(
     userName: String,
     userEmail: String,
     autoNoAffectInventoryForAssets: Boolean = false,
+    autoNoAffectDashboardForAssets: Boolean = false,
+    excludeAllFixedAssetsFromDashboard: Boolean = false,
     onToggleAutoNoAffectInventory: (Boolean) -> Unit = {},
     onApplyNoAffectInventoryToAll: (Boolean) -> Unit = {},
+    onToggleAutoNoAffectDashboard: (Boolean) -> Unit = {},
+    onToggleExcludeAllFixedAssetsFromDashboard: (Boolean) -> Unit = {},
+    onApplyNoAffectDashboardToAll: (Boolean) -> Unit = {},
     onNavigateTo: (SettingsSubRoute) -> Unit,
     onRequestLogout: () -> Unit,
     onRequestDeleteAccount: () -> Unit = {},
@@ -97,7 +102,7 @@ fun SettingsMainContent(
             onDismissRequest = { showMassApplyDialog = false },
             title = {
                 Text(
-                    text = "Afectación de Inventarios",
+                    text = "Afectación del Dashboard Principal",
                     fontWeight = FontWeight.Bold,
                     fontSize = 17.sp,
                     color = Color(0xFF0F172A)
@@ -106,12 +111,12 @@ fun SettingsMainContent(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Selecciona cómo deseas configurar la totalidad de los activos fijos existentes en el sistema:",
+                        text = "Configura si los activos fijos deben sumar o no en el total de activos y patrimonio del Dashboard:",
                         fontSize = 13.sp,
                         color = Color(0xFF475569)
                     )
                     Text(
-                        text = "• 'No afecta inventarios': Los activos se mantendrán para cálculo de valor y depreciación contable pero excluidos del stock de inventario operativo.\n• 'Afectar inventarios': Todos los activos se marcarán dentro del control de inventario.",
+                        text = "• 'No Afectar Dashboard': Los activos seguirán registrados en la app y con su cálculo contable, pero su valor (ej. $100.000.000) NO se sumará a los activos ni al patrimonio del tablero principal.\n• 'Afectar Dashboard': El valor de los activos se sumará normalmente al total del Dashboard.",
                         fontSize = 12.sp,
                         color = Color(0xFF64748B),
                         lineHeight = 16.sp
@@ -122,9 +127,9 @@ fun SettingsMainContent(
                 Button(
                     onClick = {
                         showMassApplyDialog = false
-                        onApplyNoAffectInventoryToAll(true)
+                        onApplyNoAffectDashboardToAll(true)
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007BFF))
                 ) {
                     Text("No Afectar (Todos)", color = Color.White)
                 }
@@ -137,10 +142,10 @@ fun SettingsMainContent(
                     OutlinedButton(
                         onClick = {
                             showMassApplyDialog = false
-                            onApplyNoAffectInventoryToAll(false)
+                            onApplyNoAffectDashboardToAll(false)
                         }
                     ) {
-                        Text("Afectar Inventario", color = Color(0xFF0284C7))
+                        Text("Afectar Dashboard", color = Color(0xFF007BFF))
                     }
                 }
             }
@@ -320,14 +325,14 @@ fun SettingsMainContent(
             )
         }
 
-        // 3. ACTIVOS FIJOS E INVENTARIO
-        SettingsSection(title = "ACTIVOS FIJOS E INVENTARIO") {
-            // Switch tile: No afecta inventarios por defecto
+        // 3. ACTIVOS FIJOS
+        SettingsSection(title = "ACTIVOS FIJOS") {
+            // Switch tile: No afecta dashboard por defecto para nuevos activos
             Surface(
                 color = Color.White,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .testTag("settings_tile_auto_no_affect_inventory")
+                    .testTag("settings_tile_auto_no_affect_dashboard")
             ) {
                 Row(
                     modifier = Modifier
@@ -349,25 +354,25 @@ fun SettingsMainContent(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Inventory2,
+                                imageVector = Icons.Default.TableChart,
                                 contentDescription = null,
-                                tint = Color(0xFF0284C7),
+                                tint = Color(0xFF007BFF),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
                         Column {
                             Text(
-                                text = "Marcar 'No afecta inventarios' por defecto",
+                                text = "Marcar 'No afecta dashboard' por defecto",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF0F172A)
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = if (autoNoAffectInventoryForAssets)
-                                    "Los nuevos activos fijos creados se marcarán automáticamente como fuera de inventario."
+                                text = if (autoNoAffectDashboardForAssets)
+                                    "Los nuevos activos que crees no sumarán al total de activos ni patrimonio en el dashboard."
                                 else
-                                    "Los nuevos activos fijos afectarán el inventario operativo por defecto.",
+                                    "Los nuevos activos que crees afectarán y sumarán al dashboard por defecto.",
                                 fontSize = 11.5.sp,
                                 color = Color(0xFF64748B),
                                 lineHeight = 15.sp
@@ -375,11 +380,77 @@ fun SettingsMainContent(
                         }
                     }
                     Switch(
-                        checked = autoNoAffectInventoryForAssets,
-                        onCheckedChange = { onToggleAutoNoAffectInventory(it) },
+                        checked = autoNoAffectDashboardForAssets,
+                        onCheckedChange = { onToggleAutoNoAffectDashboard(it) },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = Color.White,
                             checkedTrackColor = Color(0xFF007BFF),
+                            uncheckedThumbColor = Color.White,
+                            uncheckedTrackColor = Color(0xFFCBD5E1)
+                        )
+                    )
+                }
+            }
+            HorizontalDivider(color = Color(0xFFF8FAFC), thickness = 1.dp)
+
+            // Switch tile: Excluir todos los activos fijos del dashboard
+            Surface(
+                color = Color.White,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("settings_tile_exclude_all_fixed_assets_dashboard")
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFFEE2E2)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Shield,
+                                contentDescription = null,
+                                tint = Color(0xFFEF4444),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = "Excluir todos los activos del Dashboard",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0F172A)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = if (excludeAllFixedAssetsFromDashboard)
+                                    "La totalidad de los activos fijos están ocultos y no suman al total del Dashboard."
+                                else
+                                    "Los activos fijos válidos suman normalmente a los totales del Dashboard.",
+                                fontSize = 11.5.sp,
+                                color = Color(0xFF64748B),
+                                lineHeight = 15.sp
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = excludeAllFixedAssetsFromDashboard,
+                        onCheckedChange = { onToggleExcludeAllFixedAssetsFromDashboard(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = Color(0xFFEF4444),
                             uncheckedThumbColor = Color.White,
                             uncheckedTrackColor = Color(0xFFCBD5E1)
                         )
@@ -394,7 +465,7 @@ fun SettingsMainContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { showMassApplyDialog = true }
-                    .testTag("settings_tile_mass_no_affect_inventory")
+                    .testTag("settings_tile_mass_no_affect_dashboard")
             ) {
                 Row(
                     modifier = Modifier
@@ -419,14 +490,14 @@ fun SettingsMainContent(
                     Spacer(modifier = Modifier.width(14.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Aplicar regla a todos los activos fijos",
+                            text = "Aplicar regla a todos los activos existentes",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF0F172A)
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Actualizar en lote todos los activos fijos existentes en el sistema.",
+                            text = "Actualizar en lote todos los activos fijos existentes en la base de datos.",
                             fontSize = 11.5.sp,
                             color = Color(0xFF64748B)
                         )

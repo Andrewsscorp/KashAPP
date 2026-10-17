@@ -39,6 +39,8 @@ class SettingsRepositoryImpl(
             excludeAllAccountsFromDashboard = prefs.getBoolean("exclude_all_accounts_dashboard", false),
             excludedAccountIds = prefs.getStringSet("excluded_account_ids", emptySet()) ?: emptySet(),
             autoNoAffectInventoryForAssets = prefs.getBoolean("auto_no_affect_inventory_for_assets", false),
+            autoNoAffectDashboardForAssets = prefs.getBoolean("auto_no_affect_dashboard_for_assets", false),
+            excludeAllFixedAssetsFromDashboard = prefs.getBoolean("exclude_all_fixed_assets_dashboard", false),
             version = prefs.getLong("version", 1L)
         )
     }
@@ -70,6 +72,8 @@ class SettingsRepositoryImpl(
             .putBoolean("exclude_all_accounts_dashboard", updated.excludeAllAccountsFromDashboard)
             .putStringSet("excluded_account_ids", updated.excludedAccountIds)
             .putBoolean("auto_no_affect_inventory_for_assets", updated.autoNoAffectInventoryForAssets)
+            .putBoolean("auto_no_affect_dashboard_for_assets", updated.autoNoAffectDashboardForAssets)
+            .putBoolean("exclude_all_fixed_assets_dashboard", updated.excludeAllFixedAssetsFromDashboard)
             .putLong("version", nextVersion)
             .apply()
 
@@ -176,6 +180,52 @@ class SettingsRepositoryImpl(
                         eventType = "MASS_UPDATE_ASSETS_NO_AFFECT_INVENTORY",
                         authMethod = "SETTINGS",
                         details = "Acción Masiva Activos: ${if (noAffect) "Aplicado 'No afecta inventarios'" else "Restablecido 'Afecta inventarios'"} a $count activos fijos existentes."
+                    )
+                )
+            } catch (_: Exception) {}
+            count
+        }
+    }
+
+    override suspend fun setAutoNoAffectDashboardForAssets(userId: String, enabled: Boolean): Result<Unit> {
+        val current = _preferencesFlow.value
+        val res = updatePreferences(current.copy(autoNoAffectDashboardForAssets = enabled))
+        try {
+            auditSecurityLogDao?.insertLog(
+                com.example.data.local.entity.AuditSecurityLog(
+                    eventType = "CONFIG_ASSETS_AUTO_NO_AFFECT_DASHBOARD",
+                    authMethod = "SETTINGS",
+                    details = "Ajuste General Activos: ${if (enabled) "ACTIVADO - Nuevos activos marcarán 'No afecta dashboard' por defecto" else "DESACTIVADO - Nuevos activos afectarán dashboard por defecto"}"
+                )
+            )
+        } catch (_: Exception) {}
+        return res.map { }
+    }
+
+    override suspend fun setExcludeAllFixedAssetsFromDashboard(userId: String, excluded: Boolean): Result<Unit> {
+        val current = _preferencesFlow.value
+        val res = updatePreferences(current.copy(excludeAllFixedAssetsFromDashboard = excluded))
+        try {
+            auditSecurityLogDao?.insertLog(
+                com.example.data.local.entity.AuditSecurityLog(
+                    eventType = "CONFIG_ASSETS_EXCLUDE_ALL_DASHBOARD",
+                    authMethod = "SETTINGS",
+                    details = "Ajuste General Activos: ${if (excluded) "ACTIVADO - Todos los activos fijos quedan EXCLUIDOS de los totales del Dashboard" else "DESACTIVADO - Activos fijos se incluyen normalmente en el Dashboard"}"
+                )
+            )
+        } catch (_: Exception) {}
+        return res.map { }
+    }
+
+    override suspend fun applyNoAffectDashboardToAllAssets(userId: String, noAffect: Boolean): Result<Int> {
+        return runCatching {
+            val count = fixedAssetDao?.updateNoAffectDashboardGlobal(noAffect) ?: 0
+            try {
+                auditSecurityLogDao?.insertLog(
+                    com.example.data.local.entity.AuditSecurityLog(
+                        eventType = "MASS_UPDATE_ASSETS_NO_AFFECT_DASHBOARD",
+                        authMethod = "SETTINGS",
+                        details = "Acción Masiva Activos: ${if (noAffect) "Aplicado 'No afecta dashboard'" else "Restablecido 'Afecta dashboard'"} a $count activos fijos existentes en la base de datos."
                     )
                 )
             } catch (_: Exception) {}

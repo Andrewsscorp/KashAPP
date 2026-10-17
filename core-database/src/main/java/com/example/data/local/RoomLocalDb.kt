@@ -46,6 +46,9 @@ object RoomLocalDb {
             try {
                 db.execSQL("ALTER TABLE fixed_assets ADD COLUMN noAffectInventory INTEGER NOT NULL DEFAULT 0")
             } catch (_: Throwable) {}
+            try {
+                db.execSQL("ALTER TABLE fixed_assets ADD COLUMN noAffectDashboard INTEGER NOT NULL DEFAULT 0")
+            } catch (_: Throwable) {}
         }
 
         override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
@@ -54,6 +57,9 @@ object RoomLocalDb {
             ensureSharedExpenseSchema(db)
             try {
                 db.execSQL("ALTER TABLE fixed_assets ADD COLUMN noAffectInventory INTEGER NOT NULL DEFAULT 0")
+            } catch (_: Throwable) {}
+            try {
+                db.execSQL("ALTER TABLE fixed_assets ADD COLUMN noAffectDashboard INTEGER NOT NULL DEFAULT 0")
             } catch (_: Throwable) {}
         }
     }
@@ -619,6 +625,14 @@ object RoomLocalDb {
         }
     }
 
+    val MIGRATION_34_35 = object : androidx.room.migration.Migration(34, 35) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+            try {
+                db.execSQL("ALTER TABLE fixed_assets ADD COLUMN noAffectDashboard INTEGER NOT NULL DEFAULT 0")
+            } catch (_: Throwable) {}
+        }
+    }
+
     private fun tryCreateEncryptedDb(context: Context, passphraseBytes: ByteArray): SecurityDatabase? {
         return try {
             // Attempt to load native SQLCipher library if available
@@ -633,7 +647,7 @@ object RoomLocalDb {
                 ENCRYPTED_DB_NAME
             )
                 .openHelperFactory(openHelperFactory)
-                .addMigrations(MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33, MIGRATION_33_34)
+                .addMigrations(MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33, MIGRATION_33_34, MIGRATION_34_35)
                 .addCallback(foreignKeyCallback)
                 .build()
 

@@ -137,6 +137,7 @@ class DashboardViewModel(
                 val isPrivacy = _uiState.value.isPrivacyMode
                 val excludeAllAccounts = prefs.excludeAllAccountsFromDashboard
                 val excludedAccountIds = prefs.excludedAccountIds
+                val excludeAllFixedAssets = prefs.excludeAllFixedAssetsFromDashboard
 
                 // 1. Compute Accounts
                 val domainAccounts = accounts.map { acc ->
@@ -231,22 +232,27 @@ class DashboardViewModel(
                         .setScale(2, RoundingMode.HALF_EVEN)
                 }
 
-                // Fixed Assets: Sum all valid non-disposed user assets
-                val totalFixedAssetsValue = fixedAssets
-                    .filter { asset ->
-                        val state = com.example.domain.model.fixedassets.statemachine.AssetStateMachine.resolveState(asset.status)
-                        asset.deletedAt == null && !state.isTerminal &&
-                        !asset.status.equals("WRITTEN_OFF", ignoreCase = true) &&
-                        !asset.status.equals("SOLD", ignoreCase = true) &&
-                        !asset.status.equals("DISPOSED", ignoreCase = true) &&
-                        !asset.status.equals("DADO_DE_BAJA", ignoreCase = true)
-                    }
-                    .fold(BigDecimal.ZERO) { acc, asset ->
-                        val netBookValue = (asset.acquisitionValue - asset.accumulatedDepreciation).coerceAtLeast(asset.residualValue).coerceAtLeast(0.0)
-                        val assetVal = if (netBookValue > 0.0) netBookValue else asset.acquisitionValue
-                        acc + BigDecimal.valueOf(assetVal)
-                    }
-                    .setScale(2, RoundingMode.HALF_EVEN)
+                // Fixed Assets: Sum all valid non-disposed user assets respecting 'noAffectDashboard' and global exclusion
+                val totalFixedAssetsValue = if (excludeAllFixedAssets) {
+                    BigDecimal.ZERO.setScale(2, RoundingMode.HALF_EVEN)
+                } else {
+                    fixedAssets
+                        .filter { asset ->
+                            val state = com.example.domain.model.fixedassets.statemachine.AssetStateMachine.resolveState(asset.status)
+                            asset.deletedAt == null && !state.isTerminal &&
+                            !asset.status.equals("WRITTEN_OFF", ignoreCase = true) &&
+                            !asset.status.equals("SOLD", ignoreCase = true) &&
+                            !asset.status.equals("DISPOSED", ignoreCase = true) &&
+                            !asset.status.equals("DADO_DE_BAJA", ignoreCase = true) &&
+                            !asset.noAffectDashboard && asset.includeInNetWorth
+                        }
+                        .fold(BigDecimal.ZERO) { acc, asset ->
+                            val netBookValue = (asset.acquisitionValue - asset.accumulatedDepreciation).coerceAtLeast(asset.residualValue).coerceAtLeast(0.0)
+                            val assetVal = if (netBookValue > 0.0) netBookValue else asset.acquisitionValue
+                            acc + BigDecimal.valueOf(assetVal)
+                        }
+                        .setScale(2, RoundingMode.HALF_EVEN)
+                }
 
                 val sparkline = computeSparklinePoints(transactions)
 
