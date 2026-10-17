@@ -1,0 +1,9 @@
+{
+  "name": "KashApp Secure Auth v9.1.0",
+  "version": "9.1.0",
+  "description": "KashApp v9.1.0 - Bóveda Financiera Segura de Grado Bancario con Desbloqueo Rápido Biométrico/PIN automático, Eliminación de Cuenta Play Store, Room v31 SQLCipher AES-256, Presupuestos Base Cero, Activos Fijos NIC 16, Módulos Offline-First y Google Sign-In.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
