@@ -18,6 +18,8 @@ data class UserPreferencesDomain(
     val monthlySummaryEnabled: Boolean = true,
     val wifiOnlySync: Boolean = false,
     val privacyModeEnabled: Boolean = false,
+    val excludeAllAccountsFromDashboard: Boolean = false,
+    val excludedAccountIds: Set<String> = emptySet(),
     val updatedAt: Long = System.currentTimeMillis(),
     val version: Long = 1L
 )
@@ -26,6 +28,7 @@ enum class SettingsSubRoute {
     MAIN,
     MI_PERFIL,
     SEGURIDAD,
+    AUDITORIA,
     NOTIFICACIONES,
     MONEDA_TRM,
     CATEGORIAS,

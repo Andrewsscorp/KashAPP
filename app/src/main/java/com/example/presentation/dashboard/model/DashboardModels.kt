@@ -88,7 +88,8 @@ data class Account(
     val currency: String = "COP",
     val colorHex: String = "#0284C7",
     val allowsNegative: Boolean = false,
-    val rawId: String = ""
+    val rawId: String = "",
+    val isExcludedFromDashboard: Boolean = false
 )
 
 @Immutable
@@ -124,7 +125,19 @@ data class ScheduledPayment(
     val entityName: String,
     val dueDate: LocalDate,
     val amount: BigDecimal,
-    val isIncome: Boolean = false
+    val isIncome: Boolean = false,
+    val rawId: String = id.toString(),
+    val category: String = "SERVICIOS",
+    val recurrence: String = "MONTHLY",
+    val currency: String = "COP",
+    val isPaid: Boolean = false,
+    val paidDate: String? = null,
+    val sourceAccountId: String? = null,
+    val sourceAccountName: String? = null,
+    val notes: String? = null,
+    val reminderDaysBefore: Int = 3,
+    val notificationEnabled: Boolean = true,
+    val createdAt: Long = System.currentTimeMillis()
 )
 
 @Immutable
@@ -152,7 +165,8 @@ data class CreditCard(
     val usedQuota: BigDecimal,
     val cutoffDateFormatted: String,
     val paymentDueDateFormatted: String,
-    val colorHex: String = "#6366F1"
+    val colorHex: String = "#6366F1",
+    val includeInNetWorth: Boolean = true
 ) {
     val availableQuota: BigDecimal get() = (quotaLimit - usedQuota).coerceAtLeast(BigDecimal.ZERO)
     val usagePercentage: Float

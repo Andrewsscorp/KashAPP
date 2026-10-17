@@ -58,10 +58,13 @@ fun SettingsAccountsSubScreen(
     val context = LocalContext.current
     val appContainer = remember(context) { (context.applicationContext as? KashAppApplication)?.appContainer }
     val financialRepository = appContainer?.financialRepository
+    val settingsRepository = appContainer?.settingsRepository
     val coroutineScope = rememberCoroutineScope()
 
     val accounts by (financialRepository?.getAccounts(userId) ?: flowOf(emptyList()))
         .collectAsStateWithLifecycle(initialValue = emptyList())
+    val userPreferences by (settingsRepository?.observePreferences(userId) ?: flowOf(com.example.features.settings.domain.model.UserPreferencesDomain()))
+        .collectAsStateWithLifecycle(initialValue = com.example.features.settings.domain.model.UserPreferencesDomain())
 
     Column(
         modifier = modifier
@@ -70,6 +73,57 @@ fun SettingsAccountsSubScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Card: Configuración Global Dashboard
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = if (userPreferences.excludeAllAccountsFromDashboard) Color(0xFFFEF3C7) else Color(0xFFF0FDF4),
+            border = BorderStroke(1.dp, if (userPreferences.excludeAllAccountsFromDashboard) Color(0xFFFDE68A) else Color(0xFFBBF7D0)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier.padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Excluir todas las cuentas del Dashboard",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (userPreferences.excludeAllAccountsFromDashboard) Color(0xFFB45309) else Color(0xFF15803D)
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = if (userPreferences.excludeAllAccountsFromDashboard)
+                            "Ninguna cuenta afecta el dinero disponible ni el patrimonio neto en la pantalla principal."
+                        else
+                            "Las cuentas autorizadas suman al dinero disponible y patrimonio neto en el Dashboard.",
+                        fontSize = 11.sp,
+                        color = Color(0xFF475569)
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Switch(
+                    checked = userPreferences.excludeAllAccountsFromDashboard,
+                    onCheckedChange = { checked ->
+                        coroutineScope.launch {
+                            settingsRepository?.setExcludeAllAccountsFromDashboard(userId, checked)
+                            onShowMessage(
+                                if (checked) "Todas las cuentas excluidas del Dashboard"
+                                else "Cuentas habilitadas para impactar el Dashboard"
+                            )
+                        }
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = Color(0xFF007BFF),
+                        uncheckedThumbColor = Color.White,
+                        uncheckedTrackColor = Color(0xFFCBD5E1)
+                    )
+                )
+            }
+        }
+
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = Color(0xFFEFF6FF),
@@ -195,6 +249,60 @@ fun SettingsAccountsSubScreen(
                                         colors = SwitchDefaults.colors(
                                             checkedThumbColor = Color.White,
                                             checkedTrackColor = Color(0xFFD97706),
+                                            uncheckedThumbColor = Color.White,
+                                            uncheckedTrackColor = Color(0xFFCBD5E1)
+                                        )
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Switch Individual Dashboard
+                            val isIndividualIncluded = !userPreferences.excludedAccountIds.contains(acc.id)
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (!isIndividualIncluded || userPreferences.excludeAllAccountsFromDashboard) Color(0xFFFEF2F2) else Color(0xFFF0FDF4),
+                                border = BorderStroke(1.dp, if (!isIndividualIncluded || userPreferences.excludeAllAccountsFromDashboard) Color(0xFFFECACA) else Color(0xFFBBF7D0)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = if (userPreferences.excludeAllAccountsFromDashboard) "Excluida por regla global del Dashboard"
+                                                   else if (!isIndividualIncluded) "Excluida del Dashboard y Patrimonio"
+                                                   else "Afecta Dashboard y Patrimonio Neto",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (!isIndividualIncluded || userPreferences.excludeAllAccountsFromDashboard) Color(0xFFDC2626) else Color(0xFF15803D)
+                                        )
+                                        Text(
+                                            text = if (userPreferences.excludeAllAccountsFromDashboard) "La regla general tiene todas las cuentas excluidas de las métricas principales"
+                                                   else if (!isIndividualIncluded) "El saldo de esta cuenta no se suma al dinero disponible ni al patrimonio neto"
+                                                   else "El saldo de esta cuenta se suma a las métricas principales del Dashboard",
+                                            fontSize = 10.sp,
+                                            color = Color(0xFF64748B)
+                                        )
+                                    }
+                                    Switch(
+                                        checked = isIndividualIncluded && !userPreferences.excludeAllAccountsFromDashboard,
+                                        enabled = !userPreferences.excludeAllAccountsFromDashboard,
+                                        onCheckedChange = { isChecked ->
+                                            coroutineScope.launch {
+                                                settingsRepository?.setAccountExcludedFromDashboard(userId, acc.id, !isChecked)
+                                                onShowMessage(
+                                                    if (isChecked) "${acc.name} ahora afecta el Dashboard"
+                                                    else "${acc.name} excluida del Dashboard"
+                                                )
+                                            }
+                                        },
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = Color.White,
+                                            checkedTrackColor = Color(0xFF007BFF),
                                             uncheckedThumbColor = Color.White,
                                             uncheckedTrackColor = Color(0xFFCBD5E1)
                                         )

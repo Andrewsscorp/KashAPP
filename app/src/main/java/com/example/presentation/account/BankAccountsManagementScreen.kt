@@ -98,6 +98,9 @@ import com.example.presentation.account.components.AccountMachineLearningAnalyti
 import com.example.presentation.account.components.AccountTransactionsAuditedTab
 import com.example.presentation.account.components.CurrencyPickerModal
 import com.example.presentation.account.components.LiveCurrencyConversionPreview
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import com.example.features.settings.domain.model.UserPreferencesDomain
 import com.example.presentation.account.components.WORLD_CURRENCIES_CATALOG
 import com.example.util.MoneyFormatter
 import kotlinx.coroutines.launch
@@ -123,10 +126,14 @@ fun BankAccountsManagementScreen(
     val context = LocalContext.current
     val appContainer = remember(context) { (context.applicationContext as KashAppApplication).appContainer }
     val financialRepository = appContainer.financialRepository
+    val settingsRepository = appContainer.settingsRepository
     val coroutineScope = rememberCoroutineScope()
 
     val accounts by financialRepository.getAccounts(userId).collectAsStateWithLifecycle(initialValue = emptyList())
     val allTransactions by financialRepository.getTransactions(userId).collectAsStateWithLifecycle(initialValue = emptyList())
+    val userPreferences by settingsRepository.observePreferences(userId).collectAsStateWithLifecycle(
+        initialValue = UserPreferencesDomain()
+    )
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var searchQuery by remember { mutableStateOf("") }
@@ -371,6 +378,76 @@ fun BankAccountsManagementScreen(
                             .fillMaxSize()
                             .padding(horizontal = 16.dp, vertical = 10.dp)
                     ) {
+                        // Global Dashboard Impact Card
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (userPreferences.excludeAllAccountsFromDashboard) Color(0xFF78350F).copy(alpha = 0.35f)
+                                else Color(0xFF1E293B)
+                            ),
+                            border = BorderStroke(
+                                1.dp,
+                                if (userPreferences.excludeAllAccountsFromDashboard) Color(0xFFF59E0B).copy(alpha = 0.6f)
+                                else Color(0xFF334155)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (userPreferences.excludeAllAccountsFromDashboard) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                            contentDescription = null,
+                                            tint = if (userPreferences.excludeAllAccountsFromDashboard) Color(0xFFFBBF24) else Color(0xFF38BDF8),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Text(
+                                            text = "Afectación en Dashboard",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(3.dp))
+                                    Text(
+                                        text = if (userPreferences.excludeAllAccountsFromDashboard)
+                                            "Todas las cuentas están excluidas: ningún saldo afecta el disponible ni patrimonio en Dashboard."
+                                        else
+                                            "Las cuentas activas suman al saldo disponible y patrimonio neto del Dashboard.",
+                                        fontSize = 11.sp,
+                                        color = if (userPreferences.excludeAllAccountsFromDashboard) Color(0xFFFDE68A) else Color(0xFF94A3B8),
+                                        lineHeight = 15.sp
+                                    )
+                                }
+
+                                Switch(
+                                    checked = !userPreferences.excludeAllAccountsFromDashboard,
+                                    onCheckedChange = { active ->
+                                        coroutineScope.launch {
+                                            settingsRepository.setExcludeAllAccountsFromDashboard(userId, !active)
+                                        }
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = Color(0xFF007BFF),
+                                        uncheckedThumbColor = Color.White,
+                                        uncheckedTrackColor = Color(0xFF475569)
+                                    )
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
                         // Search bar
                         OutlinedTextField(
                             value = searchQuery,
@@ -440,8 +517,11 @@ fun BankAccountsManagementScreen(
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 items(filteredAccounts, key = { it.id }) { account ->
+                                    val isExcluded = userPreferences.excludedAccountIds.contains(account.id)
                                     BankAccountManagementCard(
                                         account = account,
+                                        isGloballyExcluded = userPreferences.excludeAllAccountsFromDashboard,
+                                        isIndividuallyExcluded = isExcluded,
                                         onEditClick = { accountToEdit = account },
                                         onStatsClick = { accountForStats = account },
                                         onTransactionsClick = { accountForTransactions = account },
@@ -478,12 +558,15 @@ fun BankAccountsManagementScreen(
     // MODAL: MODIFICAR / EDITAR CUENTA
     // ==========================================
     accountToEdit?.let { targetAcc ->
+        val isExcluded = userPreferences.excludedAccountIds.contains(targetAcc.id)
         EditAccountModal(
             account = targetAcc,
+            isInitiallyExcluded = isExcluded,
             onDismiss = { accountToEdit = null },
-            onSave = { updatedAccount ->
+            onSave = { updatedAccount, newExcludedState ->
                 coroutineScope.launch {
                     financialRepository.updateAccount(updatedAccount)
+                    settingsRepository.setAccountExcludedFromDashboard(userId, updatedAccount.id, newExcludedState)
                     accountToEdit = null
                 }
             }
@@ -699,6 +782,8 @@ fun BankAccountsManagementScreen(
 @Composable
 private fun BankAccountManagementCard(
     account: AccountEntity,
+    isGloballyExcluded: Boolean = false,
+    isIndividuallyExcluded: Boolean = false,
     onEditClick: () -> Unit,
     onStatsClick: () -> Unit,
     onTransactionsClick: () -> Unit,
@@ -841,17 +926,69 @@ private fun BankAccountManagementCard(
                 }
             }
 
-            if (account.hasOverdraft) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            // Dashboard Impact Pill & Overdraft Badge
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (isGloballyExcluded) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Color(0xFFF59E0B).copy(alpha = 0.15f),
+                        border = BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.3f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(Icons.Default.VisibilityOff, contentDescription = null, tint = Color(0xFFFBBF24), modifier = Modifier.size(11.dp))
+                            Text("Excluida globalmente", fontSize = 10.sp, color = Color(0xFFFBBF24), fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                } else if (isIndividuallyExcluded) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Color(0xFFF59E0B).copy(alpha = 0.15f),
+                        border = BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.3f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(Icons.Default.VisibilityOff, contentDescription = null, tint = Color(0xFFFBBF24), modifier = Modifier.size(11.dp))
+                            Text("Excluida del Dashboard", fontSize = 10.sp, color = Color(0xFFFBBF24), fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                } else {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Color(0xFF10B981).copy(alpha = 0.15f),
+                        border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.3f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(Icons.Default.Visibility, contentDescription = null, tint = Color(0xFF34D399), modifier = Modifier.size(11.dp))
+                            Text("Impacta Dashboard", fontSize = 10.sp, color = Color(0xFF34D399), fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+
+                if (account.hasOverdraft) {
                     Surface(
                         shape = RoundedCornerShape(4.dp),
-                        color = Color(0xFFF59E0B).copy(alpha = 0.2f)
+                        color = Color(0xFF38BDF8).copy(alpha = 0.15f)
                     ) {
                         Text(
-                            text = "Sobregiro habilitado",
+                            text = "Sobregiro",
                             fontSize = 9.sp,
-                            color = Color(0xFFFBBF24),
+                            color = Color(0xFF38BDF8),
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                         )
@@ -944,8 +1081,9 @@ private fun BankAccountManagementCard(
 @Composable
 private fun EditAccountModal(
     account: AccountEntity,
+    isInitiallyExcluded: Boolean,
     onDismiss: () -> Unit,
-    onSave: (AccountEntity) -> Unit
+    onSave: (AccountEntity, Boolean) -> Unit
 ) {
     var name by remember { mutableStateOf(account.name) }
     var bankName by remember { mutableStateOf(account.bankName) }
@@ -954,6 +1092,7 @@ private fun EditAccountModal(
     var selectedCurrency by remember { mutableStateOf(account.currency) }
     var selectedColor by remember { mutableStateOf(account.customColorHex.ifBlank { "#0284C7" }) }
     var hasOverdraft by remember { mutableStateOf(account.hasOverdraft) }
+    var isExcludedFromDashboard by remember { mutableStateOf(isInitiallyExcluded) }
     var isCurrencyPickerOpen by remember { mutableStateOf(false) }
 
     val accountTypes = listOf("SAVINGS" to "Ahorros", "CHECKING" to "Corriente", "INVESTMENT" to "Inversión", "CASH" to "Efectivo")
@@ -1157,13 +1296,40 @@ private fun EditAccountModal(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text("Permitir Sobregiro", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                         Text("Permite balance negativo en transacciones", fontSize = 10.sp, color = Color(0xFF94A3B8))
                     }
                     Switch(
                         checked = hasOverdraft,
                         onCheckedChange = { hasOverdraft = it },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = Color(0xFF007BFF)
+                        )
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Dashboard Impact toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Afectar Dashboard y Patrimonio", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(
+                            text = if (!isExcludedFromDashboard) "Esta cuenta suma al disponible y patrimonio del Dashboard"
+                            else "Cuenta excluida del cálculo en Dashboard",
+                            fontSize = 10.sp,
+                            color = if (!isExcludedFromDashboard) Color(0xFF34D399) else Color(0xFFFBBF24)
+                        )
+                    }
+                    Switch(
+                        checked = !isExcludedFromDashboard,
+                        onCheckedChange = { isExcludedFromDashboard = !it },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = Color.White,
                             checkedTrackColor = Color(0xFF007BFF)
@@ -1185,7 +1351,7 @@ private fun EditAccountModal(
                             customColorHex = selectedColor,
                             hasOverdraft = hasOverdraft
                         )
-                        onSave(updated)
+                        onSave(updated, isExcludedFromDashboard)
                     },
                     modifier = Modifier
                         .fillMaxWidth()

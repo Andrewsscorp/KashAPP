@@ -1,5 +1,6 @@
 package com.example.presentation.dashboard.components.cards
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -41,6 +42,7 @@ import java.util.Locale
 @Composable
 fun UpcomingPaymentsCard(
     payments: ImmutableList<ScheduledPayment>,
+    onPaymentClick: (ScheduledPayment) -> Unit = {},
     isPrivacyMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
@@ -102,7 +104,10 @@ fun UpcomingPaymentsCard(
                         val isUrgent = daysUntilDue in 0..3
 
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onPaymentClick(payment) }
+                                .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {

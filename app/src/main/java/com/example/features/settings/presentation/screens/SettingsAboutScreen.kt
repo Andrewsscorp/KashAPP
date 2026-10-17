@@ -104,6 +104,7 @@ fun getSubRouteTitle(route: SettingsSubRoute): String {
         SettingsSubRoute.MAIN -> "Ajustes"
         SettingsSubRoute.MI_PERFIL -> "Mi perfil"
         SettingsSubRoute.SEGURIDAD -> "Seguridad"
+        SettingsSubRoute.AUDITORIA -> "Bóveda de Auditoría"
         SettingsSubRoute.NOTIFICACIONES -> "Notificaciones"
         SettingsSubRoute.MONEDA_TRM -> "Moneda y TRM"
         SettingsSubRoute.CATEGORIAS -> "Categorías"

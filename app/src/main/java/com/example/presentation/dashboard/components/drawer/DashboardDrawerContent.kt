@@ -80,6 +80,7 @@ fun DashboardDrawerContent(
     onOpenInformes: (() -> Unit)? = null,
     onOpenUpcomingPayments: (() -> Unit)? = null,
     onOpenSharedExpenses: (() -> Unit)? = null,
+    onOpenAuditVault: (() -> Unit)? = null,
     onOpenSettings: () -> Unit,
     onLogoutClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -479,6 +480,18 @@ fun DashboardDrawerContent(
                 HorizontalDivider(
                     modifier = Modifier.padding(vertical = 8.dp, horizontal = 8.dp),
                     color = Color.White.copy(alpha = 0.08f)
+                )
+
+                DrawerMenuItem(
+                    icon = Icons.Default.Security,
+                    label = "Bóveda de Auditoría",
+                    badgeText = "Inmutable",
+                    iconColor = Color(0xFF38BDF8),
+                    isSelected = false,
+                    onClick = {
+                        onCloseDrawer()
+                        onOpenAuditVault?.invoke()
+                    }
                 )
 
                 DrawerMenuItem(

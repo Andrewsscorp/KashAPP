@@ -14,5 +14,8 @@ interface SettingsRepository {
     suspend fun setBiometricsEnabled(userId: String, enabled: Boolean): Result<Unit>
     suspend fun setBudgetAlertsEnabled(userId: String, enabled: Boolean): Result<Unit>
     suspend fun setPaymentRemindersEnabled(userId: String, enabled: Boolean): Result<Unit>
+    suspend fun setExcludeAllAccountsFromDashboard(userId: String, excluded: Boolean): Result<Unit>
+    suspend fun setAccountExcludedFromDashboard(userId: String, accountId: String, excluded: Boolean): Result<Unit>
+    suspend fun isAccountExcluded(userId: String, accountId: String): Boolean
     suspend fun executeProtocolLogout(userId: String): Result<Unit>
 }

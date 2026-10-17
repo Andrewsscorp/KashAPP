@@ -123,14 +123,24 @@ class DashboardViewModel(
             creditCardConfigs to scheduledPayments
         }
 
+        val prefsFlow = settingsRepository?.observePreferences(userId)
+            ?: kotlinx.coroutines.flow.flowOf(com.example.features.settings.domain.model.UserPreferencesDomain())
+
+        val f4 = combine(f3, prefsFlow) { (creditCardConfigs, scheduledPayments), prefs ->
+            Triple(creditCardConfigs, scheduledPayments, prefs)
+        }
+
         viewModelScope.launch {
-            // Combine real reactive flows from Room Database including Fixed Assets, Credit Cards, and Scheduled Payments
-            combine(f1, f2, f3) { (accounts, transactions, budgets), (goals, investments, fixedAssets), (creditCardConfigs, scheduledPayments) ->
+            // Combine real reactive flows from Room Database including Fixed Assets, Credit Cards, Scheduled Payments, and User Preferences
+            combine(f1, f2, f4) { (accounts, transactions, budgets), (goals, investments, fixedAssets), (creditCardConfigs, scheduledPayments, prefs) ->
                 val selectedMonth = _uiState.value.period.currentMonth
                 val isPrivacy = _uiState.value.isPrivacyMode
+                val excludeAllAccounts = prefs.excludeAllAccountsFromDashboard
+                val excludedAccountIds = prefs.excludedAccountIds
 
                 // 1. Compute Accounts
                 val domainAccounts = accounts.map { acc ->
+                    val isExcluded = excludeAllAccounts || excludedAccountIds.contains(acc.id)
                     Account(
                         id = try { UUID.fromString(acc.id.removePrefix("acc_").removePrefix("card_")) } catch (_: Exception) { UUID.randomUUID() },
                         name = acc.name,
@@ -146,7 +156,8 @@ class DashboardViewModel(
                         currency = acc.currency,
                         colorHex = acc.customColorHex.ifBlank { "#0284C7" },
                         allowsNegative = acc.hasOverdraft,
-                        rawId = acc.id
+                        rawId = acc.id,
+                        isExcludedFromDashboard = isExcluded
                     )
                 }.toImmutableList()
 
@@ -162,39 +173,63 @@ class DashboardViewModel(
                 }
 
                 // 3. Compute Net Worth State (availableCash + investments + assets - liabilities)
-                val availableCash = accounts
-                    .filter { it.type != "CREDIT_CARD" && it.type != "CREDIT" && it.type != "CDT" && it.type != "INVESTMENT" && !it.name.contains("Tarjeta", ignoreCase = true) }
-                    .fold(BigDecimal.ZERO) { acc, item -> acc + BigDecimal.valueOf(item.balance.coerceAtLeast(0.0)) }
-                    .setScale(2, RoundingMode.HALF_EVEN)
+                val availableCash = if (excludeAllAccounts) {
+                    BigDecimal.ZERO
+                } else {
+                    accounts
+                        .filter { 
+                            it.type != "CREDIT_CARD" && it.type != "CREDIT" && it.type != "CDT" && it.type != "INVESTMENT" &&
+                            !it.name.contains("Tarjeta", ignoreCase = true) &&
+                            !excludedAccountIds.contains(it.id)
+                        }
+                        .fold(BigDecimal.ZERO) { acc, item -> acc + BigDecimal.valueOf(item.balance.coerceAtLeast(0.0)) }
+                        .setScale(2, RoundingMode.HALF_EVEN)
+                }
 
                 val investmentsTotal = investments
+                    .filter { it.includeInNetWorth }
                     .fold(BigDecimal.ZERO) { acc, item -> acc + BigDecimal.valueOf(item.initialAmount) }
-                    .add(accounts.filter { it.type == "CDT" || it.type == "INVESTMENT" }
-                        .fold(BigDecimal.ZERO) { acc, item -> acc + BigDecimal.valueOf(item.balance) })
+                    .add(
+                        if (excludeAllAccounts) {
+                            BigDecimal.ZERO
+                        } else {
+                            accounts.filter { (it.type == "CDT" || it.type == "INVESTMENT") && !excludedAccountIds.contains(it.id) }
+                                .fold(BigDecimal.ZERO) { acc, item -> acc + BigDecimal.valueOf(item.balance) }
+                        }
+                    )
                     .setScale(2, RoundingMode.HALF_EVEN)
 
-                val liabilitiesTotal = accounts
-                    .filter { 
-                        it.type.equals("CREDIT_CARD", ignoreCase = true) || 
-                        it.type.equals("CREDIT", ignoreCase = true) || 
-                        it.type.equals("LOAN", ignoreCase = true) || 
-                        it.type.equals("DEBT", ignoreCase = true) ||
-                        it.name.contains("Tarjeta", ignoreCase = true)
-                    }
-                    .fold(BigDecimal.ZERO) { acc, item ->
-                        val cardConfig = creditCardConfigs.find { it.accountId == item.id }
-                        val debtAmount = if (cardConfig != null) {
-                            cardConfig.quotaUsed
-                        } else if (item.overdraftLimit > 0 && item.availableBalance != null) {
-                            (item.overdraftLimit - item.availableBalance).coerceAtLeast(0.0)
-                        } else if (item.balance < 0) {
-                            kotlin.math.abs(item.balance)
-                        } else {
-                            0.0
+                val liabilitiesTotal = if (excludeAllAccounts) {
+                    BigDecimal.ZERO
+                } else {
+                    accounts
+                        .filter { 
+                            (it.type.equals("CREDIT_CARD", ignoreCase = true) || 
+                            it.type.equals("CREDIT", ignoreCase = true) || 
+                            it.type.equals("LOAN", ignoreCase = true) || 
+                            it.type.equals("DEBT", ignoreCase = true) ||
+                            it.name.contains("Tarjeta", ignoreCase = true)) &&
+                            !excludedAccountIds.contains(it.id)
                         }
-                        acc + BigDecimal.valueOf(debtAmount)
-                    }
-                    .setScale(2, RoundingMode.HALF_EVEN)
+                        .fold(BigDecimal.ZERO) { acc, item ->
+                            val cardConfig = creditCardConfigs.find { it.accountId == item.id }
+                            if (cardConfig != null && !cardConfig.includeInNetWorth) {
+                                acc
+                            } else {
+                                val debtAmount = if (cardConfig != null) {
+                                    cardConfig.quotaUsed
+                                } else if (item.overdraftLimit > 0 && item.availableBalance != null) {
+                                    (item.overdraftLimit - item.availableBalance).coerceAtLeast(0.0)
+                                } else if (item.balance < 0) {
+                                    kotlin.math.abs(item.balance)
+                                } else {
+                                    0.0
+                                }
+                                acc + BigDecimal.valueOf(debtAmount)
+                            }
+                        }
+                        .setScale(2, RoundingMode.HALF_EVEN)
+                }
 
                 // Fixed Assets: Sum all valid non-disposed user assets
                 val totalFixedAssetsValue = fixedAssets
@@ -323,7 +358,8 @@ class DashboardViewModel(
                         usedQuota = BigDecimal.valueOf(usedQuotaValue).setScale(2, RoundingMode.HALF_EVEN),
                         cutoffDateFormatted = if (cardConfig != null && cardConfig.cutOffDay > 0) "Día ${cardConfig.cutOffDay}" else if (c.feeChargeDay > 0) "Día ${c.feeChargeDay}" else "Día 15",
                         paymentDueDateFormatted = if (cardConfig != null && cardConfig.paymentDueDay > 0) "Día ${cardConfig.paymentDueDay}" else if (c.feeChargeDay > 0) "Día ${(c.feeChargeDay + 15) % 30 + 1}" else "Día 2",
-                        colorHex = c.customColorHex.ifBlank { "#0284C7" }
+                        colorHex = c.customColorHex.ifBlank { "#0284C7" },
+                        includeInNetWorth = cardConfig?.includeInNetWorth ?: true
                     )
                 }.toImmutableList()
 
@@ -346,7 +382,19 @@ class DashboardViewModel(
                             entityName = sp.entityName,
                             dueDate = dueLocalDate,
                             amount = BigDecimal.valueOf(sp.amount).setScale(2, RoundingMode.HALF_EVEN),
-                            isIncome = sp.isIncome
+                            isIncome = sp.isIncome,
+                            rawId = sp.id,
+                            category = sp.category,
+                            recurrence = sp.recurrence,
+                            currency = sp.currency,
+                            isPaid = sp.isPaid,
+                            paidDate = sp.paidDate,
+                            sourceAccountId = sp.sourceAccountId,
+                            sourceAccountName = sp.sourceAccountName,
+                            notes = sp.notes,
+                            reminderDaysBefore = sp.reminderDaysBefore,
+                            notificationEnabled = sp.notificationEnabled,
+                            createdAt = sp.createdAt
                         )
                     }
                     .sortedBy { it.dueDate }
@@ -608,6 +656,18 @@ class DashboardViewModel(
             savings = kpi.savings.divide(bdRate, 2, RoundingMode.HALF_EVEN),
             budgetLimit = kpi.budgetLimit.divide(bdRate, 2, RoundingMode.HALF_EVEN)
         )
+    }
+
+    fun setExcludeAllAccountsFromDashboard(excluded: Boolean) {
+        viewModelScope.launch {
+            settingsRepository?.setExcludeAllAccountsFromDashboard(userId, excluded)
+        }
+    }
+
+    fun setAccountExcludedFromDashboard(accountId: String, excluded: Boolean) {
+        viewModelScope.launch {
+            settingsRepository?.setAccountExcludedFromDashboard(userId, accountId, excluded)
+        }
     }
 
     fun syncWithCloud() {

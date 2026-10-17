@@ -16,8 +16,8 @@ android {
     applicationId = "com.suarez.kashapp"
     minSdk = 24
     targetSdk = 36
-    versionCode = 921
-    versionName = "9.2.1"
+    versionCode = 930
+    versionName = "9.3.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

@@ -52,6 +52,7 @@ import java.time.LocalDate
 fun ProximosPagosCard(
     payments: ImmutableList<ScheduledPayment>,
     onCalendarIconClick: () -> Unit = {},
+    onPaymentClick: (ScheduledPayment) -> Unit = {},
     isPrivacyMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
@@ -108,14 +109,13 @@ fun ProximosPagosCard(
             colors = CardDefaults.cardColors(containerColor = Color.White),
             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onCalendarIconClick() }
+            modifier = Modifier.fillMaxWidth()
         ) {
             if (payments.isEmpty()) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clickable { onCalendarIconClick() }
                         .padding(vertical = 28.dp, horizontal = 20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
@@ -158,7 +158,8 @@ fun ProximosPagosCard(
                     payments.take(4).forEachIndexed { index, payment ->
                         PaymentRowItem(
                             payment = payment,
-                            isPrivacyMode = isPrivacyMode
+                            isPrivacyMode = isPrivacyMode,
+                            onClick = { onPaymentClick(payment) }
                         )
 
                         if (index < payments.take(4).size - 1) {
@@ -177,20 +178,37 @@ fun ProximosPagosCard(
 @Composable
 private fun PaymentRowItem(
     payment: ScheduledPayment,
-    isPrivacyMode: Boolean
+    isPrivacyMode: Boolean,
+    onClick: () -> Unit = {}
 ) {
-    val (icon, iconBg, iconTint, subtext) = when {
-        payment.isIncome -> Tuple4(Icons.Default.Payments, Color(0xFFFEF3C7), Color(0xFFD97706), "30 Sep · Ingreso")
-        payment.entityName.contains("netflix", ignoreCase = true) -> Tuple4(Icons.Default.PlayArrow, Color(0xFFFEE2E2), Color(0xFFEF4444), "3 Oct · Entretenimiento")
-        payment.entityName.contains("tarjeta", ignoreCase = true) -> Tuple4(Icons.Default.CreditCard, Color(0xFFF3E8FF), Color(0xFF8B5CF6), "8 Oct · Pago mínimo")
-        payment.entityName.contains("arriendo", ignoreCase = true) || payment.entityName.contains("hogar", ignoreCase = true) ->
-            Tuple4(Icons.Default.Home, Color(0xFFE0F2FE), Color(0xFF007BFF), "15 Oct · Vivienda")
-        else -> Tuple4(Icons.Default.CalendarMonth, Color(0xFFE0F2FE), Color(0xFF007BFF), "Próximo vencimiento")
+    val monthShort = when (payment.dueDate.monthValue) {
+        1 -> "Ene"; 2 -> "Feb"; 3 -> "Mar"; 4 -> "Abr"; 5 -> "May"; 6 -> "Jun"
+        7 -> "Jul"; 8 -> "Ago"; 9 -> "Sep"; 10 -> "Oct"; 11 -> "Nov"; else -> "Dic"
+    }
+    val catDisplay = if (payment.isIncome) "Ingreso" else when (payment.category.uppercase()) {
+        "TARJETA_CREDITO" -> "Tarjeta"
+        "SUSCRIPCION" -> "Suscripción"
+        "ARRIENDO" -> "Vivienda"
+        "DEUDA_PRESTAMO" -> "Préstamo"
+        else -> "Servicios"
+    }
+    val dynamicSubtext = "${payment.dueDate.dayOfMonth} $monthShort · $catDisplay"
+
+    val (icon, iconBg, iconTint) = when {
+        payment.isIncome -> Triple(Icons.Default.Payments, Color(0xFFFEF3C7), Color(0xFFD97706))
+        payment.entityName.contains("netflix", ignoreCase = true) || payment.category.contains("SUSCRIPCION", ignoreCase = true) ->
+            Triple(Icons.Default.PlayArrow, Color(0xFFFEE2E2), Color(0xFFEF4444))
+        payment.entityName.contains("tarjeta", ignoreCase = true) || payment.category.contains("TARJETA", ignoreCase = true) ->
+            Triple(Icons.Default.CreditCard, Color(0xFFF3E8FF), Color(0xFF8B5CF6))
+        payment.entityName.contains("arriendo", ignoreCase = true) || payment.category.contains("ARRIENDO", ignoreCase = true) ->
+            Triple(Icons.Default.Home, Color(0xFFE0F2FE), Color(0xFF007BFF))
+        else -> Triple(Icons.Default.CalendarMonth, Color(0xFFE0F2FE), Color(0xFF007BFF))
     }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -222,7 +240,7 @@ private fun PaymentRowItem(
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = subtext,
+                text = dynamicSubtext,
                 fontSize = 11.sp,
                 color = Color(0xFF94A3B8)
             )
@@ -236,5 +254,3 @@ private fun PaymentRowItem(
         )
     }
 }
-
-private data class Tuple4<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)

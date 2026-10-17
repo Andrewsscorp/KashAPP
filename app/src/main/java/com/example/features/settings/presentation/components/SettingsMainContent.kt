@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.PersonOutline
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.TableChart
@@ -181,6 +182,16 @@ fun SettingsMainContent(
                 subtitle = "Bloqueo biométrico, PIN y sesiones activas.",
                 onClick = { onNavigateTo(SettingsSubRoute.SEGURIDAD) },
                 testTag = "settings_tile_seguridad"
+            )
+            HorizontalDivider(color = Color(0xFFF8FAFC), thickness = 1.dp)
+            SettingsTileItem(
+                icon = Icons.Default.Shield,
+                iconTint = Color(0xFF0284C7),
+                iconBg = Color(0xFFE0F2FE),
+                title = "Bóveda de Auditoría",
+                subtitle = "Cadena de custodia inmutable y trazabilidad.",
+                onClick = { onNavigateTo(SettingsSubRoute.AUDITORIA) },
+                testTag = "settings_tile_auditoria"
             )
         }
 

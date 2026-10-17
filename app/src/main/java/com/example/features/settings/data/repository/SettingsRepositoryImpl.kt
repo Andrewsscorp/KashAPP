@@ -10,7 +10,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 class SettingsRepositoryImpl(
-    private val context: Context
+    private val context: Context,
+    private val auditSecurityLogDao: com.example.data.local.dao.AuditSecurityLogDao? = null
 ) : SettingsRepository {
 
     private val prefs: SharedPreferences by lazy {
@@ -34,6 +35,8 @@ class SettingsRepositoryImpl(
             monthlySummaryEnabled = prefs.getBoolean("monthly_summary_enabled", true),
             wifiOnlySync = prefs.getBoolean("wifi_only_sync", false),
             privacyModeEnabled = prefs.getBoolean("privacy_mode_enabled", false),
+            excludeAllAccountsFromDashboard = prefs.getBoolean("exclude_all_accounts_dashboard", false),
+            excludedAccountIds = prefs.getStringSet("excluded_account_ids", emptySet()) ?: emptySet(),
             version = prefs.getLong("version", 1L)
         )
     }
@@ -62,6 +65,8 @@ class SettingsRepositoryImpl(
             .putBoolean("monthly_summary_enabled", updated.monthlySummaryEnabled)
             .putBoolean("wifi_only_sync", updated.wifiOnlySync)
             .putBoolean("privacy_mode_enabled", updated.privacyModeEnabled)
+            .putBoolean("exclude_all_accounts_dashboard", updated.excludeAllAccountsFromDashboard)
+            .putStringSet("excluded_account_ids", updated.excludedAccountIds)
             .putLong("version", nextVersion)
             .apply()
 
@@ -102,6 +107,46 @@ class SettingsRepositoryImpl(
     override suspend fun setPaymentRemindersEnabled(userId: String, enabled: Boolean): Result<Unit> {
         val current = _preferencesFlow.value
         return updatePreferences(current.copy(paymentRemindersEnabled = enabled)).map { }
+    }
+
+    override suspend fun setExcludeAllAccountsFromDashboard(userId: String, excluded: Boolean): Result<Unit> {
+        val current = _preferencesFlow.value
+        val res = updatePreferences(current.copy(excludeAllAccountsFromDashboard = excluded))
+        try {
+            auditSecurityLogDao?.insertLog(
+                com.example.data.local.entity.AuditSecurityLog(
+                    eventType = "CONFIG_EXCLUDE_ALL_ACCOUNTS_DASHBOARD",
+                    authMethod = "SETTINGS",
+                    details = "Ajuste General: ${if (excluded) "ACTIVADO - Todas las cuentas excluidas del Dashboard" else "DESACTIVADO - Las cuentas afectan el Dashboard normalmente"}"
+                )
+            )
+        } catch (_: Exception) {}
+        return res.map { }
+    }
+
+    override suspend fun setAccountExcludedFromDashboard(userId: String, accountId: String, excluded: Boolean): Result<Unit> {
+        val current = _preferencesFlow.value
+        val newSet = if (excluded) {
+            current.excludedAccountIds + accountId
+        } else {
+            current.excludedAccountIds - accountId
+        }
+        val res = updatePreferences(current.copy(excludedAccountIds = newSet))
+        try {
+            auditSecurityLogDao?.insertLog(
+                com.example.data.local.entity.AuditSecurityLog(
+                    eventType = "CONFIG_ACCOUNT_DASHBOARD_EXCLUSION",
+                    authMethod = "SETTINGS",
+                    details = "Ajuste Individual: Cuenta ID $accountId ${if (excluded) "EXCLUIDA de métricas del Dashboard" else "INCLUIDA en métricas del Dashboard"}"
+                )
+            )
+        } catch (_: Exception) {}
+        return res.map { }
+    }
+
+    override suspend fun isAccountExcluded(userId: String, accountId: String): Boolean {
+        val current = _preferencesFlow.value
+        return current.excludeAllAccountsFromDashboard || current.excludedAccountIds.contains(accountId)
     }
 
     override suspend fun executeProtocolLogout(userId: String): Result<Unit> {

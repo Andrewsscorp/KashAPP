@@ -177,6 +177,22 @@ fun SettingsScreen(
                             onBack = { viewModel.navigateBackToMain() }
                         )
                     }
+                    SettingsSubRoute.AUDITORIA -> {
+                        val ctx = LocalContext.current
+                        val appContainer = (ctx.applicationContext as KashAppApplication).appContainer
+                        val auditViewModel: com.example.presentation.audit.AuditViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                            factory = com.example.presentation.audit.AuditViewModelFactory(
+                                auditSecurityLogDao = appContainer.securityDatabase.auditSecurityLogDao(),
+                                assetAuditLogDao = appContainer.securityDatabase.assetAuditLogDao(),
+                                financialDao = appContainer.securityDatabase.financialDao(),
+                                userId = uiState.userEmail.ifBlank { "user_default" }
+                            )
+                        )
+                        com.example.presentation.audit.AuditModuleScreen(
+                            viewModel = auditViewModel,
+                            onNavigateBack = { viewModel.navigateBackToMain() }
+                        )
+                    }
                     SettingsSubRoute.NOTIFICACIONES -> {
                         SettingsNotificationsScreen(
                             budgetAlerts = uiState.preferences.budgetAlertsEnabled,

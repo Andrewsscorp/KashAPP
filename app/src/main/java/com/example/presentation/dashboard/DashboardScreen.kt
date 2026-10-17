@@ -54,6 +54,7 @@ import com.example.presentation.dashboard.components.pulse.ElPulsoDeTuMesCard
 import com.example.presentation.dashboard.components.topbar.DashboardHeroHeader
 import com.example.presentation.dashboard.detail.FinancialRubroDetailScreen
 import com.example.presentation.dashboard.components.dialogs.TransactionDetailsBottomSheet
+import com.example.presentation.dashboard.components.dialogs.ScheduledPaymentDetailsBottomSheet
 import com.example.domain.models.FinancialRubroType
 import com.example.presentation.dashboard.model.DashboardEvent
 import com.example.presentation.expense.CreateExpenseScreen
@@ -123,7 +124,9 @@ fun DashboardScreen(
     var showSharedExpensesSettings by remember { mutableStateOf(false) }
     var activeFinancialRubro by remember { mutableStateOf<FinancialRubroType?>(null) }
     var currentBottomNavRoute by remember { mutableStateOf("kashapp://dashboard") }
+    var showAuditVault by remember { mutableStateOf(false) }
     var selectedTxForModal by remember { mutableStateOf<com.example.presentation.dashboard.model.Transaction?>(null) }
+    var selectedPaymentForModal by remember { mutableStateOf<com.example.presentation.dashboard.model.ScheduledPayment?>(null) }
 
     val currentActivity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity
     LaunchedEffect(Unit) {
@@ -188,6 +191,9 @@ fun DashboardScreen(
                 },
                 onOpenSharedExpenses = {
                     showSharedExpensesModule = true
+                },
+                onOpenAuditVault = {
+                    showAuditVault = true
                 },
                 onOpenSettings = {
                     viewModel.onEvent(DashboardEvent.OpenSettingsClick)
@@ -350,6 +356,7 @@ fun DashboardScreen(
                 ProximosPagosCard(
                     payments = uiState.upcomingPayments,
                     onCalendarIconClick = { showUpcomingPaymentsModule = true },
+                    onPaymentClick = { payment -> selectedPaymentForModal = payment },
                     isPrivacyMode = uiState.isPrivacyMode
                 )
 
@@ -1012,6 +1019,32 @@ fun DashboardScreen(
                 selectedTxForModal = null
                 viewModel.onEvent(DashboardEvent.Refresh)
             }
+        )
+    }
+
+    if (selectedPaymentForModal != null) {
+        ScheduledPaymentDetailsBottomSheet(
+            payment = selectedPaymentForModal!!,
+            onDismiss = { selectedPaymentForModal = null },
+            onOpenUpcomingPayments = {
+                selectedPaymentForModal = null
+                showUpcomingPaymentsModule = true
+            }
+        )
+    }
+
+    if (showAuditVault) {
+        val auditViewModel: com.example.presentation.audit.AuditViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+            factory = com.example.presentation.audit.AuditViewModelFactory(
+                auditSecurityLogDao = appContainer.securityDatabase.auditSecurityLogDao(),
+                assetAuditLogDao = appContainer.securityDatabase.assetAuditLogDao(),
+                financialDao = appContainer.securityDatabase.financialDao(),
+                userId = uiState.userName.ifBlank { "user_default" }
+            )
+        )
+        com.example.presentation.audit.AuditModuleScreen(
+            viewModel = auditViewModel,
+            onNavigateBack = { showAuditVault = false }
         )
     }
 }

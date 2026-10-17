@@ -1,5 +1,6 @@
 package com.example.presentation.dashboard.components.dialogs
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -209,6 +211,7 @@ fun TransactionDetailsBottomSheet(
                 OutlinedButton(
                     onClick = { onDelete(transaction.id) },
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFEF4444)),
+                    border = BorderStroke(1.dp, Color(0xFFEF4444)),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .weight(1f)
@@ -217,19 +220,25 @@ fun TransactionDetailsBottomSheet(
                 ) {
                     Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar", modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(text = "Eliminar", fontSize = 13.sp)
+                    Text(text = "Eliminar", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
 
                 Button(
                     onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColors(containerColor = KashNavy),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF007BFF),
+                        contentColor = Color.White
+                    ),
                     shape = RoundedCornerShape(12.dp),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp)
                         .testTag("close_receipt_button")
                 ) {
-                    Text(text = "Entendido", fontSize = 13.sp)
+                    Icon(imageVector = Icons.Default.Check, contentDescription = "Aceptar", tint = Color.White, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(text = "Entendido", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
 
