@@ -563,14 +563,13 @@ private fun buildRawRubroItems(
             }
         }
         FinancialRubroType.ASSETS -> {
-            val activeAssets = roomFixedAssets.filter {
-                it.deletedAt == null && (
-                    it.status.equals("ACTIVE", ignoreCase = true) ||
-                    it.status.equals("ACTIVO", ignoreCase = true) ||
-                    it.status.equals("OPERATIONAL", ignoreCase = true) ||
-                    it.status.equals("EN_USO", ignoreCase = true) ||
-                    it.status.isBlank()
-                )
+            val activeAssets = roomFixedAssets.filter { asset ->
+                val state = com.example.domain.model.fixedassets.statemachine.AssetStateMachine.resolveState(asset.status)
+                asset.deletedAt == null && !state.isTerminal &&
+                !asset.status.equals("WRITTEN_OFF", ignoreCase = true) &&
+                !asset.status.equals("SOLD", ignoreCase = true) &&
+                !asset.status.equals("DISPOSED", ignoreCase = true) &&
+                !asset.status.equals("DADO_DE_BAJA", ignoreCase = true)
             }
             if (activeAssets.isNotEmpty()) {
                 activeAssets.map { asset ->

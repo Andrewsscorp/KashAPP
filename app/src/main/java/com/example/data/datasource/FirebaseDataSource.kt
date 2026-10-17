@@ -219,7 +219,7 @@ open class FirebaseDataSource(private val context: Context) {
 
             firestore.collection("financial_backups")
                 .document(targetId)
-                .set(enrichedPayload, SetOptions.merge())
+                .set(enrichedPayload)
                 .await()
 
             val dummyOrGenericIds = setOf("user_default", "kash_user_bio", "local_pin", "biometric")
@@ -227,7 +227,7 @@ open class FirebaseDataSource(private val context: Context) {
                 try {
                     firestore.collection("financial_backups")
                         .document(userId)
-                        .set(enrichedPayload, SetOptions.merge())
+                        .set(enrichedPayload)
                         .await()
                 } catch (_: Exception) {}
             }

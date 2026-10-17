@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
@@ -61,9 +62,14 @@ class DashboardViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                val restored = financialRepository?.restoreFinancialBackupFromCloudIfNeeded(userId)?.getOrDefault(false) ?: false
-                if (!restored) {
-                    financialRepository?.seedDefaultsIfNeeded(userId)
+                val currentAccounts = financialRepository?.getAccounts(userId)?.firstOrNull().orEmpty()
+                val dummyIds = setOf("acc_ahorros", "acc_corriente", "acc_billetera", "acc_efectivo")
+                val hasRealAccounts = currentAccounts.any { !dummyIds.contains(it.id) || it.balance > 0.0 }
+                if (!hasRealAccounts) {
+                    val restored = financialRepository?.restoreFinancialBackupFromCloudIfNeeded(userId)?.getOrDefault(false) ?: false
+                    if (!restored) {
+                        financialRepository?.seedDefaultsIfNeeded(userId)
+                    }
                 }
                 fixedAssetRepository?.seedDefaultCategoriesIfNeeded(userId)
                 fixedAssetRepository?.seedDefaultAssetsIfNeeded(userId)
@@ -190,18 +196,20 @@ class DashboardViewModel(
                     }
                     .setScale(2, RoundingMode.HALF_EVEN)
 
-                // Fixed Assets: Sum net book value of active assets marked to include in Net Worth
+                // Fixed Assets: Sum all valid non-disposed user assets
                 val totalFixedAssetsValue = fixedAssets
-                    .filter {
-                        (it.status.equals("ACTIVE", ignoreCase = true) ||
-                         it.status.equals("ACTIVO", ignoreCase = true) ||
-                         it.status.equals("OPERATIONAL", ignoreCase = true) ||
-                         it.status.equals("EN_USO", ignoreCase = true) ||
-                         it.status.isBlank()) && it.includeInNetWorth
+                    .filter { asset ->
+                        val state = com.example.domain.model.fixedassets.statemachine.AssetStateMachine.resolveState(asset.status)
+                        asset.deletedAt == null && !state.isTerminal &&
+                        !asset.status.equals("WRITTEN_OFF", ignoreCase = true) &&
+                        !asset.status.equals("SOLD", ignoreCase = true) &&
+                        !asset.status.equals("DISPOSED", ignoreCase = true) &&
+                        !asset.status.equals("DADO_DE_BAJA", ignoreCase = true)
                     }
                     .fold(BigDecimal.ZERO) { acc, asset ->
-                        val netBookValue = (asset.acquisitionValue - asset.accumulatedDepreciation).coerceAtLeast(asset.residualValue)
-                        acc + BigDecimal.valueOf(netBookValue)
+                        val netBookValue = (asset.acquisitionValue - asset.accumulatedDepreciation).coerceAtLeast(asset.residualValue).coerceAtLeast(0.0)
+                        val assetVal = if (netBookValue > 0.0) netBookValue else asset.acquisitionValue
+                        acc + BigDecimal.valueOf(assetVal)
                     }
                     .setScale(2, RoundingMode.HALF_EVEN)
 
@@ -606,11 +614,18 @@ class DashboardViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                val restored = financialRepository?.restoreFinancialBackupFromCloudIfNeeded(userId)?.getOrDefault(false) ?: false
-                if (restored) {
-                    android.util.Log.i("DashboardViewModel", "✓ Cuentas restauradas de la nube")
+                val currentAccounts = financialRepository?.getAccounts(userId)?.firstOrNull().orEmpty()
+                val dummyIds = setOf("acc_ahorros", "acc_corriente", "acc_billetera", "acc_efectivo")
+                val hasRealAccounts = currentAccounts.any { !dummyIds.contains(it.id) || it.balance > 0.0 }
+                if (!hasRealAccounts) {
+                    val restored = financialRepository?.restoreFinancialBackupFromCloudIfNeeded(userId)?.getOrDefault(false) ?: false
+                    if (restored) {
+                        android.util.Log.i("DashboardViewModel", "✓ Cuentas restauradas de la nube")
+                    }
+                } else {
+                    financialRepository?.backupFullPortfolioToCloud(userId)
+                    android.util.Log.i("DashboardViewModel", "✓ Portafolio respaldado en la nube exitosamente")
                 }
-                financialRepository?.backupFullPortfolioToCloud(userId)
             } catch (e: Exception) {
                 android.util.Log.w("DashboardViewModel", "Sync notice: ${e.message}")
             } finally {

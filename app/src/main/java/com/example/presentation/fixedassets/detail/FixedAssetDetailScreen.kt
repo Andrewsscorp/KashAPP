@@ -1883,7 +1883,10 @@ fun FixedAssetDetailScreen(
             },
             containerColor = Color(0xFF0F172A),
             confirmButton = {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Button(
                         onClick = {
                             val updated = currentAsset.copy(
@@ -1910,9 +1913,11 @@ fun FixedAssetDetailScreen(
                             Toast.makeText(context, "Activo dado de baja exitosamente (NIIF)", Toast.LENGTH_SHORT).show()
                             onDismiss()
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Dar de Baja (NIIF)", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        Text("Dar de Baja (NIIF)", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
                     }
 
                     OutlinedButton(
@@ -1923,9 +1928,11 @@ fun FixedAssetDetailScreen(
                             onDismiss()
                         },
                         border = BorderStroke(1.dp, Color(0xFF7F1D1D)),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFCA5A5))
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFCA5A5)),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Eliminar Definitivamente", fontSize = 12.sp)
+                        Text("Eliminar Definitivamente", fontSize = 12.5.sp)
                     }
                 }
             },

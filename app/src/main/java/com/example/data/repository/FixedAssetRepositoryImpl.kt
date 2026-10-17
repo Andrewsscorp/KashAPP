@@ -396,14 +396,8 @@ class FixedAssetRepositoryImpl(
     }
 
     override suspend fun seedDefaultAssetsIfNeeded(userId: String) {
-        // En versión de producción 9.0.0, eliminamos cualquier activo o movimiento de prueba/mock previo
-        val existing = fixedAssetDao.observeAssets(userId).firstOrNull() ?: emptyList()
-        val mockAssets = existing.filter { it.id.startsWith("AF-00") }
-        for (mockAsset in mockAssets) {
-            fixedAssetDao.deleteAssetById(mockAsset.id)
-            fixedAssetDao.deleteMovementsByAssetId(mockAsset.id)
-        }
-        // Base de datos limpia sin mock data: los activos son creados únicamente por el usuario
+        // En producción 9.2.1: Base de datos limpia sin mock data.
+        // Nunca se eliminan activos creados por el usuario en el arranque.
     }
 
     override fun observeCategories(userId: String): Flow<List<AssetCategoryEntity>> {

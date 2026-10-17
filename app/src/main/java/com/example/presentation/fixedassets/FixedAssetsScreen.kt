@@ -1342,7 +1342,6 @@ internal fun ResponsiveDarkNavyAssetCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .clickable { onClick() }
             .testTag("asset_item_${asset.id}")
     ) {
         Column(
@@ -1351,6 +1350,12 @@ internal fun ResponsiveDarkNavyAssetCard(
                 .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onClick() },
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
             // Nivel Superior: Miniatura + Nombre + Badges (Estado + Dashboard)
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1474,6 +1479,7 @@ internal fun ResponsiveDarkNavyAssetCard(
                         fontWeight = FontWeight.Medium
                     )
                 }
+            }
             }
 
             // Nivel Inferior: Botones de Acción Visibles (Opciones que antes estaban ocultas)

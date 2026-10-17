@@ -505,6 +505,11 @@ class FakeFinancialRepository : FinancialRepository {
         return Result.success(Unit)
     }
 
+    override suspend fun deleteAccountWithAudit(accountId: String, preserveAuditTrail: Boolean): Result<Unit> {
+        accounts.remove(accountId)
+        return Result.success(Unit)
+    }
+
     override fun getTransactionsByAccount(accountId: String): Flow<List<TransactionEntity>> = flowOf(emptyList())
 
     override fun getTags(): Flow<List<com.example.data.local.entity.TagEntity>> = flowOf(emptyList())

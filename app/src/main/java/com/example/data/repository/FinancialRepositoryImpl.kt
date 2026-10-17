@@ -41,6 +41,7 @@ class FinancialRepositoryImpl(
 ) : FinancialRepository {
 
     private val syncScope = CoroutineScope(ioDispatcher)
+    private val deletedAccountIds = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
 
     override fun getAccounts(userId: String): Flow<List<AccountEntity>> {
         return financialDao.getAccountsFlow(userId)
@@ -626,7 +627,16 @@ class FinancialRepositoryImpl(
 
     override suspend fun deleteAccount(accountId: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            val account = financialDao.getAccountById(accountId)
+            val uid = account?.userId ?: firebaseDataSource.getCurrentUserId() ?: "user_default"
+            deletedAccountIds.add(accountId)
             financialDao.deleteAccountById(accountId)
+            // Sincronizar inmediatamente con la nube para que Firestore refleje la eliminación
+            try {
+                backupFullPortfolioToCloud(uid)
+            } catch (syncEx: Exception) {
+                Log.w("FinancialRepositoryImpl", "Aviso no crítico actualizando respaldo tras borrar cuenta: ${syncEx.message}")
+            }
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e("FinancialRepositoryImpl", "Error eliminando cuenta: ${e.message}", e)
@@ -637,6 +647,7 @@ class FinancialRepositoryImpl(
     override suspend fun deleteAccountWithAudit(accountId: String, preserveAuditTrail: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val account = financialDao.getAccountById(accountId)
+            val uid = account?.userId ?: firebaseDataSource.getCurrentUserId() ?: "user_default"
             if (account != null) {
                 try {
                     auditLogDao.insertLog(
@@ -650,10 +661,17 @@ class FinancialRepositoryImpl(
                     Log.w("FinancialRepository", "Audit log insert non-critical failure: ${e.message}")
                 }
             }
+            deletedAccountIds.add(accountId)
             if (!preserveAuditTrail) {
                 financialDao.deleteTransactionsByAccountId(accountId)
             }
             financialDao.deleteAccountById(accountId)
+            // Sincronizar inmediatamente con la nube para que Firestore refleje la eliminación
+            try {
+                backupFullPortfolioToCloud(uid)
+            } catch (syncEx: Exception) {
+                Log.w("FinancialRepositoryImpl", "Aviso no crítico actualizando respaldo tras borrar cuenta con auditoría: ${syncEx.message}")
+            }
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e("FinancialRepositoryImpl", "Error eliminando cuenta con auditoría: ${e.message}", e)
@@ -2151,6 +2169,14 @@ class FinancialRepositoryImpl(
 
     override suspend fun restoreFinancialBackupFromCloudIfNeeded(userId: String): Result<Boolean> = withContext(ioDispatcher) {
         try {
+            val localAccounts = financialDao.getAccountsFlow(userId).firstOrNull().orEmpty()
+            val dummyIds = setOf("acc_ahorros", "acc_corriente", "acc_billetera", "acc_efectivo")
+            val hasCustomOrFundedAccounts = localAccounts.any { !dummyIds.contains(it.id) || it.balance > 0.0 }
+            if (hasCustomOrFundedAccounts) {
+                Log.i("FinancialRepository", "Omitiendo restauración desde la nube: el usuario $userId ya posee ${localAccounts.size} cuenta(s) en la base de datos local.")
+                return@withContext Result.success(false)
+            }
+
             val backupData = firebaseDataSource.getFinancialBackup(userId)
             if (backupData == null) {
                 return@withContext Result.success(false)
@@ -2277,16 +2303,17 @@ class FinancialRepositoryImpl(
             }
 
             // Inserción de cuentas restauradas y depuración de dummies
-            if (accountsToInsert.isNotEmpty()) {
-                financialDao.insertAccounts(accountsToInsert)
+            val validAccountsToInsert = accountsToInsert.filter { !deletedAccountIds.contains(it.id) }
+            if (validAccountsToInsert.isNotEmpty()) {
+                financialDao.insertAccounts(validAccountsToInsert)
                 restoredAny = true
-                Log.i("FinancialRepository", "✓ Se restauraron ${accountsToInsert.size} cuenta(s) desde Firebase Firestore.")
+                Log.i("FinancialRepository", "✓ Se restauraron ${validAccountsToInsert.size} cuenta(s) desde Firebase Firestore.")
 
-                val hasFundedAccount = accountsToInsert.any { it.balance > 0.0 }
+                val hasFundedAccount = validAccountsToInsert.any { it.balance > 0.0 }
                 if (hasFundedAccount) {
                     val dummyIds = listOf("acc_ahorros", "acc_corriente", "acc_billetera", "acc_efectivo")
                     for (dummyId in dummyIds) {
-                        if (accountsToInsert.none { it.id == dummyId }) {
+                        if (validAccountsToInsert.none { it.id == dummyId }) {
                             financialDao.deleteAccountById(dummyId)
                         }
                     }
@@ -2373,7 +2400,7 @@ class FinancialRepositoryImpl(
 
             val dummyIds = setOf("acc_ahorros", "acc_corriente", "acc_billetera", "acc_efectivo")
             val isAllEmptyDummy = (allAccounts.isEmpty() || allAccounts.all { it.balance == 0.0 && dummyIds.contains(it.id) }) && allTransactions.isEmpty()
-            if (isAllEmptyDummy) {
+            if (isAllEmptyDummy && deletedAccountIds.isEmpty()) {
                 Log.i("FinancialRepository", "Omitiendo respaldo a Firestore: las cuentas locales son únicamente las cuentas iniciales en $0.")
                 return@withContext Result.success(true)
             }
