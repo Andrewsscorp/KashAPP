@@ -29,6 +29,9 @@ interface FinancialDao {
     @Query("SELECT * FROM transactions WHERE (userId = :userId OR userId = 'user_default' OR :userId = '') ORDER BY createdAt DESC")
     fun getTransactionsFlow(userId: String): Flow<List<TransactionEntity>>
 
+    @Query("SELECT * FROM transactions ORDER BY createdAt DESC")
+    fun getAllTransactionsFlow(): Flow<List<TransactionEntity>>
+
     @Query("SELECT * FROM transactions WHERE (userId = :userId OR userId = 'user_default' OR :userId = '') ORDER BY createdAt DESC")
     suspend fun getTransactions(userId: String): List<TransactionEntity>
 

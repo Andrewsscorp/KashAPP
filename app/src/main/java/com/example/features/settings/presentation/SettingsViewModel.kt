@@ -111,6 +111,39 @@ class SettingsViewModel(
         _uiState.update { it.copy(statusMessage = null) }
     }
 
+    fun toggleAutoNoAffectInventory(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setAutoNoAffectInventoryForAssets(userId, enabled)
+            _uiState.update {
+                it.copy(
+                    statusMessage = if (enabled)
+                        "Nuevos activos fijos se marcarán automáticamente como 'No afecta inventarios'"
+                    else
+                        "Nuevos activos fijos afectarán inventarios por defecto"
+                )
+            }
+        }
+    }
+
+    fun applyNoAffectInventoryToAllAssets(noAffect: Boolean) {
+        viewModelScope.launch {
+            repository.applyNoAffectInventoryToAllAssets(userId, noAffect)
+                .onSuccess { count ->
+                    _uiState.update {
+                        it.copy(
+                            statusMessage = if (noAffect)
+                                "Se aplicó 'No afecta inventarios' a $count activos fijos existentes"
+                            else
+                                "Se habilitó afectación de inventario para $count activos fijos"
+                        )
+                    }
+                }
+                .onFailure { err ->
+                    _uiState.update { it.copy(statusMessage = "Error al actualizar activos: ${err.message}") }
+                }
+        }
+    }
+
     fun executeLogout(onLogoutSuccess: () -> Unit) {
         _uiState.update { it.copy(isLoggingOut = true, showLogoutConfirmationDialog = false) }
         viewModelScope.launch {

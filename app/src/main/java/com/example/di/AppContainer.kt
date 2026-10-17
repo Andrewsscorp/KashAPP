@@ -132,7 +132,8 @@ class AppContainer(private val context: Context) {
     val settingsRepository: com.example.features.settings.domain.repository.SettingsRepository by lazy {
         com.example.features.settings.data.repository.SettingsRepositoryImpl(
             context = context,
-            auditSecurityLogDao = securityDatabase.auditSecurityLogDao()
+            auditSecurityLogDao = securityDatabase.auditSecurityLogDao(),
+            fixedAssetDao = securityDatabase.fixedAssetDao()
         )
     }
 

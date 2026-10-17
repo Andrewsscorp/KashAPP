@@ -554,6 +554,36 @@ fun FixedAssetDetailScreen(
                                         overflow = TextOverflow.Ellipsis
                                     )
                                 }
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (currentAsset.noAffectInventory) Color(0xFF0E2849) else Color(0xFF0C1F38),
+                                    border = BorderStroke(1.dp, if (currentAsset.noAffectInventory) Color(0xFF38BDF8).copy(alpha = 0.5f) else Color(0xFF334155)),
+                                    modifier = Modifier.clickable {
+                                        val updated = currentAsset.copy(noAffectInventory = !currentAsset.noAffectInventory)
+                                        currentAsset = updated
+                                        onUpdateAsset(updated)
+                                        Toast.makeText(context, if (updated.noAffectInventory) "Marcado: No afecta inventarios" else "Marcado: Afecta inventarios", Toast.LENGTH_SHORT).show()
+                                    }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Inventory2,
+                                            contentDescription = null,
+                                            tint = if (currentAsset.noAffectInventory) Color(0xFF38BDF8) else Color(0xFF94A3B8),
+                                            modifier = Modifier.size(11.dp)
+                                        )
+                                        Text(
+                                            text = if (currentAsset.noAffectInventory) "No Afecta Inv." else "En Inventario",
+                                            fontSize = 10.5.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (currentAsset.noAffectInventory) Color(0xFF38BDF8) else Color(0xFF94A3B8)
+                                        )
+                                    }
+                                }
                             }
                             AssetStateBadge(
                                 asset = currentAsset,
@@ -603,6 +633,36 @@ fun FixedAssetDetailScreen(
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
+                                }
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (currentAsset.noAffectInventory) Color(0xFF0E2849) else Color(0xFF0C1F38),
+                                    border = BorderStroke(1.dp, if (currentAsset.noAffectInventory) Color(0xFF38BDF8).copy(alpha = 0.5f) else Color(0xFF334155)),
+                                    modifier = Modifier.clickable {
+                                        val updated = currentAsset.copy(noAffectInventory = !currentAsset.noAffectInventory)
+                                        currentAsset = updated
+                                        onUpdateAsset(updated)
+                                        Toast.makeText(context, if (updated.noAffectInventory) "Marcado: No afecta inventarios" else "Marcado: Afecta inventarios", Toast.LENGTH_SHORT).show()
+                                    }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Inventory2,
+                                            contentDescription = null,
+                                            tint = if (currentAsset.noAffectInventory) Color(0xFF38BDF8) else Color(0xFF94A3B8),
+                                            modifier = Modifier.size(11.dp)
+                                        )
+                                        Text(
+                                            text = if (currentAsset.noAffectInventory) "No Afecta Inv." else "En Inventario",
+                                            fontSize = 10.5.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (currentAsset.noAffectInventory) Color(0xFF38BDF8) else Color(0xFF94A3B8)
+                                        )
+                                    }
                                 }
                             }
                             Spacer(modifier = Modifier.width(6.dp))

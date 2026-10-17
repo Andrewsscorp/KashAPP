@@ -153,6 +153,9 @@ fun SettingsScreen(
                         SettingsMainContent(
                             userName = uiState.userName,
                             userEmail = uiState.userEmail,
+                            autoNoAffectInventoryForAssets = uiState.preferences.autoNoAffectInventoryForAssets,
+                            onToggleAutoNoAffectInventory = { viewModel.toggleAutoNoAffectInventory(it) },
+                            onApplyNoAffectInventoryToAll = { viewModel.applyNoAffectInventoryToAllAssets(it) },
                             onNavigateTo = { viewModel.navigateToSubRoute(it) },
                             onRequestLogout = { viewModel.showLogoutDialog(true) },
                             onRequestDeleteAccount = { viewModel.showDeleteAccountDialog(true) }
@@ -185,6 +188,7 @@ fun SettingsScreen(
                                 auditSecurityLogDao = appContainer.securityDatabase.auditSecurityLogDao(),
                                 assetAuditLogDao = appContainer.securityDatabase.assetAuditLogDao(),
                                 financialDao = appContainer.securityDatabase.financialDao(),
+                                fixedAssetDao = appContainer.securityDatabase.fixedAssetDao(),
                                 userId = uiState.userEmail.ifBlank { "user_default" }
                             )
                         )

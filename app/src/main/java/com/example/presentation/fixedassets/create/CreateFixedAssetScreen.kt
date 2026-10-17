@@ -33,6 +33,8 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -518,6 +520,105 @@ fun CreateFixedAssetScreen(
                                 },
                                 fontSize = 11.5.sp,
                                 color = if (formState.includeInNetWorth) Color(0xFFE2E8F0) else Color(0xFF94A3B8),
+                                lineHeight = 16.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            // CONTROL DE INVENTARIO OPERATIVO ("No afecta inventarios")
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
+                border = BorderStroke(1.dp, cardBorder),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("create_asset_inventory_card")
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(if (formState.noAffectInventory) Color(0xFF0284C7).copy(alpha = 0.2f) else Color(0xFF64748B).copy(alpha = 0.2f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Inventory2,
+                                    contentDescription = null,
+                                    tint = if (formState.noAffectInventory) Color(0xFF38BDF8) else Color(0xFF94A3B8),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = "No Afecta Inventarios",
+                                    fontSize = 14.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Text(
+                                    text = if (formState.noAffectInventory) "Fuera de control de inventario de almacén" else "Afecta y descuenta de inventario operativo",
+                                    fontSize = 11.5.sp,
+                                    color = if (formState.noAffectInventory) Color(0xFF38BDF8) else Color(0xFF94A3B8)
+                                )
+                            }
+                        }
+
+                        Switch(
+                            checked = formState.noAffectInventory,
+                            onCheckedChange = { formState = formState.copy(noAffectInventory = it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = Color(0xFF0284C7),
+                                uncheckedThumbColor = Color(0xFF94A3B8),
+                                uncheckedTrackColor = Color(0xFF1E293B)
+                            )
+                        )
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (formState.noAffectInventory) Color(0xFF0284C7).copy(alpha = 0.12f) else Color(0xFF1E293B).copy(alpha = 0.6f),
+                        border = BorderStroke(
+                            1.dp,
+                            if (formState.noAffectInventory) Color(0xFF38BDF8).copy(alpha = 0.3f) else Color(0xFF334155)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (formState.noAffectInventory) Icons.Default.Info else Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = if (formState.noAffectInventory) Color(0xFF38BDF8) else Color(0xFF94A3B8),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = if (formState.noAffectInventory) {
+                                    "Marcado: Este activo se registrará para cálculo de depreciación y valor contable, pero NO alterará el control de inventarios de existencias/almacén."
+                                } else {
+                                    "Desmarcado: El activo forma parte del inventario operativo y de existencias de la empresa."
+                                },
+                                fontSize = 11.5.sp,
+                                color = if (formState.noAffectInventory) Color(0xFFE2E8F0) else Color(0xFF94A3B8),
                                 lineHeight = 16.sp
                             )
                         }

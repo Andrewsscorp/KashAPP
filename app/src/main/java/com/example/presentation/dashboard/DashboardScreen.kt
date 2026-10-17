@@ -1039,6 +1039,7 @@ fun DashboardScreen(
                 auditSecurityLogDao = appContainer.securityDatabase.auditSecurityLogDao(),
                 assetAuditLogDao = appContainer.securityDatabase.assetAuditLogDao(),
                 financialDao = appContainer.securityDatabase.financialDao(),
+                fixedAssetDao = appContainer.securityDatabase.fixedAssetDao(),
                 userId = uiState.userName.ifBlank { "user_default" }
             )
         )

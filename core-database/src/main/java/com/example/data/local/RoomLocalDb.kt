@@ -43,12 +43,18 @@ object RoomLocalDb {
             try {
                 db.execSQL("DELETE FROM accounts WHERE id IN ('acc_ahorros', 'acc_corriente', 'acc_billetera', 'acc_efectivo') AND balance = 0.0 AND NOT EXISTS (SELECT 1 FROM transactions WHERE transactions.accountId = accounts.id)")
             } catch (_: Throwable) {}
+            try {
+                db.execSQL("ALTER TABLE fixed_assets ADD COLUMN noAffectInventory INTEGER NOT NULL DEFAULT 0")
+            } catch (_: Throwable) {}
         }
 
         override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
             super.onCreate(db)
             SecurityDatabase.installIntegrityGuards(db)
             ensureSharedExpenseSchema(db)
+            try {
+                db.execSQL("ALTER TABLE fixed_assets ADD COLUMN noAffectInventory INTEGER NOT NULL DEFAULT 0")
+            } catch (_: Throwable) {}
         }
     }
 
@@ -605,6 +611,14 @@ object RoomLocalDb {
         }
     }
 
+    val MIGRATION_33_34 = object : androidx.room.migration.Migration(33, 34) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+            try {
+                db.execSQL("ALTER TABLE fixed_assets ADD COLUMN noAffectInventory INTEGER NOT NULL DEFAULT 0")
+            } catch (_: Throwable) {}
+        }
+    }
+
     private fun tryCreateEncryptedDb(context: Context, passphraseBytes: ByteArray): SecurityDatabase? {
         return try {
             // Attempt to load native SQLCipher library if available
@@ -619,7 +633,7 @@ object RoomLocalDb {
                 ENCRYPTED_DB_NAME
             )
                 .openHelperFactory(openHelperFactory)
-                .addMigrations(MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33)
+                .addMigrations(MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33, MIGRATION_33_34)
                 .addCallback(foreignKeyCallback)
                 .build()
 

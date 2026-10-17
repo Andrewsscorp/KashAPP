@@ -130,6 +130,9 @@ fun FixedAssetsScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val appContainer = remember(context) { (context.applicationContext as? com.example.KashAppApplication)?.appContainer }
+    val userPrefs by (appContainer?.settingsRepository?.observePreferences(viewModel.userId) ?: kotlinx.coroutines.flow.flowOf(com.example.features.settings.domain.model.UserPreferencesDomain()))
+        .collectAsState(initial = com.example.features.settings.domain.model.UserPreferencesDomain())
     val uiState by viewModel.uiState.collectAsState()
     val moneyFmt = DecimalFormat("$ #,##0")
 
@@ -150,7 +153,9 @@ fun FixedAssetsScreen(
 
     // Sub-pantallas
     if (uiState.isCreatingAsset) {
-        val initialForm = uiState.assetToEdit?.let { FixedAssetFormState.fromEntity(it) } ?: FixedAssetFormState()
+        val initialForm = uiState.assetToEdit?.let { FixedAssetFormState.fromEntity(it) } ?: FixedAssetFormState(
+            noAffectInventory = userPrefs.autoNoAffectInventoryForAssets
+        )
         CreateFixedAssetScreen(
             initialState = initialForm,
             availableCategories = uiState.categories,

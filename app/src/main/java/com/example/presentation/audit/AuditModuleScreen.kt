@@ -3,6 +3,7 @@ package com.example.presentation.audit
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -33,37 +35,41 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -73,6 +79,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -80,8 +87,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
  * Enterprise Immutable Audit Vault Screen ("Bóveda de Auditoría").
- * Strictly immutable, append-only ledger displaying all security, financial,
- * account visibility, and system operations with cryptographic proof.
+ * Strictly immutable, append-only cryptographic ledger with 100% real local data,
+ * interactive SHA-256 verification, distribution charts, and official PDF exports.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,11 +102,32 @@ fun AuditModuleScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    // Handle PDF Export and Share intent
+    LaunchedEffect(uiState.exportPdfResult) {
+        uiState.exportPdfResult?.let { result ->
+            if (result.success && result.fileUri != null) {
+                try {
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "application/pdf"
+                        putExtra(Intent.EXTRA_STREAM, result.fileUri)
+                        putExtra(Intent.EXTRA_SUBJECT, "KashApp - Certificado Oficial de Auditoría")
+                        putExtra(Intent.EXTRA_TEXT, "Adjunto Certificado Oficial de Auditoría y Trazabilidad Forense emitido por KashApp Enterprise.")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    context.startActivity(Intent.createChooser(shareIntent, "Compartir Informe de Auditoría PDF"))
+                } catch (e: Exception) {
+                    Toast.makeText(context, "No se pudo abrir visor de PDF: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            } else if (!result.success && result.message.isNotBlank()) {
+                Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
+            }
+            viewModel.clearPdfResult()
+        }
+    }
+
     LaunchedEffect(uiState.exportSuccessMessage) {
         uiState.exportSuccessMessage?.let { msg ->
-            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            clipboard.setPrimaryClip(ClipData.newPlainText("KashApp Audit Report", viewModel.generateExportCertificate()))
-            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
             viewModel.clearExportMessage()
         }
     }
@@ -116,23 +144,24 @@ fun AuditModuleScreen(
                 .statusBarsPadding()
         ) {
             // ==========================================
-            // TOP BAR
+            // TOP BAR (RESPONSIVE WITH SAFE MARGINS)
             // ==========================================
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                    .padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.weight(1f, fill = false)
                 ) {
                     IconButton(
                         onClick = onNavigateBack,
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(38.dp)
                             .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.1f))
                             .testTag("audit_back_btn")
@@ -141,40 +170,42 @@ fun AuditModuleScreen(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Volver",
                             tint = Color.White,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(19.dp)
                         )
                     }
 
                     Column {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Text(
                                 text = "Bóveda de Auditoría",
-                                fontSize = 18.sp,
+                                fontSize = 16.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = Color.White,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = Color(0xFF10B981).copy(alpha = 0.18f),
-                                border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.4f))
+                                shape = RoundedCornerShape(5.dp),
+                                color = Color(0xFF10B981).copy(alpha = 0.2f),
+                                border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.45f))
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Lock,
                                         contentDescription = null,
                                         tint = Color(0xFF34D399),
-                                        modifier = Modifier.size(10.dp)
+                                        modifier = Modifier.size(9.dp)
                                     )
                                     Text(
                                         text = "INMUTABLE",
-                                        fontSize = 9.5.sp,
+                                        fontSize = 8.5.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF34D399)
                                     )
@@ -183,104 +214,167 @@ fun AuditModuleScreen(
                         }
                         Text(
                             text = "Cadena de custodia criptográfica append-only",
-                            fontSize = 11.5.sp,
-                            color = Color(0xFF94A3B8)
+                            fontSize = 10.5.sp,
+                            color = Color(0xFF94A3B8),
+                            maxLines = 1
                         )
                     }
                 }
 
-                // Copy Certificate Action Button
-                Surface(
-                    onClick = {
-                        val report = viewModel.generateExportCertificate()
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("KashApp Audit Report", report))
-                        Toast.makeText(context, "Certificado de auditoría copiado al portapapeles", Toast.LENGTH_SHORT).show()
-                    },
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFF007BFF),
-                    modifier = Modifier.testTag("audit_export_btn")
+                // Action Buttons Group (immune to MIUI sidebar overlaps)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    // 1. Verify Integrity Button
+                    Surface(
+                        onClick = { viewModel.verifyVaultIntegrity() },
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFF1E293B),
+                        border = BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.4f)),
+                        modifier = Modifier.testTag("audit_verify_btn")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            if (uiState.isVerifyingIntegrity) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(12.dp),
+                                    color = Color(0xFF38BDF8),
+                                    strokeWidth = 1.5.dp
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Shield,
+                                    contentDescription = null,
+                                    tint = Color(0xFF38BDF8),
+                                    modifier = Modifier.size(13.dp)
+                                )
+                            }
+                            Text(
+                                text = "Verificar",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF38BDF8)
+                            )
+                        }
+                    }
+
+                    // 2. Export PDF Official Button
+                    Surface(
+                        onClick = { viewModel.exportToPdf(context) },
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFF007BFF),
+                        modifier = Modifier.testTag("audit_export_pdf_btn")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.FileDownload,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = "PDF",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+
+                    // 3. Copy text certificate
+                    IconButton(
+                        onClick = {
+                            val report = viewModel.generateExportCertificate()
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            clipboard.setPrimaryClip(ClipData.newPlainText("KashApp Audit Report", report))
+                            Toast.makeText(context, "Certificado copiado al portapapeles", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.08f))
+                            .testTag("audit_copy_btn")
                     ) {
                         Icon(
                             imageVector = Icons.Default.ContentCopy,
-                            contentDescription = null,
+                            contentDescription = "Copiar Certificado",
                             tint = Color.White,
                             modifier = Modifier.size(14.dp)
                         )
-                        Text(
-                            text = "Exportar",
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
                     }
                 }
             }
 
             // ==========================================
-            // IMMUTABLE CERTIFICATE BANNER
+            // INTEGRITY VERIFICATION RESULT BANNER
             // ==========================================
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
-                border = BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.25f))
+            AnimatedVisibility(
+                visible = uiState.integrityVerificationResult != null,
+                enter = fadeIn(),
+                exit = fadeOut()
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(
+                uiState.integrityVerificationResult?.let { msg ->
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFF052E16),
+                        border = BorderStroke(1.dp, Color(0xFF10B981)),
                         modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF0284C7).copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 4.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Shield,
-                            contentDescription = null,
-                            tint = Color(0xFF38BDF8),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Libro Mayor Criptográfico Verificado",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Ningún registro puede ser editado ni eliminado. Cada evento cuenta con firma digital SHA-256 generada en Room SQLCipher.",
-                            fontSize = 11.sp,
-                            color = Color(0xFF94A3B8),
-                            lineHeight = 15.sp
-                        )
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = Color(0xFF34D399),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Text(
+                                    text = msg,
+                                    fontSize = 11.5.sp,
+                                    color = Color(0xFFD1FAE5),
+                                    lineHeight = 15.sp
+                                )
+                            }
+                            IconButton(
+                                onClick = { viewModel.clearIntegrityResult() },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Cerrar",
+                                    tint = Color(0xFF6EE7B7),
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
             // ==========================================
-            // KPI COUNTERS ROW
+            // KPI COUNTERS ROW (RESPONSIVE LABELS)
             // ==========================================
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 16.dp),
+                contentPadding = PaddingValues(horizontal = 14.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item {
@@ -313,14 +407,44 @@ fun AuditModuleScreen(
                 }
                 item {
                     AuditCounterCard(
-                        title = "TRANSACCIONES",
+                        title = "FINANZAS",
                         count = uiState.transactionsCount,
                         color = Color(0xFF10B981)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // ==========================================
+            // VISUAL CATEGORY DISTRIBUTION BAR
+            // ==========================================
+            if (uiState.totalCount > 0) {
+                val secWeight = (uiState.securityCount.toFloat() / uiState.totalCount).coerceAtLeast(0.02f)
+                val accWeight = (uiState.accountsCount.toFloat() / uiState.totalCount).coerceAtLeast(0.02f)
+                val astWeight = (uiState.assetsCount.toFloat() / uiState.totalCount).coerceAtLeast(0.02f)
+                val txWeight = (uiState.transactionsCount.toFloat() / uiState.totalCount).coerceAtLeast(0.02f)
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(Color(0xFF1E293B))
+                    ) {
+                        Box(modifier = Modifier.weight(secWeight).fillMaxHeight().background(Color(0xFFEF4444)))
+                        Box(modifier = Modifier.weight(accWeight).fillMaxHeight().background(Color(0xFF0284C7)))
+                        Box(modifier = Modifier.weight(astWeight).fillMaxHeight().background(Color(0xFF8B5CF6)))
+                        Box(modifier = Modifier.weight(txWeight).fillMaxHeight().background(Color(0xFF10B981)))
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
             // ==========================================
             // SEARCH BAR
@@ -329,22 +453,22 @@ fun AuditModuleScreen(
                 value = uiState.searchQuery,
                 onValueChange = { viewModel.onSearchQueryChange(it) },
                 placeholder = {
-                    Text("Buscar por evento, detalle o hash...", color = Color(0xFF64748B), fontSize = 12.5.sp)
+                    Text("Buscar por evento, concepto o hash SHA-256...", color = Color(0xFF64748B), fontSize = 12.sp)
                 },
                 leadingIcon = {
-                    Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(18.dp))
+                    Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(17.dp))
                 },
                 trailingIcon = {
                     if (uiState.searchQuery.isNotEmpty()) {
                         IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                            Icon(imageVector = Icons.Default.Close, contentDescription = "Limpiar", tint = Color(0xFF94A3B8), modifier = Modifier.size(16.dp))
+                            Icon(imageVector = Icons.Default.Close, contentDescription = "Limpiar", tint = Color(0xFF94A3B8), modifier = Modifier.size(15.dp))
                         }
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .height(48.dp),
+                    .padding(horizontal = 14.dp)
+                    .height(46.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = Color(0xFF1E293B),
@@ -357,14 +481,67 @@ fun AuditModuleScreen(
                 singleLine = true
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // ==========================================
+            // TIME & SEVERITY FILTER CHIPS ROW
+            // ==========================================
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // Time Filters
+                items(AuditTimeFilter.values()) { timeFilter ->
+                    val isSelected = uiState.selectedTimeFilter == timeFilter
+                    Surface(
+                        onClick = { viewModel.onTimeFilterSelect(timeFilter) },
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isSelected) Color(0xFF0284C7) else Color(0xFF1E293B),
+                        border = BorderStroke(1.dp, if (isSelected) Color(0xFF38BDF8) else Color(0xFF334155))
+                    ) {
+                        Text(
+                            text = timeFilter.label,
+                            fontSize = 11.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSelected) Color.White else Color(0xFF94A3B8),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                item {
+                    Box(modifier = Modifier.width(1.dp).height(20.dp).background(Color(0xFF334155)))
+                }
+
+                // Severity Filters
+                items(AuditSeverityFilter.values()) { sevFilter ->
+                    val isSelected = uiState.selectedSeverityFilter == sevFilter
+                    Surface(
+                        onClick = { viewModel.onSeverityFilterSelect(sevFilter) },
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isSelected) Color(0xFF334155) else Color(0xFF1E293B),
+                        border = BorderStroke(1.dp, if (isSelected) Color(0xFF94A3B8) else Color(0xFF334155))
+                    ) {
+                        Text(
+                            text = sevFilter.label,
+                            fontSize = 11.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSelected) Color.White else Color(0xFF94A3B8),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
 
             // ==========================================
             // CATEGORY FILTER CHIPS
             // ==========================================
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 16.dp),
+                contentPadding = PaddingValues(horizontal = 14.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 items(AuditCategory.values()) { category ->
@@ -381,13 +558,13 @@ fun AuditModuleScreen(
                             fontSize = 11.5.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             color = if (isSelected) catColor else Color(0xFF94A3B8),
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // ==========================================
             // AUDIT LOGS LIST
@@ -401,20 +578,22 @@ fun AuditModuleScreen(
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(24.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Shield,
                             contentDescription = null,
                             tint = Color(0xFF475569),
-                            modifier = Modifier.size(52.dp)
+                            modifier = Modifier.size(48.dp)
                         )
                         Text(
                             text = if (uiState.searchQuery.isNotEmpty()) "No hay eventos que coincidan con la búsqueda"
-                            else "No hay eventos registrados en esta categoría",
+                            else "No hay eventos registrados con los filtros seleccionados",
                             fontSize = 13.sp,
                             color = Color(0xFF94A3B8),
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
@@ -423,8 +602,8 @@ fun AuditModuleScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                        .padding(horizontal = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(9.dp)
                 ) {
                     items(uiState.filteredLogs, key = { it.id }) { entry ->
                         AuditCardItem(
@@ -433,7 +612,7 @@ fun AuditModuleScreen(
                         )
                     }
                     item {
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(28.dp))
                     }
                 }
             }
@@ -480,20 +659,21 @@ private fun AuditCounterCard(
         border = BorderStroke(1.dp, color.copy(alpha = 0.35f))
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = title,
-                fontSize = 9.5.sp,
+                fontSize = 9.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF94A3B8),
-                letterSpacing = 0.5.sp
+                letterSpacing = 0.5.sp,
+                maxLines = 1
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = count.toString(),
-                fontSize = 16.sp,
+                fontSize = 15.sp,
                 fontWeight = FontWeight.Black,
                 color = color
             )
@@ -518,7 +698,7 @@ private fun AuditCardItem(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp)
+                .padding(13.dp)
         ) {
             // Top Row: Category tag + Severity pill + Relative time
             Row(
@@ -537,7 +717,7 @@ private fun AuditCardItem(
                     ) {
                         Text(
                             text = entry.category.label,
-                            fontSize = 10.sp,
+                            fontSize = 9.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(entry.category.colorHex),
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -550,7 +730,7 @@ private fun AuditCardItem(
                     ) {
                         Text(
                             text = entry.severity.name,
-                            fontSize = 9.5.sp,
+                            fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
                             color = entry.severity.color,
                             modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
@@ -560,38 +740,38 @@ private fun AuditCardItem(
 
                 Text(
                     text = entry.relativeTime,
-                    fontSize = 11.sp,
+                    fontSize = 10.5.sp,
                     color = Color(0xFF94A3B8)
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(7.dp))
 
             // Title
             Text(
                 text = entry.eventTitle,
-                fontSize = 14.sp,
+                fontSize = 13.5.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(3.dp))
 
-            // Details truncated preview
+            // Details preview
             Text(
                 text = entry.details.replace("\n", " "),
-                fontSize = 12.sp,
+                fontSize = 11.5.sp,
                 color = Color(0xFFCBD5E1),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                lineHeight = 16.sp
+                lineHeight = 15.sp
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(9.dp))
 
-            // Bottom row: Origin / Auth method badge + SHA256 short hash
+            // Bottom row: Origin / Auth method + SHA256 short hash
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -605,19 +785,20 @@ private fun AuditCardItem(
                         imageVector = Icons.Default.Fingerprint,
                         contentDescription = null,
                         tint = Color(0xFF94A3B8),
-                        modifier = Modifier.size(13.dp)
+                        modifier = Modifier.size(12.dp)
                     )
                     Text(
                         text = entry.authMethodOrOrigin,
-                        fontSize = 10.5.sp,
+                        fontSize = 10.sp,
                         color = Color(0xFF94A3B8),
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1
                     )
                 }
 
                 Text(
                     text = "sha256:${entry.hashSha256.take(8)}...",
-                    fontSize = 10.sp,
+                    fontSize = 9.5.sp,
                     fontFamily = FontFamily.Monospace,
                     color = Color(0xFF38BDF8)
                 )
@@ -639,7 +820,6 @@ private fun AuditDetailBottomSheetContent(
             .padding(horizontal = 20.dp, vertical = 12.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        // Modal Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -652,186 +832,140 @@ private fun AuditDetailBottomSheetContent(
                 Surface(
                     shape = RoundedCornerShape(8.dp),
                     color = Color(entry.category.colorHex).copy(alpha = 0.2f),
-                    border = BorderStroke(1.dp, Color(entry.category.colorHex))
+                    border = BorderStroke(1.dp, Color(entry.category.colorHex).copy(alpha = 0.5f))
                 ) {
                     Text(
                         text = entry.category.label,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(entry.category.colorHex),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                     )
                 }
 
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = entry.severity.color.copy(alpha = 0.2f)
+                    color = entry.severity.color.copy(alpha = 0.18f)
                 ) {
                     Text(
-                        text = entry.severity.label,
+                        text = entry.severity.name,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = entry.severity.color,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                     )
                 }
             }
 
-            IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
-                Icon(imageVector = Icons.Default.Close, contentDescription = "Cerrar", tint = Color(0xFF94A3B8))
+            IconButton(onClick = onDismiss) {
+                Icon(imageVector = Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // Title
         Text(
             text = entry.eventTitle,
-            fontSize = 18.sp,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White
         )
 
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = entry.formattedDateTime,
+            fontSize = 12.sp,
+            color = Color(0xFF94A3B8)
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+        HorizontalDivider(color = Color(0xFF334155))
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Metadata grid
+        Text(
+            text = "Detalle del Evento",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFF94A3B8)
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = entry.details,
+            fontSize = 13.5.sp,
+            color = Color(0xFFE2E8F0),
+            lineHeight = 19.sp
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        Text(
+            text = "Origen / Método de Autorización",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFF94A3B8)
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = entry.authMethodOrOrigin,
+            fontSize = 13.sp,
+            color = Color.White,
+            fontWeight = FontWeight.Medium
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Cryptographic Hash Card
         Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
-            border = BorderStroke(1.dp, Color(0xFF334155))
+            border = BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.3f)),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                DetailRow(label = "ID Registro:", value = entry.id)
-                DetailRow(label = "Fecha y Hora:", value = entry.formattedDateTime)
-                DetailRow(label = "Marca de Tiempo (ms):", value = entry.timestamp.toString())
-                DetailRow(label = "Origen / Método:", value = entry.authMethodOrOrigin)
-                DetailRow(label = "Condición Legal:", value = "Inmutable Append-Only (SQLCipher)")
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // Details Section
-        Text(
-            text = "Detalle del Evento Auditado",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF94A3B8)
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            color = Color(0xFF0F172A),
-            border = BorderStroke(1.dp, Color(0xFF334155))
-        ) {
-            Text(
-                text = entry.details,
-                fontSize = 13.sp,
-                color = Color.White,
-                lineHeight = 18.sp,
-                modifier = Modifier.padding(14.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // Cryptographic Hash Section
-        Text(
-            text = "Huella Criptográfica SHA-256",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF94A3B8)
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            color = Color(0xFF0A101D),
-            border = BorderStroke(1.dp, Color(0xFF0284C7).copy(alpha = 0.4f))
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Firma Digital SHA-256 (Inmutable)",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF38BDF8)
+                    )
+                    IconButton(
+                        onClick = {
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            clipboard.setPrimaryClip(ClipData.newPlainText("SHA256 Hash", entry.hashSha256))
+                            Toast.makeText(context, "Hash copiado al portapapeles", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.ContentCopy, contentDescription = "Copiar Hash", tint = Color(0xFF38BDF8), modifier = Modifier.size(14.dp))
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = entry.hashSha256,
-                    fontSize = 11.sp,
+                    fontSize = 10.5.sp,
                     fontFamily = FontFamily.Monospace,
-                    color = Color(0xFF38BDF8),
-                    modifier = Modifier.weight(1f)
+                    color = Color(0xFFCBD5E1),
+                    lineHeight = 15.sp
                 )
-                IconButton(
-                    onClick = {
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("SHA256 Hash", entry.hashSha256))
-                        Toast.makeText(context, "Hash copiado al portapapeles", Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ContentCopy,
-                        contentDescription = "Copiar Hash",
-                        tint = Color(0xFF38BDF8),
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        // Corporate Blue Entendido Button
         Button(
             onClick = onDismiss,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
+            modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF007BFF),
-                contentColor = Color.White
-            )
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007BFF))
         ) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = "Entendido",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
+            Text("Entendido", color = Color.White, fontWeight = FontWeight.Bold)
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
-    }
-}
-
-@Composable
-private fun DetailRow(
-    label: String,
-    value: String
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(text = label, fontSize = 11.5.sp, color = Color(0xFF94A3B8), fontWeight = FontWeight.Medium)
-        Text(text = value, fontSize = 11.5.sp, color = Color.White, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }

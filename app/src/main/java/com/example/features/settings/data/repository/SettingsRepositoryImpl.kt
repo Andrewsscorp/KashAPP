@@ -11,7 +11,8 @@ import kotlinx.coroutines.flow.update
 
 class SettingsRepositoryImpl(
     private val context: Context,
-    private val auditSecurityLogDao: com.example.data.local.dao.AuditSecurityLogDao? = null
+    private val auditSecurityLogDao: com.example.data.local.dao.AuditSecurityLogDao? = null,
+    private val fixedAssetDao: com.example.data.local.dao.FixedAssetDao? = null
 ) : SettingsRepository {
 
     private val prefs: SharedPreferences by lazy {
@@ -37,6 +38,7 @@ class SettingsRepositoryImpl(
             privacyModeEnabled = prefs.getBoolean("privacy_mode_enabled", false),
             excludeAllAccountsFromDashboard = prefs.getBoolean("exclude_all_accounts_dashboard", false),
             excludedAccountIds = prefs.getStringSet("excluded_account_ids", emptySet()) ?: emptySet(),
+            autoNoAffectInventoryForAssets = prefs.getBoolean("auto_no_affect_inventory_for_assets", false),
             version = prefs.getLong("version", 1L)
         )
     }
@@ -67,6 +69,7 @@ class SettingsRepositoryImpl(
             .putBoolean("privacy_mode_enabled", updated.privacyModeEnabled)
             .putBoolean("exclude_all_accounts_dashboard", updated.excludeAllAccountsFromDashboard)
             .putStringSet("excluded_account_ids", updated.excludedAccountIds)
+            .putBoolean("auto_no_affect_inventory_for_assets", updated.autoNoAffectInventoryForAssets)
             .putLong("version", nextVersion)
             .apply()
 
@@ -147,6 +150,37 @@ class SettingsRepositoryImpl(
     override suspend fun isAccountExcluded(userId: String, accountId: String): Boolean {
         val current = _preferencesFlow.value
         return current.excludeAllAccountsFromDashboard || current.excludedAccountIds.contains(accountId)
+    }
+
+    override suspend fun setAutoNoAffectInventoryForAssets(userId: String, enabled: Boolean): Result<Unit> {
+        val current = _preferencesFlow.value
+        val res = updatePreferences(current.copy(autoNoAffectInventoryForAssets = enabled))
+        try {
+            auditSecurityLogDao?.insertLog(
+                com.example.data.local.entity.AuditSecurityLog(
+                    eventType = "CONFIG_ASSETS_AUTO_NO_AFFECT_INVENTORY",
+                    authMethod = "SETTINGS",
+                    details = "Ajuste General Activos: ${if (enabled) "ACTIVADO - Nuevos activos marcarán 'No afecta inventarios' por defecto" else "DESACTIVADO - Nuevos activos afectarán inventarios por defecto"}"
+                )
+            )
+        } catch (_: Exception) {}
+        return res.map { }
+    }
+
+    override suspend fun applyNoAffectInventoryToAllAssets(userId: String, noAffect: Boolean): Result<Int> {
+        return runCatching {
+            val count = fixedAssetDao?.updateNoAffectInventoryGlobal(noAffect) ?: 0
+            try {
+                auditSecurityLogDao?.insertLog(
+                    com.example.data.local.entity.AuditSecurityLog(
+                        eventType = "MASS_UPDATE_ASSETS_NO_AFFECT_INVENTORY",
+                        authMethod = "SETTINGS",
+                        details = "Acción Masiva Activos: ${if (noAffect) "Aplicado 'No afecta inventarios'" else "Restablecido 'Afecta inventarios'"} a $count activos fijos existentes."
+                    )
+                )
+            } catch (_: Exception) {}
+            count
+        }
     }
 
     override suspend fun executeProtocolLogout(userId: String): Result<Unit> {

@@ -22,6 +22,21 @@ enum class AuditSeverity(val label: String, val color: Color) {
     CRITICAL("Crítico", Color(0xFFEF4444))
 }
 
+enum class AuditTimeFilter(val label: String) {
+    ALL("Todo"),
+    TODAY("Hoy"),
+    LAST_7_DAYS("7 Días"),
+    THIS_MONTH("Este Mes")
+}
+
+enum class AuditSeverityFilter(val label: String) {
+    ALL("Todas"),
+    CRITICAL("Críticas"),
+    WARNING("Alertas"),
+    SUCCESS("Exitosas"),
+    INFO("Informativas")
+}
+
 data class AuditUiEntry(
     val id: String,
     val timestamp: Long,
@@ -41,6 +56,8 @@ data class AuditVaultUiState(
     val filteredLogs: List<AuditUiEntry> = emptyList(),
     val searchQuery: String = "",
     val selectedCategory: AuditCategory = AuditCategory.ALL,
+    val selectedTimeFilter: AuditTimeFilter = AuditTimeFilter.ALL,
+    val selectedSeverityFilter: AuditSeverityFilter = AuditSeverityFilter.ALL,
     val totalCount: Int = 0,
     val securityCount: Int = 0,
     val accountsCount: Int = 0,
@@ -48,5 +65,8 @@ data class AuditVaultUiState(
     val transactionsCount: Int = 0,
     val selectedEntryForDetail: AuditUiEntry? = null,
     val isLoading: Boolean = false,
-    val exportSuccessMessage: String? = null
+    val isVerifyingIntegrity: Boolean = false,
+    val integrityVerificationResult: String? = null,
+    val exportSuccessMessage: String? = null,
+    val exportPdfResult: com.example.util.FinancialReportExporter.ExportResult? = null
 )

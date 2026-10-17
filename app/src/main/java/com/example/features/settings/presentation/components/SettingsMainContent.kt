@@ -41,14 +41,26 @@ import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.Upload
-import androidx.compose.material.icons.filled.ViewQuilt
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,11 +82,71 @@ import com.example.ui.theme.KashNavy
 fun SettingsMainContent(
     userName: String,
     userEmail: String,
+    autoNoAffectInventoryForAssets: Boolean = false,
+    onToggleAutoNoAffectInventory: (Boolean) -> Unit = {},
+    onApplyNoAffectInventoryToAll: (Boolean) -> Unit = {},
     onNavigateTo: (SettingsSubRoute) -> Unit,
     onRequestLogout: () -> Unit,
     onRequestDeleteAccount: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    var showMassApplyDialog by remember { mutableStateOf(false) }
+
+    if (showMassApplyDialog) {
+        AlertDialog(
+            onDismissRequest = { showMassApplyDialog = false },
+            title = {
+                Text(
+                    text = "Afectación de Inventarios",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp,
+                    color = Color(0xFF0F172A)
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Selecciona cómo deseas configurar la totalidad de los activos fijos existentes en el sistema:",
+                        fontSize = 13.sp,
+                        color = Color(0xFF475569)
+                    )
+                    Text(
+                        text = "• 'No afecta inventarios': Los activos se mantendrán para cálculo de valor y depreciación contable pero excluidos del stock de inventario operativo.\n• 'Afectar inventarios': Todos los activos se marcarán dentro del control de inventario.",
+                        fontSize = 12.sp,
+                        color = Color(0xFF64748B),
+                        lineHeight = 16.sp
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showMassApplyDialog = false
+                        onApplyNoAffectInventoryToAll(true)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7))
+                ) {
+                    Text("No Afectar (Todos)", color = Color.White)
+                }
+            },
+            dismissButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    TextButton(onClick = { showMassApplyDialog = false }) {
+                        Text("Cancelar", color = Color(0xFF64748B))
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            showMassApplyDialog = false
+                            onApplyNoAffectInventoryToAll(false)
+                        }
+                    ) {
+                        Text("Afectar Inventario", color = Color(0xFF0284C7))
+                    }
+                }
+            }
+        )
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -248,7 +320,128 @@ fun SettingsMainContent(
             )
         }
 
-        // 3. PREFERENCIAS
+        // 3. ACTIVOS FIJOS E INVENTARIO
+        SettingsSection(title = "ACTIVOS FIJOS E INVENTARIO") {
+            // Switch tile: No afecta inventarios por defecto
+            Surface(
+                color = Color.White,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("settings_tile_auto_no_affect_inventory")
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFE0F2FE)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Inventory2,
+                                contentDescription = null,
+                                tint = Color(0xFF0284C7),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = "Marcar 'No afecta inventarios' por defecto",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0F172A)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = if (autoNoAffectInventoryForAssets)
+                                    "Los nuevos activos fijos creados se marcarán automáticamente como fuera de inventario."
+                                else
+                                    "Los nuevos activos fijos afectarán el inventario operativo por defecto.",
+                                fontSize = 11.5.sp,
+                                color = Color(0xFF64748B),
+                                lineHeight = 15.sp
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = autoNoAffectInventoryForAssets,
+                        onCheckedChange = { onToggleAutoNoAffectInventory(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = Color(0xFF007BFF),
+                            uncheckedThumbColor = Color.White,
+                            uncheckedTrackColor = Color(0xFFCBD5E1)
+                        )
+                    )
+                }
+            }
+            HorizontalDivider(color = Color(0xFFF8FAFC), thickness = 1.dp)
+
+            // Button tile: Aplicar a todos los activos existentes
+            Surface(
+                color = Color.White,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showMassApplyDialog = true }
+                    .testTag("settings_tile_mass_no_affect_inventory")
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFFEF3C7)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = Color(0xFFD97706),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Aplicar regla a todos los activos fijos",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0F172A)
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Actualizar en lote todos los activos fijos existentes en el sistema.",
+                            fontSize = 11.5.sp,
+                            color = Color(0xFF64748B)
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = Color(0xFF94A3B8),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
+
+        // 4. PREFERENCIAS
         SettingsSection(title = "PREFERENCIAS") {
             SettingsTileItem(
                 icon = Icons.Default.Palette,
@@ -261,7 +454,7 @@ fun SettingsMainContent(
             )
             HorizontalDivider(color = Color(0xFFF8FAFC), thickness = 1.dp)
             SettingsTileItem(
-                icon = Icons.Default.ViewQuilt,
+                icon = Icons.Default.TableChart,
                 iconTint = Color(0xFF0284C7),
                 iconBg = Color(0xFFE0F2FE),
                 title = "Personalizar inicio",

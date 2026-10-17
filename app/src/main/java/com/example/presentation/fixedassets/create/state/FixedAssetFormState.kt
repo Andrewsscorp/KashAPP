@@ -44,6 +44,7 @@ data class FixedAssetFormState(
     val allowLifeChange: Boolean = false,
     val allowResidualChange: Boolean = false,
     val allowMethodChange: Boolean = false,
+    val noAffectInventory: Boolean = false,
     val status: String = "ACTIVE",
     val stateNotes: String? = null,
     val accumulatedDepreciation: Double = 0.0,
@@ -111,6 +112,7 @@ data class FixedAssetFormState(
             allowLifeChange = allowLifeChange,
             allowResidualChange = allowResidualChange,
             allowMethodChange = allowMethodChange,
+            noAffectInventory = noAffectInventory,
             updatedAt = System.currentTimeMillis()
         )
     }
@@ -156,6 +158,7 @@ data class FixedAssetFormState(
                 allowLifeChange = entity.allowLifeChange,
                 allowResidualChange = entity.allowResidualChange,
                 allowMethodChange = entity.allowMethodChange,
+                noAffectInventory = entity.noAffectInventory,
                 status = entity.status,
                 stateNotes = entity.stateNotes,
                 accumulatedDepreciation = entity.accumulatedDepreciation,

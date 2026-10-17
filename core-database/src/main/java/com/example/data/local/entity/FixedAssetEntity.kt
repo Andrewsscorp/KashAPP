@@ -54,6 +54,7 @@ data class FixedAssetEntity(
     val allowLifeChange: Boolean = false,
     val allowResidualChange: Boolean = false,
     val allowMethodChange: Boolean = false,
+    val noAffectInventory: Boolean = false,
     val deletedAt: Long? = null,
     val stateNotes: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
