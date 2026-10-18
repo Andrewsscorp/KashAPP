@@ -13,9 +13,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -302,7 +304,8 @@ fun BudgetCategoriesAccordionCard(
                             shape = RoundedCornerShape(10.dp),
                             border = BorderStroke(1.dp, Color(0xFF38BDF8)),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF38BDF8)),
-                            modifier = Modifier.fillMaxWidth().height(38.dp)
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 40.dp)
                         ) {
                             Text("Sugerir distribución Regla 50 / 30 / 20", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }

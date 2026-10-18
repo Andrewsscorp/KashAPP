@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -700,7 +702,8 @@ fun ObjetivosScreen(
                                             shape = RoundedCornerShape(8.dp),
                                             border = BorderStroke(1.dp, accentCyan),
                                             colors = ButtonDefaults.outlinedButtonColors(contentColor = accentCyan),
-                                            modifier = Modifier.height(34.dp)
+                                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                            modifier = Modifier.heightIn(min = 40.dp)
                                         ) {
                                             Text("Aportar", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                         }
