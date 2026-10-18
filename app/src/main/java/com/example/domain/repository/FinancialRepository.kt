@@ -123,6 +123,18 @@ interface FinancialRepository {
         isTaxExempt: Boolean = false,
         payrollConfig: com.example.data.local.entity.AccountPayrollConfigEntity? = null
     ): AccountEntity
+
+    /**
+     * Encrypts a sensitive account field (account number, token) using hardware-backed AES-256-GCM
+     * with an "ENCv1:" envelope prefix.
+     */
+    fun encryptSensitiveField(rawValue: String?): String? = rawValue
+
+    /**
+     * Decrypts a sensitive account field. Transparently handles "ENCv1:" AES-GCM ciphertext
+     * as well as legacy plaintext Base64 records for zero-loss backwards compatibility.
+     */
+    fun decryptSensitiveField(storedValue: String?): String? = storedValue
     suspend fun updateAccountAllowNegative(accountId: String, allowNegative: Boolean)
     suspend fun updateAccount(account: AccountEntity): Result<Unit>
     suspend fun deleteAccount(accountId: String): Result<Unit>

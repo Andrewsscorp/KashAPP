@@ -80,7 +80,7 @@ class CreateCdtUseCase(
             currency = cleanCurrency,
             type = "CDT",
             bankName = cleanBankName,
-            accountNumberEncrypted = cleanCertificateNumber,
+            accountNumberEncrypted = financialRepository.encryptSensitiveField(cleanCertificateNumber),
             accountNumberMasked = cleanCertificateNumber?.let { if (it.length > 4) "•••• " + it.takeLast(4) else it },
             openingDate = issueDate.toString(),
             generatesInterest = true,

@@ -65,7 +65,8 @@ class AppContainer(private val context: Context) {
             auditLogDao = securityDatabase.auditSecurityLogDao(),
             firebaseDataSource = firebaseDataSource,
             merchantDao = securityDatabase.merchantDao(),
-            outboxDao = securityDatabase.outboxDao()
+            outboxDao = securityDatabase.outboxDao(),
+            keystoreCryptoManager = keystoreCryptoManager
         )
     }
 

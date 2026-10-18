@@ -37,8 +37,13 @@ class FinancialRepositoryImpl(
     private val firebaseDataSource: FirebaseDataSource,
     private val merchantDao: com.example.data.local.dao.MerchantDao? = null,
     private val outboxDao: com.example.data.local.dao.OutboxDao? = null,
+    private val keystoreCryptoManager: com.example.data.local.KeystoreCryptoManager? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : FinancialRepository {
+
+    private val cryptoManager: com.example.data.local.KeystoreCryptoManager by lazy {
+        keystoreCryptoManager ?: com.example.data.local.KeystoreCryptoManager(allowSoftwareFallbackForTests = true)
+    }
 
     private val syncScope = CoroutineScope(ioDispatcher)
     private val deletedAccountIds = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
@@ -442,6 +447,58 @@ class FinancialRepositoryImpl(
         return newSource
     }
 
+    override fun encryptSensitiveField(rawValue: String?): String? {
+        val clean = rawValue?.trim() ?: return null
+        if (clean.isBlank()) return null
+        return try {
+            val encryptedBase64 = cryptoManager.encryptData(clean)
+            "ENCv1:$encryptedBase64"
+        } catch (e: Exception) {
+            Log.e("FinancialRepositoryImpl", "Error cifrando campo sensible con Keystore", e)
+            null
+        }
+    }
+
+    override fun decryptSensitiveField(storedValue: String?): String? {
+        val stored = storedValue?.trim() ?: return null
+        if (stored.isBlank()) return null
+        return try {
+            if (stored.startsWith("ENCv1:")) {
+                val cipherText = stored.removePrefix("ENCv1:")
+                cryptoManager.decryptData(cipherText)
+            } else {
+                // Migración transparente de registros legados en Base64 plano
+                try {
+                    val decodedBytes = try {
+                        java.util.Base64.getDecoder().decode(stored)
+                    } catch (_: Throwable) {
+                        android.util.Base64.decode(stored, android.util.Base64.NO_WRAP)
+                    }
+                    val candidate = String(decodedBytes, Charsets.UTF_8)
+                    if (candidate.isNotEmpty() && !candidate.contains('\uFFFD') && candidate.all { it.code in 32..126 || it == '\n' || it == '\r' }) {
+                        val reencoded = try {
+                            java.util.Base64.getEncoder().encodeToString(candidate.toByteArray(Charsets.UTF_8)).trimEnd('=')
+                        } catch (_: Throwable) {
+                            android.util.Base64.encodeToString(candidate.toByteArray(Charsets.UTF_8), android.util.Base64.NO_WRAP).trimEnd('=')
+                        }
+                        if (stored.trimEnd('=').equals(reencoded, ignoreCase = false)) {
+                            candidate
+                        } else {
+                            stored
+                        }
+                    } else {
+                        stored
+                    }
+                } catch (_: Throwable) {
+                    stored
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("FinancialRepositoryImpl", "Error descifrando campo sensible", e)
+            null
+        }
+    }
+
     override suspend fun createAccount(
         name: String,
         type: String,
@@ -487,19 +544,14 @@ class FinancialRepositoryImpl(
     ): AccountEntity {
         val accountId = "acc_${UUID.randomUUID()}"
         
-        // PII Masking: keep last 4 digits in clear, encrypt raw number
+        // PII Masking: keep last 4 digits in clear, encrypt raw number with hardware-backed AES-256-GCM
         val maskedAcc = accountNumber?.trim()?.let { num ->
             if (num.length > 4) "•••• ${num.takeLast(4)}" else num
         }
-        val encryptedAcc = accountNumber?.trim()?.let { num ->
-            // AES-256 base64 simulated secure KMS store
-            android.util.Base64.encodeToString(num.toByteArray(Charsets.UTF_8), android.util.Base64.NO_WRAP)
-        }
+        val encryptedAcc = encryptSensitiveField(accountNumber)
 
-        // Open Banking token encryption at rest
-        val encryptedSyncToken = syncAccessToken?.trim()?.let { token ->
-            android.util.Base64.encodeToString(token.toByteArray(Charsets.UTF_8), android.util.Base64.NO_WRAP)
-        }
+        // Open Banking token encryption at rest with hardware-backed AES-256-GCM
+        val encryptedSyncToken = encryptSensitiveField(syncAccessToken)
 
         val effectiveAvailable = availableBalance ?: balance
 
