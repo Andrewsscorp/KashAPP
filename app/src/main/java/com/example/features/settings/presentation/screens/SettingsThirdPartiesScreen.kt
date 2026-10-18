@@ -1,10 +1,16 @@
 package com.example.features.settings.presentation.screens
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.ContactsContract
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,7 +29,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -60,7 +65,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,8 +77,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.example.data.local.entity.ThirdPartyEntity
 import com.example.presentation.thirdparty.ThirdPartyViewModel
+import com.example.presentation.thirdparty.components.ThirdPartyDetailDialog
 import com.example.presentation.thirdparty.components.ThirdPartyFormModalSheet
 import com.example.presentation.thirdparty.components.resolveThirdPartyIcon
 import com.example.presentation.thirdparty.model.ThirdPartyCategoryFilter
@@ -88,8 +97,9 @@ fun SettingsThirdPartiesSubScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    var showPermissionDeniedDialog by remember { mutableStateOf(false) }
 
-    // Contact Picker via Android's native contract (Zero permission prompts required)
+    // Contact Picker Contract
     val contactPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickContact()
     ) { contactUri: Uri? ->
@@ -106,34 +116,38 @@ fun SettingsThirdPartiesSubScreen(
                         if (nameIndex != -1) contactName = cursor.getString(nameIndex) ?: ""
                         val contactId = if (idIndex != -1) cursor.getString(idIndex) else null
 
-                        // Query Phone number
+                        // Query Phone number safely
                         if (contactId != null) {
-                            context.contentResolver.query(
-                                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                                null,
-                                "${ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ?",
-                                arrayOf(contactId),
-                                null
-                            )?.use { phoneCursor ->
-                                if (phoneCursor.moveToFirst()) {
-                                    val phoneIdx = phoneCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
-                                    if (phoneIdx != -1) contactPhone = phoneCursor.getString(phoneIdx)
+                            try {
+                                context.contentResolver.query(
+                                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                                    null,
+                                    "${ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ?",
+                                    arrayOf(contactId),
+                                    null
+                                )?.use { phoneCursor ->
+                                    if (phoneCursor.moveToFirst()) {
+                                        val phoneIdx = phoneCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                                        if (phoneIdx != -1) contactPhone = phoneCursor.getString(phoneIdx)
+                                    }
                                 }
-                            }
+                            } catch (_: Exception) {}
 
-                            // Query Email
-                            context.contentResolver.query(
-                                ContactsContract.CommonDataKinds.Email.CONTENT_URI,
-                                null,
-                                "${ContactsContract.CommonDataKinds.Email.CONTACT_ID} = ?",
-                                arrayOf(contactId),
-                                null
-                            )?.use { emailCursor ->
-                                if (emailCursor.moveToFirst()) {
-                                    val emailIdx = emailCursor.getColumnIndex(ContactsContract.CommonDataKinds.Email.DATA)
-                                    if (emailIdx != -1) contactEmail = emailCursor.getString(emailIdx)
+                            // Query Email safely
+                            try {
+                                context.contentResolver.query(
+                                    ContactsContract.CommonDataKinds.Email.CONTENT_URI,
+                                    null,
+                                    "${ContactsContract.CommonDataKinds.Email.CONTACT_ID} = ?",
+                                    arrayOf(contactId),
+                                    null
+                                )?.use { emailCursor ->
+                                    if (emailCursor.moveToFirst()) {
+                                        val emailIdx = emailCursor.getColumnIndex(ContactsContract.CommonDataKinds.Email.DATA)
+                                        if (emailIdx != -1) contactEmail = emailCursor.getString(emailIdx)
+                                    }
                                 }
-                            }
+                            } catch (_: Exception) {}
                         }
                     }
                 }
@@ -144,6 +158,31 @@ fun SettingsThirdPartiesSubScreen(
             } catch (e: Exception) {
                 onShowMessage("No se pudo leer el contacto: ${e.message}")
             }
+        }
+    }
+
+    // Permission Launcher for READ_CONTACTS
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            contactPickerLauncher.launch(null)
+        } else {
+            showPermissionDeniedDialog = true
+        }
+    }
+
+    // Safe trigger with permission check
+    val triggerContactPicker: () -> Unit = {
+        val hasPermission = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.READ_CONTACTS
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (hasPermission) {
+            contactPickerLauncher.launch(null)
+        } else {
+            permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
         }
     }
 
@@ -176,7 +215,7 @@ fun SettingsThirdPartiesSubScreen(
                         Spacer(modifier = Modifier.width(4.dp))
                         Column {
                             Text("Terceros y Contactos", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = KashNavy)
-                            Text("Gestión de proveedores, concesionarios y comercios", fontSize = 11.5.sp, color = Color(0xFF64748B))
+                            Text("Directorio empresarial, proveedores y comercios", fontSize = 11.5.sp, color = Color(0xFF64748B))
                         }
                     }
                 }
@@ -245,7 +284,7 @@ fun SettingsThirdPartiesSubScreen(
                     }
 
                     OutlinedButton(
-                        onClick = { contactPickerLauncher.launch(null) },
+                        onClick = triggerContactPicker,
                         shape = RoundedCornerShape(10.dp),
                         border = BorderStroke(1.dp, Color(0xFF0284C7)),
                         modifier = Modifier
@@ -273,15 +312,43 @@ fun SettingsThirdPartiesSubScreen(
                     .padding(32.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("🔍", fontSize = 42.sp)
-                    Text("No se encontraron terceros", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = KashNavy)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFE0F2FE)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = null,
+                            tint = Color(0xFF0284C7),
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
                     Text(
-                        text = if (uiState.searchQuery.isNotBlank()) "Intenta con otro término de búsqueda." else "Crea un tercero con '+ Nuevo Tercero' o importa desde tus contactos.",
+                        text = "No se encontraron terceros",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = KashNavy
+                    )
+                    Text(
+                        text = "Crea un nuevo tercero o impórtalo desde tus contactos del teléfono.",
                         fontSize = 13.sp,
                         color = Color(0xFF64748B),
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
+                    Button(
+                        onClick = { viewModel.onOpenCreateDialog(isExpress = true) },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("+ Crear Tercero Rápido")
+                    }
                 }
             }
         } else {
@@ -307,7 +374,7 @@ fun SettingsThirdPartiesSubScreen(
         }
     }
 
-    // Modal Sheet for Creation
+    // Modal Sheet for Creation / Edit (iOS styled in KashApp blues)
     if (uiState.showCreateDialog) {
         ThirdPartyFormModalSheet(
             formState = uiState.formState,
@@ -318,14 +385,15 @@ fun SettingsThirdPartiesSubScreen(
                 }
             },
             onDismiss = { viewModel.onDismissCreateDialog() },
+            onImportContactClick = triggerContactPicker,
             errorMessage = uiState.errorMessage
         )
     }
 
-    // Detail Dialog
+    // Detail Dialog (iOS styled)
     uiState.selectedThirdPartyForDetail?.let { detail ->
         ThirdPartyDetailDialog(
-            entity = detail,
+            thirdParty = detail,
             onDismiss = { viewModel.onSelectThirdPartyForDetail(null) },
             onEdit = {
                 viewModel.onOpenCreateDialog(isExpress = false, prefilledState = ThirdPartyFormState.fromEntity(detail))
@@ -335,9 +403,58 @@ fun SettingsThirdPartiesSubScreen(
                 viewModel.onDeleteThirdParty(detail.id)
                 onShowMessage("Tercero eliminado")
             },
+            onToggleFavorite = { isFav ->
+                viewModel.onToggleFavorite(detail.id, isFav)
+            },
             onExportPdf = {
                 viewModel.onExportPdf(context, detail) { msg ->
                     onShowMessage(msg)
+                }
+            }
+        )
+    }
+
+    // Dialog for Contact Permission Required / Denied
+    if (showPermissionDeniedDialog) {
+        AlertDialog(
+            onDismissRequest = { showPermissionDeniedDialog = false },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(20.dp),
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.ContactPhone, contentDescription = null, tint = Color(0xFF0284C7))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Permiso de Contactos Requerido", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = KashNavy)
+                }
+            },
+            text = {
+                Text(
+                    text = "Para seleccionar e importar el nombre, teléfono y correo electrónico de tus contactos directamente al directorio de terceros sin escribirlos manualmente, autoriza el permiso de lectura de contactos.",
+                    fontSize = 13.sp,
+                    color = Color(0xFF475569)
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showPermissionDeniedDialog = false
+                        try {
+                            val intent = Intent(
+                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.fromParts("package", context.packageName, null)
+                            )
+                            context.startActivity(intent)
+                        } catch (_: Exception) {}
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Abrir Ajustes", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPermissionDeniedDialog = false }) {
+                    Text("Cancelar", color = Color(0xFF64748B))
                 }
             }
         )
@@ -359,6 +476,7 @@ fun ThirdPartyCard(
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() }
@@ -367,99 +485,79 @@ fun ThirdPartyCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Icon Box with color
-            Box(
-                modifier = Modifier
-                    .size(46.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFE0F2FE)),
-                contentAlignment = Alignment.Center
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.weight(1f)
             ) {
-                Icon(
-                    imageVector = resolveThirdPartyIcon(entity.iconName, entity.category),
-                    contentDescription = null,
-                    tint = Color(0xFF0284C7),
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(14.dp))
-
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                // Category Avatar with Initials/Icon
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFFE0F2FE)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = entity.displayName,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.5.sp,
-                        color = Color(0xFF0F172A)
+                    Icon(
+                        imageVector = resolveThirdPartyIcon(entity.iconName, entity.category),
+                        contentDescription = null,
+                        tint = Color(0xFF0284C7),
+                        modifier = Modifier.size(24.dp)
                     )
                 }
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(4.dp),
-                        color = Color(0xFFF1F5F9)
-                    ) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = entity.fullDocument,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF334155),
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(4.dp),
-                        color = when (entity.category) {
-                            "CONCESIONARIO" -> Color(0xFFEEF2FF)
-                            "TIENDA_COMERCIO" -> Color(0xFFFEF3C7)
-                            "PROVEEDOR" -> Color(0xFFDCFCE7)
-                            else -> Color(0xFFF1F5F9)
-                        }
-                    ) {
-                        Text(
-                            text = entity.category,
-                            fontSize = 10.5.sp,
+                            text = entity.displayName,
                             fontWeight = FontWeight.Bold,
-                            color = when (entity.category) {
-                                "CONCESIONARIO" -> Color(0xFF4F46E5)
-                                "TIENDA_COMERCIO" -> Color(0xFFD97706)
-                                "PROVEEDOR" -> Color(0xFF16A34A)
-                                else -> Color(0xFF64748B)
-                            },
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            fontSize = 14.5.sp,
+                            color = KashNavy
                         )
                     }
-                }
 
-                if (!entity.primaryPhone.isNullOrBlank() || !entity.city.isNullOrBlank()) {
                     Text(
-                        text = listOfNotNull(entity.primaryPhone, entity.city).joinToString(" • "),
+                        text = "${entity.fullDocument} • ${entity.category}",
                         fontSize = 11.5.sp,
-                        color = Color(0xFF64748B)
+                        color = Color(0xFF64748B),
+                        fontWeight = FontWeight.Medium
                     )
+
+                    val phone = entity.primaryPhone
+                    if (!phone.isNullOrBlank()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Call,
+                                contentDescription = null,
+                                tint = Color(0xFF0284C7),
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = phone,
+                                fontSize = 11.sp,
+                                color = Color(0xFF0284C7),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
                 }
             }
 
-            // Quick Actions: PDF and Favorite
+            // Actions: Star Favorite & Quick PDF
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onExportPdf) {
                     Icon(
                         imageVector = Icons.Default.PictureAsPdf,
                         contentDescription = "PDF",
                         tint = Color(0xFFEF4444),
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(19.dp)
                     )
                 }
+
                 IconButton(onClick = onToggleFavorite) {
                     Icon(
                         imageVector = if (entity.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
@@ -470,103 +568,5 @@ fun ThirdPartyCard(
                 }
             }
         }
-    }
-}
-
-/**
- * Detailed Information Dialog for an inspected Third Party.
- */
-@Composable
-fun ThirdPartyDetailDialog(
-    entity: ThirdPartyEntity,
-    onDismiss: () -> Unit,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit,
-    onExportPdf: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = Color.White,
-        shape = RoundedCornerShape(20.dp),
-        title = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(entity.displayName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = KashNavy)
-                    Text("Código: ${entity.displayCode}", fontSize = 11.5.sp, color = Color(0xFF64748B))
-                }
-                IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color(0xFF64748B))
-                }
-            }
-        },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                HorizontalDivider(color = Color(0xFFF1F5F9))
-
-                DetailItemRow("Documento:", entity.fullDocument)
-                DetailItemRow("Tipo Persona:", if (entity.personType == "JURIDICA") "Jurídica" else "Natural")
-                DetailItemRow("Categoría:", entity.category)
-                DetailItemRow("Teléfono:", entity.primaryPhone)
-                DetailItemRow("Teléfono 2:", entity.secondaryPhone)
-                DetailItemRow("Correo:", entity.email)
-                DetailItemRow("Ciudad:", entity.city)
-                DetailItemRow("Dirección:", entity.address)
-                DetailItemRow("Plazo de Pago:", "${entity.paymentTermsDays} días ${if (entity.paymentTermsDays == 0) "(Contado)" else ""}")
-                DetailItemRow("Banco:", entity.defaultBank)
-                DetailItemRow("Cuenta:", if (!entity.bankAccountNumber.isNullOrBlank()) "${entity.bankAccountType ?: ""} ${entity.bankAccountNumber}" else null)
-                DetailItemRow("Notas:", entity.notes)
-            }
-        },
-        confirmButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                OutlinedButton(
-                    onClick = onExportPdf,
-                    border = BorderStroke(1.dp, Color(0xFFEF4444)),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("PDF", color = Color(0xFFEF4444), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-
-                Button(
-                    onClick = onEdit,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Icon(Icons.Default.Edit, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Editar", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Eliminar", color = Color(0xFFDC2626), fontSize = 12.sp)
-            }
-        }
-    )
-}
-
-@Composable
-private fun DetailItemRow(label: String, value: String?) {
-    if (value.isNullOrBlank()) return
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(label, fontWeight = FontWeight.SemiBold, fontSize = 12.5.sp, color = Color(0xFF64748B))
-        Text(value, fontWeight = FontWeight.Medium, fontSize = 12.5.sp, color = Color(0xFF0F172A))
     }
 }

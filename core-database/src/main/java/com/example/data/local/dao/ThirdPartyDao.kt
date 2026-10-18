@@ -65,6 +65,9 @@ interface ThirdPartyDao {
     @Query("DELETE FROM third_parties WHERE id = :id")
     suspend fun deleteThirdParty(id: String)
 
+    @Query("DELETE FROM third_parties WHERE id LIKE 'tp_seed_%' OR name LIKE '%Supermercados Éxito%' OR name LIKE '%Carulla%' OR name LIKE '%Terpel%' OR name LIKE '%Automotores Toyota%' OR name LIKE '%Los Coches%' OR name LIKE '%Servientrega%'")
+    suspend fun purgeLegacySeedThirdParties()
+
     @Query("SELECT COUNT(*) FROM third_parties WHERE userId = :userId AND isActive = 1")
     suspend fun countActiveThirdParties(userId: String = "user_default"): Int
 }

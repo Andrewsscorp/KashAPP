@@ -88,6 +88,9 @@ import com.example.presentation.fixedassets.ai.AssetAiSuggestionEngine
 import com.example.presentation.fixedassets.ai.AssetAiSuggestion
 import com.example.KashAppApplication
 import com.example.presentation.thirdparty.components.ThirdPartyFormModalSheet
+import com.example.presentation.thirdparty.components.SelectThirdPartyPopUpDialog
+import com.example.data.local.entity.ThirdPartyEntity
+import androidx.compose.material.icons.filled.List
 import com.example.presentation.thirdparty.model.ThirdPartyFormState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.runtime.collectAsState
@@ -113,6 +116,7 @@ fun CreateFixedAssetScreen(
     }
     val thirdParties by (thirdPartiesFlow?.collectAsState(initial = emptyList()) ?: remember { mutableStateOf(emptyList()) })
     var showExpressThirdPartySheet by remember { mutableStateOf(false) }
+    var showSelectThirdPartyDialog by remember { mutableStateOf(false) }
     var expressFormState by remember { mutableStateOf(ThirdPartyFormState(isExpressMode = true, category = "PROVEEDOR")) }
     var expressErrorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -129,6 +133,38 @@ fun CreateFixedAssetScreen(
     var showHistoricalDepreciationDialog by remember { mutableStateOf(false) }
     var calculatedHistoricalDepreciation by remember { mutableStateOf(0.0) }
     var elapsedMonthsForHistorical by remember { mutableStateOf(0) }
+
+    val persistSupplierIfNew = {
+        val trimmedSupplier = formState.supplier.trim()
+        if (trimmedSupplier.isNotBlank()) {
+            coroutineScope.launch {
+                try {
+                    val exists = thirdParties.any {
+                        it.name.equals(trimmedSupplier, ignoreCase = true) ||
+                        (it.commercialName?.equals(trimmedSupplier, ignoreCase = true) == true)
+                    }
+                    if (!exists) {
+                        val isVehicle = formState.categoryName.contains("Vehículo", ignoreCase = true)
+                        val generatedId = "tp_" + (kotlin.math.abs(trimmedSupplier.hashCode()) % 1000000).toString().padStart(6, '0')
+                        val autoEntity = ThirdPartyEntity(
+                            userId = "user_default",
+                            name = trimmedSupplier,
+                            normalizedName = ThirdPartyEntity.normalizeName(trimmedSupplier),
+                            personType = "NATURAL",
+                            idType = "CC",
+                            idNumber = generatedId,
+                            commercialName = trimmedSupplier,
+                            category = if (isVehicle) "CONCESIONARIO" else "PROVEEDOR",
+                            iconName = if (isVehicle) "DirectionsCar" else "Person",
+                            colorHex = "#0284C7",
+                            notes = "Registrado automáticamente desde Activos Fijos"
+                        )
+                        appContainer?.thirdPartyRepository?.saveThirdParty(autoEntity)
+                    }
+                } catch (_: Throwable) {}
+            }
+        }
+    }
 
     val handleSaveAttempt = {
         val acqDate = formState.acquisitionDate
@@ -151,9 +187,11 @@ fun CreateFixedAssetScreen(
                 elapsedMonthsForHistorical = elapsed
                 showHistoricalDepreciationDialog = true
             } else {
+                persistSupplierIfNew()
                 onSaveAsset(formState)
             }
         } else {
+            persistSupplierIfNew()
             onSaveAsset(formState)
         }
     }
@@ -1163,18 +1201,32 @@ fun CreateFixedAssetScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text("Proveedor / Concesionario", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                            TextButton(
-                                onClick = {
-                                    expressErrorMessage = null
-                                    expressFormState = ThirdPartyFormState(
-                                        name = formState.supplier,
-                                        isExpressMode = true,
-                                        category = if (formState.categoryName.contains("Vehículo", ignoreCase = true)) "CONCESIONARIO" else "PROVEEDOR"
-                                    )
-                                    showExpressThirdPartySheet = true
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Button(
+                                    onClick = { showSelectThirdPartyDialog = true },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+                                    shape = RoundedCornerShape(9.dp),
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                    modifier = Modifier.height(30.dp)
+                                ) {
+                                    Icon(Icons.Default.List, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Seleccionar", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                 }
-                            ) {
-                                Text("+ Crear Tercero rápido", color = Color(0xFF38BDF8), fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                                TextButton(
+                                    onClick = {
+                                        expressErrorMessage = null
+                                        expressFormState = ThirdPartyFormState(
+                                            name = formState.supplier,
+                                            isExpressMode = true,
+                                            category = if (formState.categoryName.contains("Vehículo", ignoreCase = true)) "CONCESIONARIO" else "PROVEEDOR"
+                                        )
+                                        showExpressThirdPartySheet = true
+                                    },
+                                    modifier = Modifier.height(30.dp)
+                                ) {
+                                    Text("+ Crear Rápido", color = Color(0xFF38BDF8), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
 
@@ -1623,6 +1675,7 @@ fun CreateFixedAssetScreen(
                             accumulatedDepreciation = calculatedHistoricalDepreciation,
                             currentMarketValue = remainingBookValue
                         )
+                        persistSupplierIfNew()
                         onSaveAsset(updated)
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = primaryBlue),
@@ -1635,6 +1688,7 @@ fun CreateFixedAssetScreen(
                 OutlinedButton(
                     onClick = {
                         showHistoricalDepreciationDialog = false
+                        persistSupplierIfNew()
                         onSaveAsset(formState)
                     },
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF94A3B8)),
@@ -1674,6 +1728,27 @@ fun CreateFixedAssetScreen(
             },
             onDismiss = { showExpressThirdPartySheet = false },
             errorMessage = expressErrorMessage
+        )
+    }
+
+    if (showSelectThirdPartyDialog) {
+        SelectThirdPartyPopUpDialog(
+            thirdParties = thirdParties,
+            onSelectThirdParty = { tp ->
+                formState = formState.copy(supplier = tp.displayName)
+                showSelectThirdPartyDialog = false
+            },
+            onOpenCreateNew = {
+                showSelectThirdPartyDialog = false
+                expressErrorMessage = null
+                expressFormState = ThirdPartyFormState(
+                    name = "",
+                    isExpressMode = true,
+                    category = if (formState.categoryName.contains("Vehículo", ignoreCase = true)) "CONCESIONARIO" else "PROVEEDOR"
+                )
+                showExpressThirdPartySheet = true
+            },
+            onDismiss = { showSelectThirdPartyDialog = false }
         )
     }
 }

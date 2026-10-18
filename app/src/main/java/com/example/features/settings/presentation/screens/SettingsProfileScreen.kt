@@ -79,6 +79,10 @@ fun SettingsProfileScreen(
     name: String,
     email: String,
     phone: String,
+    userIdDisplay: String = "",
+    authProvider: String = "Firebase Auth Seguro",
+    isEmailVerified: Boolean = true,
+    memberSince: String = "2026",
     onSaveProfile: (String, String, String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
@@ -207,13 +211,21 @@ fun SettingsProfileScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.clickable {
                                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                val clip = ClipData.newPlainText("ID", "USR-8849-2026-CO")
+                                val effectiveUid = userIdDisplay.ifBlank { "kash-user-default" }
+                                val clip = ClipData.newPlainText("ID", effectiveUid)
                                 clipboard.setPrimaryClip(clip)
-                                feedbackMessage = "ID de usuario copiado al portapapeles"
+                                feedbackMessage = "UID copiado: $effectiveUid"
                             }
                         ) {
+                            val displayUidText = if (userIdDisplay.length > 16) {
+                                "UID: ${userIdDisplay.take(8)}...${userIdDisplay.takeLast(4)}"
+                            } else if (userIdDisplay.isNotBlank()) {
+                                "UID: $userIdDisplay"
+                            } else {
+                                "UID: Cuenta Local KashApp"
+                            }
                             Text(
-                                text = "ID: USR-8849-2026-CO",
+                                text = displayUidText,
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.85f)
                             )
@@ -229,7 +241,7 @@ fun SettingsProfileScreen(
                         Spacer(modifier = Modifier.height(6.dp))
 
                         Surface(
-                            color = Color(0xFFDCFCE7),
+                            color = if (isEmailVerified) Color(0xFFDCFCE7) else Color(0xFFFEF3C7),
                             shape = RoundedCornerShape(20.dp)
                         ) {
                             Row(
@@ -238,15 +250,15 @@ fun SettingsProfileScreen(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Text(
-                                    text = "Identidad Verificada",
-                                    color = Color(0xFF15803D),
+                                    text = if (isEmailVerified) "Cuenta Verificada ($authProvider)" else "Verificación Pendiente",
+                                    color = if (isEmailVerified) Color(0xFF15803D) else Color(0xFFB45309),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Icon(
-                                    imageVector = Icons.Default.Check,
+                                    imageVector = if (isEmailVerified) Icons.Default.Check else Icons.Default.Shield,
                                     contentDescription = null,
-                                    tint = Color(0xFF15803D),
+                                    tint = if (isEmailVerified) Color(0xFF15803D) else Color(0xFFB45309),
                                     modifier = Modifier.size(13.dp)
                                 )
                             }

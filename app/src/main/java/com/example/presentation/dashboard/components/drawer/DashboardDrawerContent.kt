@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContactPhone
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.Flag
@@ -78,6 +79,7 @@ fun DashboardDrawerContent(
     onOpenFixedAssets: (() -> Unit)? = null,
     onOpenReceiptScanner: (() -> Unit)? = null,
     onOpenInformes: (() -> Unit)? = null,
+    onOpenThirdParties: (() -> Unit)? = null,
     onOpenUpcomingPayments: (() -> Unit)? = null,
     onOpenSharedExpenses: (() -> Unit)? = null,
     onOpenAuditVault: (() -> Unit)? = null,
@@ -450,6 +452,18 @@ fun DashboardDrawerContent(
                     onClick = {
                         onCloseDrawer()
                         onOpenFixedAssets?.invoke()
+                    }
+                )
+
+                DrawerMenuItem(
+                    icon = Icons.Default.ContactPhone,
+                    label = "Gestión de Terceros",
+                    badgeText = "Directorio",
+                    iconColor = Color(0xFF0284C7),
+                    isSelected = false,
+                    onClick = {
+                        onCloseDrawer()
+                        onOpenThirdParties?.invoke()
                     }
                 )
 

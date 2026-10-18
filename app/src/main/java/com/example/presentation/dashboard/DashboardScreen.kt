@@ -115,6 +115,7 @@ fun DashboardScreen(
     var showBudgetsModule by remember { mutableStateOf(false) }
     var showCurrencyTrmScreen by remember { mutableStateOf(false) }
     var showFixedAssetsModule by remember { mutableStateOf(false) }
+    var showThirdPartiesModule by remember { mutableStateOf(false) }
     var showReceiptScannerScreen by remember { mutableStateOf(false) }
     var showInformesModule by remember { mutableStateOf(false) }
     var showObjetivosModule by remember { mutableStateOf(false) }
@@ -179,6 +180,9 @@ fun DashboardScreen(
                 },
                 onOpenFixedAssets = {
                     showFixedAssetsModule = true
+                },
+                onOpenThirdParties = {
+                    showThirdPartiesModule = true
                 },
                 onOpenReceiptScanner = {
                     showReceiptScannerScreen = true
@@ -692,6 +696,26 @@ fun DashboardScreen(
             viewModel = fixedAssetsViewModel,
             onDismiss = {
                 showFixedAssetsModule = false
+                viewModel.onEvent(DashboardEvent.Refresh)
+            }
+        )
+    }
+
+    // Screen: Módulo Central de Terceros (Directorio Empresarial, Operaciones, Contactos y PDF)
+    if (showThirdPartiesModule) {
+        val context = LocalContext.current
+        val appContainer = (context.applicationContext as KashAppApplication).appContainer
+        val thirdPartyViewModel: com.example.presentation.thirdparty.ThirdPartyViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+            factory = com.example.presentation.thirdparty.ThirdPartyViewModel.Factory(
+                thirdPartyRepository = appContainer.thirdPartyRepository,
+                fixedAssetDao = appContainer.securityDatabase.fixedAssetDao(),
+                userId = viewModel.userId
+            )
+        )
+        com.example.presentation.thirdparty.ThirdPartiesHubScreen(
+            viewModel = thirdPartyViewModel,
+            onDismiss = {
+                showThirdPartiesModule = false
                 viewModel.onEvent(DashboardEvent.Refresh)
             }
         )

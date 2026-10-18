@@ -22,7 +22,12 @@ data class SettingsUiState(
     val statusMessage: String? = null,
     val userName: String = "Usuario",
     val userEmail: String = "",
-    val userPhone: String = ""
+    val userPhone: String = "",
+    val userIdDisplay: String = "",
+    val photoUrl: String? = null,
+    val authProvider: String = "Firebase Auth Seguro",
+    val isEmailVerified: Boolean = false,
+    val memberSince: String = ""
 )
 
 class SettingsViewModel(
@@ -40,6 +45,82 @@ class SettingsViewModel(
                 _uiState.update { it.copy(preferences = prefs) }
             }
         }
+        viewModelScope.launch {
+            loadRealUserProfile()
+        }
+        viewModelScope.launch {
+            authRepository?.getActiveSession()?.collect { session ->
+                if (session != null) {
+                    _uiState.update { current ->
+                        current.copy(
+                            userName = session.displayName?.takeIf { it.isNotBlank() } ?: current.userName,
+                            userEmail = session.email?.takeIf { it.isNotBlank() } ?: current.userEmail,
+                            userIdDisplay = session.userId,
+                            photoUrl = session.photoUrl ?: current.photoUrl,
+                            authProvider = session.authProvider,
+                            isEmailVerified = session.isEmailVerified
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun loadRealUserProfile() {
+        try {
+            val firebaseUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+            if (firebaseUser != null) {
+                val creationTime = firebaseUser.metadata?.creationTimestamp ?: 0L
+                val creationFormatted = if (creationTime > 0) {
+                    val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+                    sdf.format(java.util.Date(creationTime))
+                } else "2026"
+
+                val provider = firebaseUser.providerData.firstOrNull { it.providerId != "firebase" }?.providerId ?: "Firebase"
+                val providerName = when (provider) {
+                    "google.com" -> "Google Authentication"
+                    "password" -> "Correo y Contraseña"
+                    "phone" -> "Autenticación Telefónica"
+                    else -> "Firebase Auth Seguro"
+                }
+
+                _uiState.update { current ->
+                    current.copy(
+                        userName = firebaseUser.displayName?.takeIf { it.isNotBlank() } ?: current.userName.ifBlank { "Usuario KashApp" },
+                        userEmail = firebaseUser.email?.takeIf { it.isNotBlank() } ?: current.userEmail,
+                        userPhone = firebaseUser.phoneNumber?.takeIf { it.isNotBlank() } ?: current.userPhone,
+                        userIdDisplay = firebaseUser.uid,
+                        photoUrl = firebaseUser.photoUrl?.toString() ?: current.photoUrl,
+                        authProvider = providerName,
+                        isEmailVerified = firebaseUser.isEmailVerified,
+                        memberSince = creationFormatted
+                    )
+                }
+            } else {
+                viewModelScope.launch {
+                    val localSession = authRepository?.getCurrentSession()
+                    if (localSession != null) {
+                        _uiState.update { current ->
+                            current.copy(
+                                userName = localSession.displayName?.takeIf { it.isNotBlank() } ?: "Usuario KashApp",
+                                userEmail = localSession.email ?: "",
+                                userIdDisplay = localSession.userId,
+                                photoUrl = localSession.photoUrl,
+                                authProvider = localSession.authProvider,
+                                isEmailVerified = localSession.isEmailVerified
+                            )
+                        }
+                    } else {
+                        _uiState.update { current ->
+                            current.copy(
+                                userName = current.userName.ifBlank { "Usuario KashApp" },
+                                userIdDisplay = "KASH-" + (kotlin.math.abs(userId.hashCode()) % 100000).toString().padStart(5, '0')
+                            )
+                        }
+                    }
+                }
+            }
+        } catch (_: Throwable) {}
     }
 
     fun navigateToSubRoute(subRoute: SettingsSubRoute) {

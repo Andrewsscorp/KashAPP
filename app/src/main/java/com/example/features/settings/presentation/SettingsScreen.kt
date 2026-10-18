@@ -176,6 +176,10 @@ fun SettingsScreen(
                             name = uiState.userName,
                             email = uiState.userEmail,
                             phone = uiState.userPhone,
+                            userIdDisplay = uiState.userIdDisplay,
+                            authProvider = uiState.authProvider,
+                            isEmailVerified = uiState.isEmailVerified,
+                            memberSince = uiState.memberSince,
                             onSaveProfile = { newName, newEmail, newPhone ->
                                 viewModel.updateProfile(newName, newEmail, newPhone)
                             },

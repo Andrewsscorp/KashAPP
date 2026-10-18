@@ -98,127 +98,40 @@ class ThirdPartyRepositoryImpl(
 
     override suspend fun seedDefaultThirdPartiesIfNeeded(userId: String) {
         try {
-            val count = thirdPartyDao.countActiveThirdParties(userId)
-            if (count == 0) {
+            // Purgar cualquier semilla mock legacy previa de la base de datos
+            thirdPartyDao.purgeLegacySeedThirdParties()
+
+            val existingComun = thirdPartyDao.getThirdPartyById("tp_default_comun")
+                ?: thirdPartyDao.findDuplicate(userId, ThirdPartyEntity.normalizeName("Tercero Común"), "222222222")
+
+            if (existingComun == null) {
                 val now = System.currentTimeMillis()
-                val defaults = listOf(
-                    ThirdPartyEntity(
-                        id = "tp_seed_exito",
-                        userId = userId,
-                        name = "Supermercados Éxito S.A.",
-                        normalizedName = "supermercados exito s.a.",
-                        personType = "JURIDICA",
-                        idType = "NIT",
-                        idNumber = "890900608",
-                        verificationDigit = "9",
-                        commercialName = "Grupo Éxito",
-                        category = "TIENDA_COMERCIO",
-                        primaryPhone = "(604) 339-6565",
-                        email = "atencion@exito.com",
-                        city = "Medellín",
-                        iconName = "Storefront",
-                        colorHex = "#EAB308",
-                        isFavorite = true,
-                        createdAt = now,
-                        updatedAt = now
-                    ),
-                    ThirdPartyEntity(
-                        id = "tp_seed_carulla",
-                        userId = userId,
-                        name = "Carulla FreshMarket",
-                        normalizedName = "carulla freshmarket",
-                        personType = "JURIDICA",
-                        idType = "NIT",
-                        idNumber = "890900608",
-                        verificationDigit = "1",
-                        commercialName = "Carulla",
-                        category = "TIENDA_COMERCIO",
-                        primaryPhone = "(601) 745-5000",
-                        city = "Bogotá",
-                        iconName = "LocalGroceryStore",
-                        colorHex = "#16A34A",
-                        isFavorite = true,
-                        createdAt = now,
-                        updatedAt = now
-                    ),
-                    ThirdPartyEntity(
-                        id = "tp_seed_terpel",
-                        userId = userId,
-                        name = "Organización Terpel S.A.",
-                        normalizedName = "organizacion terpel s.a.",
-                        personType = "JURIDICA",
-                        idType = "NIT",
-                        idNumber = "860005224",
-                        verificationDigit = "6",
-                        commercialName = "Terpel",
-                        category = "TIENDA_COMERCIO",
-                        primaryPhone = "018000918027",
-                        city = "Bogotá",
-                        iconName = "LocalGasStation",
-                        colorHex = "#DC2626",
-                        isFavorite = true,
-                        createdAt = now,
-                        updatedAt = now
-                    ),
-                    ThirdPartyEntity(
-                        id = "tp_seed_toyota",
-                        userId = userId,
-                        name = "Automotores Toyota Colombia S.A.S.",
-                        normalizedName = "automotores toyota colombia s.a.s.",
-                        personType = "JURIDICA",
-                        idType = "NIT",
-                        idNumber = "860032904",
-                        verificationDigit = "2",
-                        commercialName = "Toyota Concesionario",
-                        category = "CONCESIONARIO",
-                        primaryPhone = "018000123692",
-                        city = "Bogotá",
-                        iconName = "DirectionsCar",
-                        colorHex = "#0284C7",
-                        isFavorite = true,
-                        createdAt = now,
-                        updatedAt = now
-                    ),
-                    ThirdPartyEntity(
-                        id = "tp_seed_loscoches",
-                        userId = userId,
-                        name = "Los Coches La Sabana S.A.S.",
-                        normalizedName = "los coches la sabana s.a.s.",
-                        personType = "JURIDICA",
-                        idType = "NIT",
-                        idNumber = "860505199",
-                        verificationDigit = "1",
-                        commercialName = "Concesionario Los Coches",
-                        category = "CONCESIONARIO",
-                        primaryPhone = "(601) 486-5000",
-                        city = "Bogotá",
-                        iconName = "DirectionsCar",
-                        colorHex = "#4F46E5",
-                        isFavorite = false,
-                        createdAt = now,
-                        updatedAt = now
-                    ),
-                    ThirdPartyEntity(
-                        id = "tp_seed_servientrega",
-                        userId = userId,
-                        name = "Servientrega S.A.",
-                        normalizedName = "servientrega s.a.",
-                        personType = "JURIDICA",
-                        idType = "NIT",
-                        idNumber = "860512330",
-                        verificationDigit = "3",
-                        commercialName = "Servientrega Envíos",
-                        category = "PROVEEDOR",
-                        primaryPhone = "(601) 770-0200",
-                        city = "Bogotá",
-                        iconName = "LocalShipping",
-                        colorHex = "#059669",
-                        isFavorite = false,
-                        createdAt = now,
-                        updatedAt = now
-                    )
+                val defaultComun = ThirdPartyEntity(
+                    id = "tp_default_comun",
+                    userId = userId,
+                    name = "Tercero Común",
+                    normalizedName = ThirdPartyEntity.normalizeName("Tercero Común"),
+                    personType = "NATURAL",
+                    idType = "CC",
+                    idNumber = "222222222",
+                    verificationDigit = null,
+                    commercialName = "Tercero Común",
+                    category = "PROVEEDOR",
+                    primaryPhone = null,
+                    secondaryPhone = null,
+                    email = null,
+                    address = null,
+                    city = null,
+                    paymentTermsDays = 0,
+                    iconName = "Person",
+                    colorHex = "#0284C7",
+                    notes = "Tercero genérico por defecto para transacciones comerciales y compras",
+                    isFavorite = false,
+                    isActive = true,
+                    createdAt = now,
+                    updatedAt = now
                 )
-                thirdPartyDao.insertThirdParties(defaults)
+                thirdPartyDao.insertThirdParty(defaultComun)
             }
         } catch (_: Throwable) {}
     }

@@ -192,13 +192,16 @@ class ThirdPartyRepositoryUnitTest {
     }
 
     @Test
-    fun seedDefaults_populatesInitialMerchantsAndDealers() = runBlocking {
+    fun seedDefaults_populatesOnlySingleDefaultTerceroComun() = runBlocking {
         repository.seedDefaultThirdPartiesIfNeeded("user-seed")
         val all = repository.observeThirdParties("user-seed").first()
 
-        assertTrue(all.isNotEmpty())
-        assertTrue(all.any { it.name.contains("Éxito", ignoreCase = true) })
-        assertTrue(all.any { it.name.contains("Toyota", ignoreCase = true) })
-        assertTrue(all.any { it.name.contains("Terpel", ignoreCase = true) })
+        assertEquals("Solo debe existir el Tercero Común por defecto", 1, all.size)
+        val defaultTp = all[0]
+        assertEquals("Tercero Común", defaultTp.name)
+        assertEquals("222222222", defaultTp.idNumber)
+        assertEquals("CC", defaultTp.idType)
+        assertFalse("No debe contener datos mockeados", all.any { it.name.contains("Éxito", ignoreCase = true) })
+        assertFalse("No debe contener datos mockeados", all.any { it.name.contains("Toyota", ignoreCase = true) })
     }
 }
