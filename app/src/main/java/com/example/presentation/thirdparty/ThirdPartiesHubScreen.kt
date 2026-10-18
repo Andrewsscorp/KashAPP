@@ -17,7 +17,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -106,17 +105,24 @@ import com.example.presentation.thirdparty.components.resolveThirdPartyIcon
 import com.example.presentation.thirdparty.model.ThirdPartyCategoryFilter
 import com.example.presentation.thirdparty.model.ThirdPartyFormState
 
+// ============================================================================
+// KASHAPP PREMIUM BLUE & DARK NAVY ENTERPRISE PALETTE (ASSETS & THIRD PARTIES)
+// ============================================================================
 private val PrimaryBlue = Color(0xFF0284C7)
-private val DarkNavy = Color(0xFF0F172A)
-private val LightIce = Color(0xFFF0F9FF)
-private val CardBg = Color.White
-private val BorderStrokeColor = Color(0xFFE2E8F0)
-private val TextMuted = Color(0xFF64748B)
+private val DeepNavyBg = Color(0xFF07101E)
+private val DarkNavy = Color(0xFF0B172B)
+private val SurfaceItem = Color(0xFF0F1E36)
+private val CardBg = Color(0xFF0B172B)
+private val BorderStrokeColor = Color(0xFF132B4F)
+private val BorderHighlight = Color(0xFF1E3A5F)
+private val AccentCyan = Color(0xFF38BDF8)
+private val TextPrimary = Color.White
+private val TextMuted = Color(0xFF8EA5C4)
 
 /**
  * Enterprise Central Hub Screen for Third Parties (Terceros, Proveedores, Concesionarios y Clientes).
  * Features real-time KPIs, multi-tab analytics, contact import with runtime permission handling,
- * PDF reports, search, filters, and fluid animations.
+ * dynamic role creation with Room persistence, PDF reports, and fluid animations in dark navy blue.
  */
 @Composable
 fun ThirdPartiesHubScreen(
@@ -139,64 +145,79 @@ fun ThirdPartiesHubScreen(
         if (contactUri != null) {
             try {
                 var contactName = ""
-                var contactPhone: String? = null
-                var contactEmail: String? = null
+                var contactPhone = ""
+                var contactEmail = ""
 
-                context.contentResolver.query(contactUri, null, null, null, null)?.use { cursor ->
-                    if (cursor.moveToFirst()) {
-                        val nameIndex = cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)
-                        val idIndex = cursor.getColumnIndex(ContactsContract.Contacts._ID)
-                        if (nameIndex != -1) contactName = cursor.getString(nameIndex) ?: ""
-                        val contactId = if (idIndex != -1) cursor.getString(idIndex) else null
+                val cursor = context.contentResolver.query(contactUri, null, null, null, null)
+                cursor?.use { c ->
+                    if (c.moveToFirst()) {
+                        val idIndex = c.getColumnIndex(ContactsContract.Contacts._ID)
+                        val nameIndex = c.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)
+                        val hasPhoneIndex = c.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER)
 
-                        if (contactId != null) {
-                            try {
-                                context.contentResolver.query(
-                                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                                    null,
-                                    "${ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ?",
-                                    arrayOf(contactId),
-                                    null
-                                )?.use { phoneCursor ->
-                                    if (phoneCursor.moveToFirst()) {
-                                        val phoneIdx = phoneCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
-                                        if (phoneIdx != -1) contactPhone = phoneCursor.getString(phoneIdx)
+                        val contactId = if (idIndex != -1) c.getString(idIndex) else ""
+                        contactName = if (nameIndex != -1) c.getString(nameIndex) ?: "" else ""
+                        val hasPhone = if (hasPhoneIndex != -1) c.getInt(hasPhoneIndex) > 0 else false
+
+                        if (hasPhone && contactId.isNotBlank()) {
+                            val phoneCursor = context.contentResolver.query(
+                                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                                null,
+                                ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+                                arrayOf(contactId),
+                                null
+                            )
+                            phoneCursor?.use { pCursor ->
+                                if (pCursor.moveToFirst()) {
+                                    val numberIdx = pCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                                    if (numberIdx != -1) {
+                                        contactPhone = pCursor.getString(numberIdx) ?: ""
                                     }
                                 }
-                            } catch (_: Exception) {}
+                            }
+                        }
 
-                            try {
-                                context.contentResolver.query(
-                                    ContactsContract.CommonDataKinds.Email.CONTENT_URI,
-                                    null,
-                                    "${ContactsContract.CommonDataKinds.Email.CONTACT_ID} = ?",
-                                    arrayOf(contactId),
-                                    null
-                                )?.use { emailCursor ->
-                                    if (emailCursor.moveToFirst()) {
-                                        val emailIdx = emailCursor.getColumnIndex(ContactsContract.CommonDataKinds.Email.DATA)
-                                        if (emailIdx != -1) contactEmail = emailCursor.getString(emailIdx)
+                        if (contactId.isNotBlank()) {
+                            val emailCursor = context.contentResolver.query(
+                                ContactsContract.CommonDataKinds.Email.CONTENT_URI,
+                                null,
+                                ContactsContract.CommonDataKinds.Email.CONTACT_ID + " = ?",
+                                arrayOf(contactId),
+                                null
+                            )
+                            emailCursor?.use { eCursor ->
+                                if (eCursor.moveToFirst()) {
+                                    val emailIdx = eCursor.getColumnIndex(ContactsContract.CommonDataKinds.Email.ADDRESS)
+                                    if (emailIdx != -1) {
+                                        contactEmail = eCursor.getString(emailIdx) ?: ""
                                     }
                                 }
-                            } catch (_: Exception) {}
+                            }
                         }
                     }
                 }
 
                 if (contactName.isNotBlank()) {
-                    viewModel.onImportFromContact(contactName, contactPhone, contactEmail)
-                    snackbarMessage = "Contacto '$contactName' importado con éxito"
+                    val prefilled = ThirdPartyFormState(
+                        name = contactName,
+                        commercialName = contactName,
+                        primaryPhone = contactPhone,
+                        email = contactEmail,
+                        isExpressMode = true,
+                        category = "PROVEEDOR"
+                    )
+                    viewModel.onOpenCreateDialog(isExpress = true, prefilledState = prefilled)
                 }
-            } catch (e: Exception) {
-                snackbarMessage = "No se pudo leer el contacto: ${e.message}"
+            } catch (_: Exception) {
+                snackbarMessage = "No fue posible leer el contacto seleccionado. Ingresa los datos manualmente."
             }
         }
     }
 
-    // Permission Launcher for READ_CONTACTS
+    // Permission Launcher
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
+    ) { isGranted: Boolean ->
         if (isGranted) {
             contactPickerLauncher.launch(null)
         } else {
@@ -204,7 +225,7 @@ fun ThirdPartiesHubScreen(
         }
     }
 
-    val triggerContactPicker: () -> Unit = {
+    val triggerContactPicker = {
         val hasPermission = ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.READ_CONTACTS
@@ -220,7 +241,7 @@ fun ThirdPartiesHubScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(LightIce)
+            .background(DeepNavyBg)
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
@@ -228,8 +249,8 @@ fun ThirdPartiesHubScreen(
         // 1. TOP APP BAR (ENTERPRISE HERO HEADER)
         // ==========================================
         Surface(
-            color = Color.White,
-            shadowElevation = 2.dp,
+            color = DarkNavy,
+            border = BorderStroke(1.dp, BorderStrokeColor),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -248,7 +269,7 @@ fun ThirdPartiesHubScreen(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Volver",
-                                tint = DarkNavy
+                                tint = TextPrimary
                             )
                         }
                         Spacer(modifier = Modifier.width(4.dp))
@@ -258,18 +279,18 @@ fun ThirdPartiesHubScreen(
                                     text = "Gestión de Terceros",
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = DarkNavy
+                                    color = TextPrimary
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Surface(
-                                    color = Color(0xFFE0F2FE),
+                                    color = Color(0xFF0F2B48),
                                     shape = RoundedCornerShape(6.dp)
                                 ) {
                                     Text(
                                         text = "${uiState.thirdParties.size}",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = PrimaryBlue,
+                                        color = AccentCyan,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                     )
                                 }
@@ -305,14 +326,15 @@ fun ThirdPartiesHubScreen(
                         onClick = triggerContactPicker,
                         shape = RoundedCornerShape(10.dp),
                         border = BorderStroke(1.dp, PrimaryBlue),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color(0xFF0F2B48)),
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                         modifier = Modifier
                             .weight(1f)
                             .height(36.dp)
                     ) {
-                        Icon(Icons.Default.ContactPhone, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(15.dp))
+                        Icon(Icons.Default.ContactPhone, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(15.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Importar Contacto", fontSize = 12.sp, color = PrimaryBlue, fontWeight = FontWeight.SemiBold)
+                        Text("Importar Contacto", fontSize = 12.sp, color = AccentCyan, fontWeight = FontWeight.SemiBold)
                     }
 
                     OutlinedButton(
@@ -327,15 +349,16 @@ fun ThirdPartiesHubScreen(
                             }
                         },
                         shape = RoundedCornerShape(10.dp),
-                        border = BorderStroke(1.dp, Color(0xFFEF4444)),
+                        border = BorderStroke(1.dp, Color(0xFF7F1D1D)),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color(0xFF2D1214)),
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                         modifier = Modifier
                             .weight(1f)
                             .height(36.dp)
                     ) {
-                        Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(15.dp))
+                        Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = Color(0xFFFCA5A5), modifier = Modifier.size(15.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Exportar PDF", fontSize = 12.sp, color = Color(0xFFEF4444), fontWeight = FontWeight.SemiBold)
+                        Text("Exportar PDF", fontSize = 12.sp, color = Color(0xFFFCA5A5), fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -372,13 +395,13 @@ fun ThirdPartiesHubScreen(
                 title = "Tiendas",
                 count = merchantsCount,
                 icon = Icons.Default.Storefront,
-                gradient = listOf(Color(0xFF16A34A), Color(0xFF15803D))
+                gradient = listOf(Color(0xFF0D9488), Color(0xFF0F766E))
             )
             HubKpiCard(
                 title = "Favoritos",
                 count = favoritesCount,
                 icon = Icons.Default.Star,
-                gradient = listOf(Color(0xFFEAB308), Color(0xFFCA8A04))
+                gradient = listOf(Color(0xFFD97706), Color(0xFFB45309))
             )
         }
 
@@ -386,8 +409,9 @@ fun ThirdPartiesHubScreen(
         // 3. SEGMENTED HUB TABS (IOS STYLE)
         // ==========================================
         Surface(
-            color = Color(0xFFE2E8F0),
+            color = DarkNavy,
             shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.dp, BorderStrokeColor),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 4.dp)
@@ -402,9 +426,8 @@ fun ThirdPartiesHubScreen(
                 tabs.forEachIndexed { index, label ->
                     val isSelected = selectedTab == index
                     Surface(
-                        color = if (isSelected) Color.White else Color.Transparent,
+                        color = if (isSelected) PrimaryBlue else Color.Transparent,
                         shape = RoundedCornerShape(11.dp),
-                        shadowElevation = if (isSelected) 2.dp else 0.dp,
                         modifier = Modifier
                             .weight(1f)
                             .clickable { selectedTab = index }
@@ -413,7 +436,7 @@ fun ThirdPartiesHubScreen(
                             text = label,
                             fontSize = 12.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) PrimaryBlue else TextMuted,
+                            color = if (isSelected) Color.White else TextMuted,
                             modifier = Modifier.padding(vertical = 7.dp),
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
@@ -425,8 +448,9 @@ fun ThirdPartiesHubScreen(
         // Feedback Banner
         if (!snackbarMessage.isNullOrBlank()) {
             Surface(
-                color = Color(0xFFDCFCE7),
+                color = Color(0xFF064E3B),
                 shape = RoundedCornerShape(10.dp),
+                border = BorderStroke(1.dp, Color(0xFF059669)),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 6.dp)
@@ -439,11 +463,11 @@ fun ThirdPartiesHubScreen(
                     Text(
                         text = snackbarMessage ?: "",
                         fontSize = 12.5.sp,
-                        color = Color(0xFF15803D),
+                        color = Color(0xFFA7F3D0),
                         fontWeight = FontWeight.SemiBold
                     )
                     IconButton(onClick = { snackbarMessage = null }, modifier = Modifier.size(20.dp)) {
-                        Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color(0xFF15803D), modifier = Modifier.size(14.dp))
+                        Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color(0xFFA7F3D0), modifier = Modifier.size(14.dp))
                     }
                 }
             }
@@ -474,8 +498,8 @@ fun ThirdPartiesHubScreen(
                             OutlinedTextField(
                                 value = uiState.searchQuery,
                                 onValueChange = { viewModel.onSearchQueryChange(it) },
-                                placeholder = { Text("Buscar por nombre, NIT, teléfono, ciudad...", fontSize = 12.5.sp) },
-                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = PrimaryBlue) },
+                                placeholder = { Text("Buscar por nombre, NIT, teléfono, ciudad...", fontSize = 12.5.sp, color = TextMuted) },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = AccentCyan) },
                                 trailingIcon = {
                                     if (uiState.searchQuery.isNotBlank()) {
                                         IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
@@ -486,10 +510,12 @@ fun ThirdPartiesHubScreen(
                                 singleLine = true,
                                 shape = RoundedCornerShape(12.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedContainerColor = Color.White,
-                                    unfocusedContainerColor = Color.White,
+                                    focusedContainerColor = DarkNavy,
+                                    unfocusedContainerColor = DarkNavy,
                                     focusedBorderColor = PrimaryBlue,
-                                    unfocusedBorderColor = BorderStrokeColor
+                                    unfocusedBorderColor = BorderStrokeColor,
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White
                                 ),
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -502,13 +528,17 @@ fun ThirdPartiesHubScreen(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 ThirdPartyCategoryFilter.entries.forEach { filter ->
+                                    val isFilterSel = uiState.selectedFilter == filter
                                     FilterChip(
-                                        selected = uiState.selectedFilter == filter,
+                                        selected = isFilterSel,
                                         onClick = { viewModel.onSelectFilter(filter) },
                                         label = { Text(filter.label, fontSize = 11.5.sp) },
+                                        border = BorderStroke(1.dp, if (isFilterSel) AccentCyan else BorderStrokeColor),
                                         colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = Color(0xFFE0F2FE),
-                                            selectedLabelColor = PrimaryBlue
+                                            selectedContainerColor = PrimaryBlue,
+                                            selectedLabelColor = Color.White,
+                                            containerColor = DarkNavy,
+                                            labelColor = TextMuted
                                         )
                                     )
                                 }
@@ -535,7 +565,7 @@ fun ThirdPartiesHubScreen(
                                         text = "No se encontraron terceros registrados",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp,
-                                        color = DarkNavy
+                                        color = TextPrimary
                                     )
                                     Text(
                                         text = "Usa el botón '+ Nuevo' o importa desde tus contactos.",
@@ -582,14 +612,14 @@ fun ThirdPartiesHubScreen(
                             text = "OPERACIONES Y VINCULACIONES",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = PrimaryBlue,
+                            color = AccentCyan,
                             letterSpacing = 0.8.sp
                         )
 
                         uiState.thirdParties.forEach { tp ->
                             Card(
                                 shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                colors = CardDefaults.cardColors(containerColor = DarkNavy),
                                 border = BorderStroke(1.dp, BorderStrokeColor),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
@@ -599,14 +629,14 @@ fun ThirdPartiesHubScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(tp.displayName, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = DarkNavy)
+                                        Text(tp.displayName, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = TextPrimary)
                                         Surface(
-                                            color = Color(0xFFE0F2FE),
+                                            color = Color(0xFF0F2B48),
                                             shape = RoundedCornerShape(6.dp)
                                         ) {
                                             Text(
                                                 text = tp.category,
-                                                color = PrimaryBlue,
+                                                color = AccentCyan,
                                                 fontSize = 10.5.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -623,7 +653,7 @@ fun ThirdPartiesHubScreen(
                                             text = "Condición de crédito: ${tp.paymentTermsDays} días plazo acordado",
                                             fontSize = 11.5.sp,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = Color(0xFF0284C7)
+                                            color = AccentCyan
                                         )
                                     }
                                     if (!tp.defaultBank.isNullOrBlank()) {
@@ -652,57 +682,57 @@ fun ThirdPartiesHubScreen(
                             text = "ANÁLISIS Y COMPOSICIÓN DEL DIRECTORIO",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = PrimaryBlue,
+                            color = AccentCyan,
                             letterSpacing = 0.8.sp
                         )
 
                         Card(
                             shape = RoundedCornerShape(18.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            colors = CardDefaults.cardColors(containerColor = DarkNavy),
                             border = BorderStroke(1.dp, BorderStrokeColor),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Text("Composición por Tipo de Persona", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = DarkNavy)
+                                Text("Composición por Tipo de Persona", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = TextPrimary)
 
                                 val naturalCount = uiState.thirdParties.count { it.personType == "NATURAL" }
                                 val juridicaCount = uiState.thirdParties.count { it.personType == "JURIDICA" }
                                 val safeTotal = if (totalCount > 0) totalCount.toFloat() else 1f
 
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text("Persona Natural: $naturalCount", fontSize = 12.5.sp, color = DarkNavy)
-                                    Text("${((naturalCount / safeTotal) * 100).toInt()}%", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                                    Text("Persona Natural: $naturalCount", fontSize = 12.5.sp, color = TextMuted)
+                                    Text("${((naturalCount / safeTotal) * 100).toInt()}%", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = AccentCyan)
                                 }
                                 LinearProgressIndicator(
                                     progress = { naturalCount / safeTotal },
                                     modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
                                     color = PrimaryBlue,
-                                    trackColor = Color(0xFFE2E8F0)
+                                    trackColor = Color(0xFF1E293B)
                                 )
 
                                 Spacer(modifier = Modifier.height(4.dp))
 
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text("Persona Jurídica (Empresas): $juridicaCount", fontSize = 12.5.sp, color = DarkNavy)
-                                    Text("${((juridicaCount / safeTotal) * 100).toInt()}%", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4F46E5))
+                                    Text("Persona Jurídica (Empresas): $juridicaCount", fontSize = 12.5.sp, color = TextMuted)
+                                    Text("${((juridicaCount / safeTotal) * 100).toInt()}%", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF818CF8))
                                 }
                                 LinearProgressIndicator(
                                     progress = { juridicaCount / safeTotal },
                                     modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
-                                    color = Color(0xFF4F46E5),
-                                    trackColor = Color(0xFFE2E8F0)
+                                    color = Color(0xFF818CF8),
+                                    trackColor = Color(0xFF1E293B)
                                 )
                             }
                         }
 
                         Card(
                             shape = RoundedCornerShape(18.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            colors = CardDefaults.cardColors(containerColor = DarkNavy),
                             border = BorderStroke(1.dp, BorderStrokeColor),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text("Resumen de Información Bancaria", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = DarkNavy)
+                                Text("Resumen de Información Bancaria", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = TextPrimary)
                                 val withBank = uiState.thirdParties.count { !it.defaultBank.isNullOrBlank() || !it.bankAccountNumber.isNullOrBlank() }
                                 Text("• Terceros con cuenta bancaria registrada: $withBank de $totalCount", fontSize = 12.5.sp, color = TextMuted)
                                 val withCredit = uiState.thirdParties.count { it.paymentTermsDays > 0 }
@@ -729,11 +759,15 @@ fun ThirdPartiesHubScreen(
             },
             onDismiss = { viewModel.onDismissCreateDialog() },
             onImportContactClick = triggerContactPicker,
-            errorMessage = uiState.errorMessage
+            errorMessage = uiState.errorMessage,
+            availableCategories = uiState.categories,
+            onCreateCategory = { name, code, icon, color ->
+                viewModel.onCreateCategory(name, code, icon, color)
+            }
         )
     }
 
-    // Detail Dialog (iOS styled)
+    // Detail Dialog (iOS styled in dark navy blues)
     uiState.selectedThirdPartyForDetail?.let { detail ->
         ThirdPartyDetailDialog(
             thirdParty = detail,
@@ -761,20 +795,20 @@ fun ThirdPartiesHubScreen(
     if (showPermissionDeniedDialog) {
         AlertDialog(
             onDismissRequest = { showPermissionDeniedDialog = false },
-            containerColor = Color.White,
+            containerColor = DarkNavy,
             shape = RoundedCornerShape(20.dp),
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.ContactPhone, contentDescription = null, tint = PrimaryBlue)
+                    Icon(Icons.Default.ContactPhone, contentDescription = null, tint = AccentCyan)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Permiso de Contactos Requerido", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = DarkNavy)
+                    Text("Permiso de Contactos Requerido", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextPrimary)
                 }
             },
             text = {
                 Text(
                     text = "Para seleccionar e importar automáticamente el nombre, teléfono y correo de tus contactos a la gestión de terceros, autoriza el permiso de lectura de contactos.",
                     fontSize = 13.sp,
-                    color = Color(0xFF475569)
+                    color = TextMuted
                 )
             },
             confirmButton = {
@@ -818,6 +852,7 @@ private fun HubKpiCard(
     Card(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        border = BorderStroke(1.dp, BorderHighlight),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = modifier
             .width(135.dp)
@@ -875,7 +910,6 @@ private fun HubThirdPartyCard(
     onExportPdf: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.98f else 1f,
@@ -885,7 +919,7 @@ private fun HubThirdPartyCard(
 
     Card(
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = DarkNavy),
         border = BorderStroke(1.dp, BorderStrokeColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         modifier = modifier
@@ -911,13 +945,13 @@ private fun HubThirdPartyCard(
                     modifier = Modifier
                         .size(46.dp)
                         .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFFE0F2FE)),
+                        .background(Color(0xFF0F2B48)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = resolveThirdPartyIcon(entity.iconName, entity.category),
                         contentDescription = null,
-                        tint = PrimaryBlue,
+                        tint = AccentCyan,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -927,7 +961,7 @@ private fun HubThirdPartyCard(
                         text = entity.displayName,
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.5.sp,
-                        color = DarkNavy
+                        color = TextPrimary
                     )
                     Text(
                         text = "${entity.fullDocument} • ${entity.category}",
@@ -942,14 +976,14 @@ private fun HubThirdPartyCard(
                             Icon(
                                 imageVector = Icons.Default.Call,
                                 contentDescription = null,
-                                tint = PrimaryBlue,
+                                tint = AccentCyan,
                                 modifier = Modifier.size(11.dp)
                             )
                             Spacer(modifier = Modifier.width(3.dp))
                             Text(
                                 text = phone,
                                 fontSize = 11.sp,
-                                color = PrimaryBlue,
+                                color = AccentCyan,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -972,7 +1006,7 @@ private fun HubThirdPartyCard(
                     Icon(
                         imageVector = if (entity.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
                         contentDescription = "Favorito",
-                        tint = if (entity.isFavorite) Color(0xFFEAB308) else Color(0xFF94A3B8),
+                        tint = if (entity.isFavorite) Color(0xFFEAB308) else Color(0xFF64748B),
                         modifier = Modifier.size(22.dp)
                     )
                 }

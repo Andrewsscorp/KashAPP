@@ -386,7 +386,11 @@ fun SettingsThirdPartiesSubScreen(
             },
             onDismiss = { viewModel.onDismissCreateDialog() },
             onImportContactClick = triggerContactPicker,
-            errorMessage = uiState.errorMessage
+            errorMessage = uiState.errorMessage,
+            availableCategories = uiState.categories,
+            onCreateCategory = { name, code, icon, color ->
+                viewModel.onCreateCategory(name, code, icon, color)
+            }
         )
     }
 

@@ -1,14 +1,18 @@
 package com.example.data.repository
 
+import com.example.data.local.dao.ThirdPartyCategoryDao
 import com.example.data.local.dao.ThirdPartyDao
+import com.example.data.local.entity.ThirdPartyCategoryEntity
 import com.example.data.local.entity.ThirdPartyEntity
 import com.example.domain.repository.DuplicateThirdPartyException
 import com.example.domain.repository.ThirdPartyRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import java.util.UUID
 
 class ThirdPartyRepositoryImpl(
-    private val thirdPartyDao: ThirdPartyDao
+    private val thirdPartyDao: ThirdPartyDao,
+    private val thirdPartyCategoryDao: ThirdPartyCategoryDao? = null
 ) : ThirdPartyRepository {
 
     override fun observeThirdParties(userId: String): Flow<List<ThirdPartyEntity>> {
@@ -29,6 +33,46 @@ class ThirdPartyRepositoryImpl(
             thirdPartyDao.getActiveThirdPartiesFlow(userId)
         } else {
             thirdPartyDao.searchThirdPartiesFlow(userId, trimmed)
+        }
+    }
+
+    override fun observeCategories(userId: String): Flow<List<ThirdPartyCategoryEntity>> {
+        return thirdPartyCategoryDao?.getCategoriesFlow(userId) ?: flowOf(emptyList())
+    }
+
+    override suspend fun getCategories(userId: String): List<ThirdPartyCategoryEntity> {
+        return thirdPartyCategoryDao?.getCategories(userId) ?: emptyList()
+    }
+
+    override suspend fun createCategory(
+        userId: String,
+        name: String,
+        code: String,
+        iconName: String,
+        colorHex: String
+    ): Result<ThirdPartyCategoryEntity> {
+        return try {
+            val trimmedName = name.trim()
+            if (trimmedName.isBlank()) {
+                return Result.failure(IllegalArgumentException("El nombre del rol o categoría no puede estar vacío."))
+            }
+            val finalCode = if (code.isNotBlank()) code.trim().uppercase() else {
+                trimmedName.uppercase().replace(Regex("[^A-Z0-9_]"), "_")
+            }
+            val entity = ThirdPartyCategoryEntity(
+                id = "cat_custom_${UUID.randomUUID()}",
+                userId = userId,
+                name = trimmedName,
+                code = finalCode,
+                iconName = iconName.ifBlank { "Business" },
+                colorHex = colorHex.ifBlank { "#0284C7" },
+                isSystem = false,
+                createdAt = System.currentTimeMillis()
+            )
+            thirdPartyCategoryDao?.insertCategory(entity)
+            Result.success(entity)
+        } catch (t: Throwable) {
+            Result.failure(t)
         }
     }
 
@@ -101,8 +145,8 @@ class ThirdPartyRepositoryImpl(
             // Purgar cualquier semilla mock legacy previa de la base de datos
             thirdPartyDao.purgeLegacySeedThirdParties()
 
-            val existingComun = thirdPartyDao.getThirdPartyById("tp_default_comun")
-                ?: thirdPartyDao.findDuplicate(userId, ThirdPartyEntity.normalizeName("Tercero Común"), "222222222")
+            val existingComun = thirdPartyDao.findDuplicate(userId, ThirdPartyEntity.normalizeName("Tercero Común"), "222222222")
+                ?: thirdPartyDao.getThirdPartyById("tp_default_comun")
 
             if (existingComun == null) {
                 val now = System.currentTimeMillis()
@@ -132,6 +176,37 @@ class ThirdPartyRepositoryImpl(
                     updatedAt = now
                 )
                 thirdPartyDao.insertThirdParty(defaultComun)
+            }
+
+            // Seed default categories if needed
+            if (thirdPartyCategoryDao != null) {
+                val existingCats = thirdPartyCategoryDao.getCategories(userId)
+                if (existingCats.isEmpty()) {
+                    val now = System.currentTimeMillis()
+                    val defaults = listOf(
+                        Triple("Proveedor", "PROVEEDOR", "Storefront"),
+                        Triple("Concesionario", "CONCESIONARIO", "DirectionsCar"),
+                        Triple("Tienda / Comercio", "TIENDA_COMERCIO", "Business"),
+                        Triple("Cliente", "CLIENTE", "Person"),
+                        Triple("Acreedor", "ACREEDOR", "AccountBalance"),
+                        Triple("Empleado", "EMPLEADO", "Groups"),
+                        Triple("Taller / Servicio", "TALLER_SERVICIO", "Build"),
+                        Triple("Contratista", "CONTRATISTA", "AssignmentInd")
+                    )
+                    val entities = defaults.map { (name, code, icon) ->
+                        ThirdPartyCategoryEntity(
+                            id = "cat_sys_$code",
+                            userId = "system",
+                            name = name,
+                            code = code,
+                            iconName = icon,
+                            colorHex = "#0284C7",
+                            isSystem = true,
+                            createdAt = now
+                        )
+                    }
+                    thirdPartyCategoryDao.insertCategories(entities)
+                }
             }
         } catch (_: Throwable) {}
     }

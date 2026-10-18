@@ -33,12 +33,29 @@ class ThirdPartyRepositoryUnitTest {
         database = Room.inMemoryDatabaseBuilder(context, SecurityDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-        repository = ThirdPartyRepositoryImpl(database.thirdPartyDao())
+        repository = ThirdPartyRepositoryImpl(database.thirdPartyDao(), database.thirdPartyCategoryDao())
     }
 
     @After
     fun tearDown() {
         database.close()
+    }
+
+    @Test
+    fun createCategory_persistsAndObservesCorrectly() = runBlocking {
+        val result = repository.createCategory(
+            userId = "user-1",
+            name = "Distribuidor Mayorista",
+            iconName = "Storefront",
+            colorHex = "#0284C7"
+        )
+        assertTrue(result.isSuccess)
+        val created = result.getOrNull()
+        assertNotNull(created)
+        assertEquals("DISTRIBUIDOR_MAYORISTA", created?.code)
+
+        val categories = repository.observeCategories("user-1").first()
+        assertTrue(categories.any { it.code == "DISTRIBUIDOR_MAYORISTA" && it.name == "Distribuidor Mayorista" })
     }
 
     @Test

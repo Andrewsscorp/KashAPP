@@ -106,15 +106,28 @@ fun CreateFixedAssetScreen(
     onCreateCategory: ((name: String, code: String, colorHex: String, iconName: String) -> Unit)? = null,
     onSaveAsset: (FixedAssetFormState) -> Unit,
     onDismiss: () -> Unit,
+    userId: String = "user_default",
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val appContainer = remember(context) { (context.applicationContext as? KashAppApplication)?.appContainer }
-    val thirdPartiesFlow = remember(appContainer) {
-        appContainer?.thirdPartyRepository?.observeThirdParties("user_default")
+
+    // Garantizar que la base de datos de terceros para este usuario contenga al menos "Tercero Común"
+    androidx.compose.runtime.LaunchedEffect(userId, appContainer) {
+        appContainer?.thirdPartyRepository?.seedDefaultThirdPartiesIfNeeded(userId)
+    }
+
+    val thirdPartiesFlow = remember(appContainer, userId) {
+        appContainer?.thirdPartyRepository?.observeThirdParties(userId)
     }
     val thirdParties by (thirdPartiesFlow?.collectAsState(initial = emptyList()) ?: remember { mutableStateOf(emptyList()) })
+
+    val thirdPartyCategoriesFlow = remember(appContainer, userId) {
+        appContainer?.thirdPartyRepository?.observeCategories(userId)
+    }
+    val thirdPartyCategories by (thirdPartyCategoriesFlow?.collectAsState(initial = emptyList()) ?: remember { mutableStateOf(emptyList()) })
+
     var showExpressThirdPartySheet by remember { mutableStateOf(false) }
     var showSelectThirdPartyDialog by remember { mutableStateOf(false) }
     var expressFormState by remember { mutableStateOf(ThirdPartyFormState(isExpressMode = true, category = "PROVEEDOR")) }
@@ -147,7 +160,7 @@ fun CreateFixedAssetScreen(
                         val isVehicle = formState.categoryName.contains("Vehículo", ignoreCase = true)
                         val generatedId = "tp_" + (kotlin.math.abs(trimmedSupplier.hashCode()) % 1000000).toString().padStart(6, '0')
                         val autoEntity = ThirdPartyEntity(
-                            userId = "user_default",
+                            userId = userId,
                             name = trimmedSupplier,
                             normalizedName = ThirdPartyEntity.normalizeName(trimmedSupplier),
                             personType = "NATURAL",
@@ -1715,7 +1728,7 @@ fun CreateFixedAssetScreen(
                     return@ThirdPartyFormModalSheet
                 }
                 coroutineScope.launch {
-                    val entity = expressFormState.toEntity("user_default")
+                    val entity = expressFormState.toEntity(userId)
                     val result = appContainer?.thirdPartyRepository?.saveThirdParty(entity)
                     result?.onSuccess { saved ->
                         formState = formState.copy(supplier = saved.displayName)
@@ -1727,7 +1740,19 @@ fun CreateFixedAssetScreen(
                 }
             },
             onDismiss = { showExpressThirdPartySheet = false },
-            errorMessage = expressErrorMessage
+            errorMessage = expressErrorMessage,
+            availableCategories = thirdPartyCategories,
+            onCreateCategory = { catName, catCode, catIcon, catColor ->
+                coroutineScope.launch {
+                    appContainer?.thirdPartyRepository?.createCategory(
+                        userId = userId,
+                        name = catName,
+                        code = catCode,
+                        iconName = catIcon,
+                        colorHex = catColor
+                    )
+                }
+            }
         )
     }
 

@@ -678,6 +678,48 @@ object RoomLocalDb {
         }
     }
 
+    val MIGRATION_36_37 = object : androidx.room.migration.Migration(36, 37) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+            try {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `third_party_categories` (
+                        `id` TEXT NOT NULL,
+                        `userId` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `code` TEXT NOT NULL,
+                        `iconName` TEXT NOT NULL DEFAULT 'Business',
+                        `colorHex` TEXT NOT NULL DEFAULT '#0284C7',
+                        `isSystem` INTEGER NOT NULL DEFAULT 0,
+                        `createdAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_third_party_categories_userId` ON `third_party_categories` (`userId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_third_party_categories_code` ON `third_party_categories` (`code`)")
+
+                val now = System.currentTimeMillis()
+                val defaults = listOf(
+                    Triple("Proveedor", "PROVEEDOR", "Storefront"),
+                    Triple("Concesionario", "CONCESIONARIO", "DirectionsCar"),
+                    Triple("Tienda / Comercio", "TIENDA_COMERCIO", "Business"),
+                    Triple("Cliente", "CLIENTE", "Person"),
+                    Triple("Acreedor", "ACREEDOR", "AccountBalance"),
+                    Triple("Empleado", "EMPLEADO", "Groups"),
+                    Triple("Taller / Servicio", "TALLER_SERVICIO", "Build"),
+                    Triple("Contratista", "CONTRATISTA", "AssignmentInd")
+                )
+                for ((name, code, icon) in defaults) {
+                    db.execSQL("""
+                        INSERT OR IGNORE INTO `third_party_categories` (`id`, `userId`, `name`, `code`, `iconName`, `colorHex`, `isSystem`, `createdAt`)
+                        VALUES ('cat_sys_$code', 'system', '$name', '$code', '$icon', '#0284C7', 1, $now)
+                    """.trimIndent())
+                }
+            } catch (e: Throwable) {
+                Log.w(TAG, "Notice running MIGRATION_36_37: ${e.message}")
+            }
+        }
+    }
+
     private fun tryCreateEncryptedDb(context: Context, passphraseBytes: ByteArray): SecurityDatabase? {
         return try {
             // Attempt to load native SQLCipher library if available
@@ -692,7 +734,7 @@ object RoomLocalDb {
                 ENCRYPTED_DB_NAME
             )
                 .openHelperFactory(openHelperFactory)
-                .addMigrations(MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33, MIGRATION_33_34, MIGRATION_34_35, MIGRATION_35_36)
+                .addMigrations(MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33, MIGRATION_33_34, MIGRATION_34_35, MIGRATION_35_36, MIGRATION_36_37)
                 .addCallback(foreignKeyCallback)
                 .build()
 

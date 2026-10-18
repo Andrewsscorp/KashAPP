@@ -99,6 +99,7 @@ data class ThirdPartyFormState(
 data class ThirdPartyUiState(
     val thirdParties: List<ThirdPartyEntity> = emptyList(),
     val filteredList: List<ThirdPartyEntity> = emptyList(),
+    val categories: List<com.example.data.local.entity.ThirdPartyCategoryEntity> = emptyList(),
     val searchQuery: String = "",
     val selectedFilter: ThirdPartyCategoryFilter = ThirdPartyCategoryFilter.TODOS,
     val isLoading: Boolean = false,

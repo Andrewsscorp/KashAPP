@@ -204,9 +204,14 @@ class AppContainer(private val context: Context) {
         securityDatabase.thirdPartyDao()
     }
 
+    val thirdPartyCategoryDao: com.example.data.local.dao.ThirdPartyCategoryDao by lazy {
+        securityDatabase.thirdPartyCategoryDao()
+    }
+
     val thirdPartyRepository: com.example.domain.repository.ThirdPartyRepository by lazy {
         com.example.data.repository.ThirdPartyRepositoryImpl(
-            thirdPartyDao = thirdPartyDao
+            thirdPartyDao = thirdPartyDao,
+            thirdPartyCategoryDao = thirdPartyCategoryDao
         )
     }
 

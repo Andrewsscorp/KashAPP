@@ -46,6 +46,30 @@ class ThirdPartyViewModel(
                 }
             }
         }
+
+        viewModelScope.launch {
+            thirdPartyRepository.observeCategories(userId).collect { cats ->
+                _uiState.update { current ->
+                    current.copy(categories = cats)
+                }
+            }
+        }
+    }
+
+    fun onCreateCategory(name: String, code: String = "", iconName: String = "Business", colorHex: String = "#0284C7") {
+        viewModelScope.launch {
+            val result = thirdPartyRepository.createCategory(userId, name, code, iconName, colorHex)
+            result.onSuccess { saved ->
+                _uiState.update { current ->
+                    current.copy(
+                        formState = current.formState.copy(category = saved.code),
+                        successMessage = "Rol '${saved.name}' creado exitosamente."
+                    )
+                }
+            }.onFailure { err ->
+                _uiState.update { it.copy(errorMessage = err.message ?: "Error al crear rol") }
+            }
+        }
     }
 
     fun onSearchQueryChange(query: String) {

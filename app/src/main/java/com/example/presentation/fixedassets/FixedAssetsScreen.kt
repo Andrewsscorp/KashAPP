@@ -169,7 +169,8 @@ fun FixedAssetsScreen(
                 viewModel.saveAsset(entity)
                 FixedAssetNotificationHelper.sendAssetCreatedNotification(context, entity.name, entity.acquisitionValue)
             },
-            onDismiss = { viewModel.closeCreateOrEditAsset() }
+            onDismiss = { viewModel.closeCreateOrEditAsset() },
+            userId = viewModel.userId
         )
         return
     }
