@@ -110,6 +110,8 @@ fun getSubRouteTitle(route: SettingsSubRoute): String {
         SettingsSubRoute.CATEGORIAS -> "Categorías"
         SettingsSubRoute.CUENTAS_ENTIDADES -> "Cuentas y entidades"
         SettingsSubRoute.TIENDA -> "Tienda y Comercios"
+        SettingsSubRoute.TERCEROS -> "Terceros y Contactos"
+        SettingsSubRoute.ACTIVOS_FIJOS -> "Activos Fijos"
         SettingsSubRoute.APARIENCIA -> "Apariencia"
         SettingsSubRoute.PERSONALIZAR_INICIO -> "Personalizar inicio"
         SettingsSubRoute.EXPORTAR_DATOS -> "Exportar datos"

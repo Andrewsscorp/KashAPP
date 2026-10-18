@@ -86,6 +86,14 @@ import com.example.presentation.fixedassets.create.state.FixedAssetFormState
 import com.example.presentation.fixedassets.create.components.IPhoneAdaptiveDatePickerField
 import com.example.presentation.fixedassets.ai.AssetAiSuggestionEngine
 import com.example.presentation.fixedassets.ai.AssetAiSuggestion
+import com.example.KashAppApplication
+import com.example.presentation.thirdparty.components.ThirdPartyFormModalSheet
+import com.example.presentation.thirdparty.model.ThirdPartyFormState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
 import java.text.DecimalFormat
 
 @Composable
@@ -97,6 +105,17 @@ fun CreateFixedAssetScreen(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val appContainer = remember(context) { (context.applicationContext as? KashAppApplication)?.appContainer }
+    val thirdPartiesFlow = remember(appContainer) {
+        appContainer?.thirdPartyRepository?.observeThirdParties("user_default")
+    }
+    val thirdParties by (thirdPartiesFlow?.collectAsState(initial = emptyList()) ?: remember { mutableStateOf(emptyList()) })
+    var showExpressThirdPartySheet by remember { mutableStateOf(false) }
+    var expressFormState by remember { mutableStateOf(ThirdPartyFormState(isExpressMode = true, category = "PROVEEDOR")) }
+    var expressErrorMessage by remember { mutableStateOf<String?>(null) }
+
     var formState by remember { mutableStateOf(initialState) }
     var usefulLifeInputText by remember { mutableStateOf(formState.usefulLifeMonths.toString()) }
     var showCategorySheet by remember { mutableStateOf(false) }
@@ -1136,15 +1155,75 @@ fun CreateFixedAssetScreen(
                         shape = RoundedCornerShape(14.dp)
                     )
 
-                    OutlinedTextField(
-                        value = formState.supplier,
-                        onValueChange = { formState = formState.copy(supplier = it) },
-                        label = { Text("Proveedor / Concesionario") },
-                        singleLine = true,
-                        colors = textFieldColors,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp)
-                    )
+                    // Selector / Autocompletado de Terceros
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Proveedor / Concesionario", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                            TextButton(
+                                onClick = {
+                                    expressErrorMessage = null
+                                    expressFormState = ThirdPartyFormState(
+                                        name = formState.supplier,
+                                        isExpressMode = true,
+                                        category = if (formState.categoryName.contains("Vehículo", ignoreCase = true)) "CONCESIONARIO" else "PROVEEDOR"
+                                    )
+                                    showExpressThirdPartySheet = true
+                                }
+                            ) {
+                                Text("+ Crear Tercero rápido", color = Color(0xFF38BDF8), fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        OutlinedTextField(
+                            value = formState.supplier,
+                            onValueChange = { formState = formState.copy(supplier = it) },
+                            placeholder = { Text("Escribe o selecciona de terceros...", color = Color(0xFF64748B)) },
+                            singleLine = true,
+                            colors = textFieldColors,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp)
+                        )
+
+                        // Chips de sugerencia rápida de terceros registrados
+                        if (thirdParties.isNotEmpty()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                val relevantThirdParties = remember(thirdParties, formState.categoryName) {
+                                    val isVehicle = formState.categoryName.contains("Vehículo", ignoreCase = true)
+                                    thirdParties.filter { 
+                                        if (isVehicle) it.category == "CONCESIONARIO" || it.isFavorite else true 
+                                    }.take(6)
+                                }
+                                relevantThirdParties.forEach { tp ->
+                                    val isSelected = formState.supplier.equals(tp.displayName, ignoreCase = true)
+                                    Surface(
+                                        color = if (isSelected) Color(0xFF0284C7) else Color(0xFF1E293B),
+                                        shape = RoundedCornerShape(8.dp),
+                                        border = BorderStroke(1.dp, if (isSelected) Color(0xFF38BDF8) else Color(0xFF334155)),
+                                        modifier = Modifier.clickable {
+                                            formState = formState.copy(supplier = tp.displayName)
+                                        }
+                                    ) {
+                                        Text(
+                                            text = "${tp.displayName} (${tp.fullDocument})",
+                                            fontSize = 11.sp,
+                                            color = if (isSelected) Color.White else Color(0xFFCBD5E1),
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -1565,6 +1644,36 @@ fun CreateFixedAssetScreen(
                     Text("No, guardar sin depreciar", fontSize = 12.5.sp)
                 }
             }
+        )
+    }
+
+    if (showExpressThirdPartySheet) {
+        ThirdPartyFormModalSheet(
+            formState = expressFormState,
+            onUpdateForm = { reducer -> expressFormState = reducer(expressFormState) },
+            onSave = {
+                if (expressFormState.name.isBlank()) {
+                    expressErrorMessage = "El nombre o razón social es obligatorio"
+                    return@ThirdPartyFormModalSheet
+                }
+                if (expressFormState.idNumber.isBlank()) {
+                    expressErrorMessage = "La identificación o NIT es obligatoria"
+                    return@ThirdPartyFormModalSheet
+                }
+                coroutineScope.launch {
+                    val entity = expressFormState.toEntity("user_default")
+                    val result = appContainer?.thirdPartyRepository?.saveThirdParty(entity)
+                    result?.onSuccess { saved ->
+                        formState = formState.copy(supplier = saved.displayName)
+                        showExpressThirdPartySheet = false
+                        expressErrorMessage = null
+                    }?.onFailure { err ->
+                        expressErrorMessage = err.message ?: "Error al guardar tercero"
+                    }
+                }
+            },
+            onDismiss = { showExpressThirdPartySheet = false },
+            errorMessage = expressErrorMessage
         )
     }
 }

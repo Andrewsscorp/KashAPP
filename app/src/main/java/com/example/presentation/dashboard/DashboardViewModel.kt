@@ -232,8 +232,26 @@ class DashboardViewModel(
                         .setScale(2, RoundingMode.HALF_EVEN)
                 }
 
-                // Fixed Assets: Sum all valid non-disposed user assets respecting 'noAffectDashboard' and global exclusion
-                val totalFixedAssetsValue = if (excludeAllFixedAssets) {
+                // Fixed Assets: 
+                // 1) Total Net Book Value of all valid assets (Always displayed in "Así está tu dinero -> Activos")
+                val totalFixedAssetsBookValue = fixedAssets
+                    .filter { asset ->
+                        val state = com.example.domain.model.fixedassets.statemachine.AssetStateMachine.resolveState(asset.status)
+                        asset.deletedAt == null && !state.isTerminal &&
+                        !asset.status.equals("WRITTEN_OFF", ignoreCase = true) &&
+                        !asset.status.equals("SOLD", ignoreCase = true) &&
+                        !asset.status.equals("DISPOSED", ignoreCase = true) &&
+                        !asset.status.equals("DADO_DE_BAJA", ignoreCase = true)
+                    }
+                    .fold(BigDecimal.ZERO) { acc, asset ->
+                        val netBookValue = (asset.acquisitionValue - asset.accumulatedDepreciation).coerceAtLeast(asset.residualValue).coerceAtLeast(0.0)
+                        val assetVal = if (netBookValue > 0.0) netBookValue else asset.acquisitionValue
+                        acc + BigDecimal.valueOf(assetVal)
+                    }
+                    .setScale(2, RoundingMode.HALF_EVEN)
+
+                // 2) Assets affecting Net Worth (Patrimonio Neto): Excluded if global rule or individual noAffectDashboard is set
+                val assetsAffectingNetWorth = if (excludeAllFixedAssets) {
                     BigDecimal.ZERO.setScale(2, RoundingMode.HALF_EVEN)
                 } else {
                     fixedAssets
@@ -259,9 +277,10 @@ class DashboardViewModel(
                 val netWorthState = NetWorthState(
                     availableCash = availableCash,
                     investments = investmentsTotal,
-                    assets = totalFixedAssetsValue,
+                    assets = totalFixedAssetsBookValue,
                     liabilities = liabilitiesTotal,
-                    sparklinePoints = sparkline.toImmutableList()
+                    sparklinePoints = sparkline.toImmutableList(),
+                    assetsForNetWorth = assetsAffectingNetWorth
                 )
 
                 // 4. Compute KPI State (Income, Expenses, Savings, BudgetLimit)
@@ -649,7 +668,8 @@ class DashboardViewModel(
             investments = netWorth.investments.divide(bdRate, 2, RoundingMode.HALF_EVEN),
             assets = netWorth.assets.divide(bdRate, 2, RoundingMode.HALF_EVEN),
             liabilities = netWorth.liabilities.divide(bdRate, 2, RoundingMode.HALF_EVEN),
-            sparklinePoints = netWorth.sparklinePoints
+            sparklinePoints = netWorth.sparklinePoints,
+            assetsForNetWorth = netWorth.assetsForNetWorth.divide(bdRate, 2, RoundingMode.HALF_EVEN)
         )
     }
 

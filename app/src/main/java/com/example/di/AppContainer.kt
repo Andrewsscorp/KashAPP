@@ -200,6 +200,16 @@ class AppContainer(private val context: Context) {
         )
     }
 
+    val thirdPartyDao: com.example.data.local.dao.ThirdPartyDao by lazy {
+        securityDatabase.thirdPartyDao()
+    }
+
+    val thirdPartyRepository: com.example.domain.repository.ThirdPartyRepository by lazy {
+        com.example.data.repository.ThirdPartyRepositoryImpl(
+            thirdPartyDao = thirdPartyDao
+        )
+    }
+
     // =========================================================================
     // MÓDULO DE GASTOS COMPARTIDOS, CONSECUTIVOS Y TICKETS (:feature-gastos-compartidos)
     // =========================================================================

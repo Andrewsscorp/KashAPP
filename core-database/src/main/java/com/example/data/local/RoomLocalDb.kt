@@ -633,6 +633,51 @@ object RoomLocalDb {
         }
     }
 
+    val MIGRATION_35_36 = object : androidx.room.migration.Migration(35, 36) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+            try {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `third_parties` (
+                        `id` TEXT NOT NULL,
+                        `userId` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `normalizedName` TEXT NOT NULL,
+                        `personType` TEXT NOT NULL DEFAULT 'NATURAL',
+                        `idType` TEXT NOT NULL DEFAULT 'CC',
+                        `idNumber` TEXT NOT NULL,
+                        `verificationDigit` TEXT,
+                        `commercialName` TEXT,
+                        `category` TEXT NOT NULL DEFAULT 'PROVEEDOR',
+                        `primaryPhone` TEXT,
+                        `secondaryPhone` TEXT,
+                        `email` TEXT,
+                        `address` TEXT,
+                        `city` TEXT,
+                        `paymentTermsDays` INTEGER NOT NULL DEFAULT 0,
+                        `defaultBank` TEXT,
+                        `bankAccountType` TEXT,
+                        `bankAccountNumber` TEXT,
+                        `iconName` TEXT NOT NULL DEFAULT 'Person',
+                        `colorHex` TEXT NOT NULL DEFAULT '#0284C7',
+                        `notes` TEXT,
+                        `isFavorite` INTEGER NOT NULL DEFAULT 0,
+                        `isActive` INTEGER NOT NULL DEFAULT 1,
+                        `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_third_parties_userId_normalizedName_idNumber` ON `third_parties` (`userId`, `normalizedName`, `idNumber`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_third_parties_userId_category` ON `third_parties` (`userId`, `category`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_third_parties_userId_isFavorite` ON `third_parties` (`userId`, `isFavorite`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_third_parties_userId_isActive` ON `third_parties` (`userId`, `isActive`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_third_parties_idNumber` ON `third_parties` (`idNumber`)")
+            } catch (e: Throwable) {
+                Log.w(TAG, "Notice running MIGRATION_35_36: ${e.message}")
+            }
+        }
+    }
+
     private fun tryCreateEncryptedDb(context: Context, passphraseBytes: ByteArray): SecurityDatabase? {
         return try {
             // Attempt to load native SQLCipher library if available
@@ -647,7 +692,7 @@ object RoomLocalDb {
                 ENCRYPTED_DB_NAME
             )
                 .openHelperFactory(openHelperFactory)
-                .addMigrations(MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33, MIGRATION_33_34, MIGRATION_34_35)
+                .addMigrations(MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33, MIGRATION_33_34, MIGRATION_34_35, MIGRATION_35_36)
                 .addCallback(foreignKeyCallback)
                 .build()
 

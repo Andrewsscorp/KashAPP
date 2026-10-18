@@ -63,6 +63,7 @@ import com.example.features.settings.presentation.screens.SettingsCurrencyScreen
 import com.example.features.settings.presentation.screens.SettingsDashboardLayoutSubScreen
 import com.example.features.settings.presentation.screens.SettingsHelpSubScreen
 import com.example.features.settings.presentation.screens.SettingsMerchantsSubScreen
+import com.example.features.settings.presentation.screens.SettingsFixedAssetsSubScreen
 import com.example.features.settings.presentation.screens.SettingsNotificationsScreen
 import com.example.features.settings.presentation.screens.SettingsProfileScreen
 import com.example.features.settings.presentation.screens.SettingsSecurityScreen
@@ -256,6 +257,36 @@ fun SettingsScreen(
                     SettingsSubRoute.TIENDA -> {
                         SettingsMerchantsSubScreen(
                             onShowMessage = { viewModel.showStatusMessage(it) },
+                            onBack = { viewModel.navigateBackToMain() },
+                            onNavigateToTerceros = { viewModel.navigateToSubRoute(SettingsSubRoute.TERCEROS) }
+                        )
+                    }
+                    SettingsSubRoute.TERCEROS -> {
+                        val ctx = LocalContext.current
+                        val appContainer = (ctx.applicationContext as KashAppApplication).appContainer
+                        val thirdPartyViewModel: com.example.presentation.thirdparty.ThirdPartyViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                            factory = com.example.presentation.thirdparty.ThirdPartyViewModel.Factory(
+                                thirdPartyRepository = appContainer.thirdPartyRepository,
+                                fixedAssetDao = appContainer.securityDatabase.fixedAssetDao(),
+                                userId = uiState.userEmail.ifBlank { "user_default" }
+                            )
+                        )
+                        com.example.features.settings.presentation.screens.SettingsThirdPartiesSubScreen(
+                            viewModel = thirdPartyViewModel,
+                            onBack = { viewModel.navigateBackToMain() },
+                            onShowMessage = { viewModel.showStatusMessage(it) }
+                        )
+                    }
+                    SettingsSubRoute.ACTIVOS_FIJOS -> {
+                        SettingsFixedAssetsSubScreen(
+                            autoNoAffectInventoryForAssets = uiState.preferences.autoNoAffectInventoryForAssets,
+                            autoNoAffectDashboardForAssets = uiState.preferences.autoNoAffectDashboardForAssets,
+                            excludeAllFixedAssetsFromDashboard = uiState.preferences.excludeAllFixedAssetsFromDashboard,
+                            onToggleAutoNoAffectInventory = { viewModel.toggleAutoNoAffectInventory(it) },
+                            onApplyNoAffectInventoryToAll = { viewModel.applyNoAffectInventoryToAllAssets(it) },
+                            onToggleAutoNoAffectDashboard = { viewModel.toggleAutoNoAffectDashboard(it) },
+                            onToggleExcludeAllFixedAssetsFromDashboard = { viewModel.toggleExcludeAllFixedAssetsFromDashboard(it) },
+                            onApplyNoAffectDashboardToAll = { viewModel.applyNoAffectDashboardToAllAssets(it) },
                             onBack = { viewModel.navigateBackToMain() }
                         )
                     }

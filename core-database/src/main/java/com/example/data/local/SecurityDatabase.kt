@@ -71,9 +71,10 @@ import com.example.data.local.entity.UserSessionEntity
         com.example.data.local.entity.SharedExpensePayerEntity::class,
         com.example.data.local.entity.SharedExpenseSplitEntity::class,
         com.example.data.local.entity.SharedExpenseLineItemEntity::class,
-        com.example.data.local.entity.SharedSettlementPaymentEntity::class
+        com.example.data.local.entity.SharedSettlementPaymentEntity::class,
+        com.example.data.local.entity.ThirdPartyEntity::class
     ],
-    version = 35,
+    version = 36,
     exportSchema = false
 )
 abstract class SecurityDatabase : RoomDatabase() {
@@ -88,6 +89,7 @@ abstract class SecurityDatabase : RoomDatabase() {
     abstract fun assetCategoryDao(): com.example.data.local.dao.AssetCategoryDao
     abstract fun assetAuditLogDao(): com.example.data.local.dao.AssetAuditLogDao
     abstract fun sharedExpenseDao(): com.example.data.local.dao.SharedExpenseDao
+    abstract fun thirdPartyDao(): com.example.data.local.dao.ThirdPartyDao
 
 
         companion object {

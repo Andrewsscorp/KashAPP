@@ -57,10 +57,11 @@ data class NetWorthState(
     val investments: BigDecimal = BigDecimal.ZERO,
     val assets: BigDecimal = BigDecimal.ZERO,
     val liabilities: BigDecimal = BigDecimal.ZERO,
-    val sparklinePoints: ImmutableList<Float> = persistentListOf(0f, 0f, 0f, 0f, 0f)
+    val sparklinePoints: ImmutableList<Float> = persistentListOf(0f, 0f, 0f, 0f, 0f),
+    val assetsForNetWorth: BigDecimal = assets
 ) {
     val totalNetWorth: BigDecimal
-        get() = (availableCash + investments + assets) - liabilities.abs()
+        get() = (availableCash + investments + assetsForNetWorth) - liabilities.abs()
 }
 
 @Immutable

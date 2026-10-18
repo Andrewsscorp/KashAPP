@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material.icons.filled.PrecisionManufacturing
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.AlertDialog
@@ -95,63 +96,6 @@ fun SettingsMainContent(
     onRequestDeleteAccount: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var showMassApplyDialog by remember { mutableStateOf(false) }
-
-    if (showMassApplyDialog) {
-        AlertDialog(
-            onDismissRequest = { showMassApplyDialog = false },
-            title = {
-                Text(
-                    text = "Afectación del Dashboard Principal",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 17.sp,
-                    color = Color(0xFF0F172A)
-                )
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "Configura si los activos fijos deben sumar o no en el total de activos y patrimonio del Dashboard:",
-                        fontSize = 13.sp,
-                        color = Color(0xFF475569)
-                    )
-                    Text(
-                        text = "• 'No Afectar Dashboard': Los activos seguirán registrados en la app y con su cálculo contable, pero su valor (ej. $100.000.000) NO se sumará a los activos ni al patrimonio del tablero principal.\n• 'Afectar Dashboard': El valor de los activos se sumará normalmente al total del Dashboard.",
-                        fontSize = 12.sp,
-                        color = Color(0xFF64748B),
-                        lineHeight = 16.sp
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showMassApplyDialog = false
-                        onApplyNoAffectDashboardToAll(true)
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007BFF))
-                ) {
-                    Text("No Afectar (Todos)", color = Color.White)
-                }
-            },
-            dismissButton = {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    TextButton(onClick = { showMassApplyDialog = false }) {
-                        Text("Cancelar", color = Color(0xFF64748B))
-                    }
-                    OutlinedButton(
-                        onClick = {
-                            showMassApplyDialog = false
-                            onApplyNoAffectDashboardToAll(false)
-                        }
-                    ) {
-                        Text("Afectar Dashboard", color = Color(0xFF007BFF))
-                    }
-                }
-            }
-        )
-    }
-
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -323,196 +267,29 @@ fun SettingsMainContent(
                 onClick = { onNavigateTo(SettingsSubRoute.TIENDA) },
                 testTag = "settings_tile_tienda"
             )
+            HorizontalDivider(color = Color(0xFFF8FAFC), thickness = 1.dp)
+            SettingsTileItem(
+                icon = Icons.Default.PersonOutline,
+                iconTint = Color(0xFF4F46E5),
+                iconBg = Color(0xFFEEF2FF),
+                title = "Terceros y Contactos",
+                subtitle = "Proveedores, concesionarios, clientes y contactos.",
+                onClick = { onNavigateTo(SettingsSubRoute.TERCEROS) },
+                testTag = "settings_tile_terceros"
+            )
+            HorizontalDivider(color = Color(0xFFF8FAFC), thickness = 1.dp)
+            SettingsTileItem(
+                icon = Icons.Default.PrecisionManufacturing,
+                iconTint = Color(0xFF0D9488),
+                iconBg = Color(0xFFCCFBF1),
+                title = "Activos Fijos",
+                subtitle = "Reglas de patrimonio, inventarios y amortización NIIF.",
+                onClick = { onNavigateTo(SettingsSubRoute.ACTIVOS_FIJOS) },
+                testTag = "settings_tile_activos_fijos"
+            )
         }
 
-        // 3. ACTIVOS FIJOS
-        SettingsSection(title = "ACTIVOS FIJOS") {
-            // Switch tile: No afecta dashboard por defecto para nuevos activos
-            Surface(
-                color = Color.White,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("settings_tile_auto_no_affect_dashboard")
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFFE0F2FE)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.TableChart,
-                                contentDescription = null,
-                                tint = Color(0xFF007BFF),
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                        Column {
-                            Text(
-                                text = "Marcar 'No afecta dashboard' por defecto",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0F172A)
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = if (autoNoAffectDashboardForAssets)
-                                    "Los nuevos activos que crees no sumarán al total de activos ni patrimonio en el dashboard."
-                                else
-                                    "Los nuevos activos que crees afectarán y sumarán al dashboard por defecto.",
-                                fontSize = 11.5.sp,
-                                color = Color(0xFF64748B),
-                                lineHeight = 15.sp
-                            )
-                        }
-                    }
-                    Switch(
-                        checked = autoNoAffectDashboardForAssets,
-                        onCheckedChange = { onToggleAutoNoAffectDashboard(it) },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = Color(0xFF007BFF),
-                            uncheckedThumbColor = Color.White,
-                            uncheckedTrackColor = Color(0xFFCBD5E1)
-                        )
-                    )
-                }
-            }
-            HorizontalDivider(color = Color(0xFFF8FAFC), thickness = 1.dp)
-
-            // Switch tile: Excluir todos los activos fijos del dashboard
-            Surface(
-                color = Color.White,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("settings_tile_exclude_all_fixed_assets_dashboard")
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFFFEE2E2)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Shield,
-                                contentDescription = null,
-                                tint = Color(0xFFEF4444),
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                        Column {
-                            Text(
-                                text = "Excluir todos los activos del Dashboard",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0F172A)
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = if (excludeAllFixedAssetsFromDashboard)
-                                    "La totalidad de los activos fijos están ocultos y no suman al total del Dashboard."
-                                else
-                                    "Los activos fijos válidos suman normalmente a los totales del Dashboard.",
-                                fontSize = 11.5.sp,
-                                color = Color(0xFF64748B),
-                                lineHeight = 15.sp
-                            )
-                        }
-                    }
-                    Switch(
-                        checked = excludeAllFixedAssetsFromDashboard,
-                        onCheckedChange = { onToggleExcludeAllFixedAssetsFromDashboard(it) },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = Color(0xFFEF4444),
-                            uncheckedThumbColor = Color.White,
-                            uncheckedTrackColor = Color(0xFFCBD5E1)
-                        )
-                    )
-                }
-            }
-            HorizontalDivider(color = Color(0xFFF8FAFC), thickness = 1.dp)
-
-            // Button tile: Aplicar a todos los activos existentes
-            Surface(
-                color = Color.White,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showMassApplyDialog = true }
-                    .testTag("settings_tile_mass_no_affect_dashboard")
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFFEF3C7)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = Color(0xFFD97706),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(14.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Aplicar regla a todos los activos existentes",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0F172A)
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Actualizar en lote todos los activos fijos existentes en la base de datos.",
-                            fontSize = 11.5.sp,
-                            color = Color(0xFF64748B)
-                        )
-                    }
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = Color(0xFF94A3B8),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-        }
-
-        // 4. PREFERENCIAS
+        // 3. PREFERENCIAS
         SettingsSection(title = "PREFERENCIAS") {
             SettingsTileItem(
                 icon = Icons.Default.Palette,
