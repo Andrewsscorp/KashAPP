@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -61,14 +62,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.core.ui.components.KashCompactButton
 import com.example.feature.ocr.model.ReceiptScanResult
 import com.example.feature.ocr.parser.ReceiptTextParser
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.DecimalFormat
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ReceiptScannerScreen(
     onNavigateBack: () -> Unit,
@@ -137,6 +143,7 @@ fun ReceiptScannerScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -161,15 +168,17 @@ fun ReceiptScannerScreen(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         Text(
                             text = "Escáner OCR de Facturas",
                             color = Color.White,
-                            fontSize = 20.sp,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
                         Box(
                             modifier = Modifier
                                 .background(Color(0xFF00C853).copy(alpha = 0.15f), RoundedCornerShape(6.dp))
@@ -179,14 +188,18 @@ fun ReceiptScannerScreen(
                                 text = "Módulo :feature-ocr",
                                 color = Color(0xFF00E676),
                                 fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }
                     Text(
                         text = "Digitaliza recibos y tickets automáticamente",
                         color = Color(0xFF94A3B8),
-                        fontSize = 13.sp
+                        fontSize = 12.5.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -283,9 +296,10 @@ fun ReceiptScannerScreen(
                     fontWeight = FontWeight.Medium
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                Row(
+                FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     SampleChip(
                         title = "Supermercado",
@@ -460,31 +474,17 @@ fun ReceiptScannerScreen(
 
                         Spacer(modifier = Modifier.height(4.dp))
 
-                        Button(
+                        KashCompactButton(
+                            text = "Guardar Gasto desde OCR",
+                            icon = Icons.Default.Check,
                             onClick = {
                                 val cleanNum = editableTotal.replace(".", "").replace(",", ".").toDoubleOrNull() ?: result.totalAmount
                                 onApplyToExpense(editableMerchant, cleanNum, editableCategory, editableDate)
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF2563EB)
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Guardar Gasto desde OCR",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                            modifier = Modifier.fillMaxWidth(),
+                            minHeight = 48.dp,
+                            containerColor = Color(0xFF2563EB)
+                        )
                     }
                 }
             }

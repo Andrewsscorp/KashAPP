@@ -150,7 +150,7 @@ fun AssetImagePickerSection(
                     ) {
                         Text(
                             text = "Foto cargada",
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF34D399),
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
@@ -275,7 +275,7 @@ fun AssetImagePickerSection(
                                     tint = Color.White,
                                     modifier = Modifier.size(14.dp)
                                 )
-                                Text("Tocar para ampliar", fontSize = 10.5.sp, color = Color.White)
+                                Text("Tocar para ampliar", fontSize = 11.sp, color = Color.White)
                             }
                         }
                     }

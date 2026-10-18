@@ -117,7 +117,7 @@ fun ExpenseAmountHeader(
                             Text(
                                 text = "* Obligatorio",
                                 color = Color(0xFFDC2626),
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
@@ -299,7 +299,7 @@ fun ExpenseAmountHeader(
                         ) {
                             Text(
                                 text = "Usar Cuota",
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)

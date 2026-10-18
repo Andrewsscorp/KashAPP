@@ -179,7 +179,7 @@ fun ManualRateHistoryModal(
                                     ) {
                                         Text(
                                             text = log.action,
-                                            fontSize = 9.sp,
+                                            fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = badgeColor,
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -219,7 +219,7 @@ fun ManualRateHistoryModal(
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = "${timeFormat.format(Date(log.timestamp))} • Por: ${log.changedBy}",
-                                    fontSize = 10.sp,
+                                    fontSize = 11.sp,
                                     color = Color(0xFF94A3B8)
                                 )
                             }

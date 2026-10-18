@@ -15,12 +15,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import com.example.core.ui.components.CurrencyText
+import com.example.core.ui.components.KashSearchBar
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -119,19 +122,32 @@ fun BankAccountsManagementScreen(
     onNavigateBack: () -> Unit,
     onOpenCreateAccount: () -> Unit,
     modifier: Modifier = Modifier,
-    userId: String = "user_default"
+    userId: String = "user_default",
+    customFinancialRepository: com.example.domain.repository.FinancialRepository? = null,
+    customSettingsRepository: com.example.features.settings.domain.repository.SettingsRepository? = null
 ) {
     BackHandler { onNavigateBack() }
 
     val context = LocalContext.current
-    val appContainer = remember(context) { (context.applicationContext as KashAppApplication).appContainer }
-    val financialRepository = appContainer.financialRepository
-    val settingsRepository = appContainer.settingsRepository
+    val financialRepository = remember(context, customFinancialRepository) {
+        customFinancialRepository ?: try {
+            (context.applicationContext as? KashAppApplication)?.appContainer?.financialRepository
+        } catch (_: Throwable) {
+            null
+        } ?: error("FinancialRepository not provided and KashAppApplication not found")
+    }
+    val settingsRepository = remember(context, customSettingsRepository) {
+        customSettingsRepository ?: try {
+            (context.applicationContext as? KashAppApplication)?.appContainer?.settingsRepository
+        } catch (_: Throwable) {
+            null
+        }
+    }
     val coroutineScope = rememberCoroutineScope()
 
     val accounts by financialRepository.getAccounts(userId).collectAsStateWithLifecycle(initialValue = emptyList())
     val allTransactions by financialRepository.getTransactions(userId).collectAsStateWithLifecycle(initialValue = emptyList())
-    val userPreferences by settingsRepository.observePreferences(userId).collectAsStateWithLifecycle(
+    val userPreferences by (settingsRepository?.observePreferences(userId) ?: kotlinx.coroutines.flow.flowOf(UserPreferencesDomain())).collectAsStateWithLifecycle(
         initialValue = UserPreferencesDomain()
     )
 
@@ -178,6 +194,7 @@ fun BankAccountsManagementScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(
+                    modifier = Modifier.weight(1f, fill = false),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
@@ -197,20 +214,26 @@ fun BankAccountsManagementScreen(
                         )
                     }
 
-                    Column {
+                    Column(modifier = Modifier.weight(1f, fill = false)) {
                         Text(
                             text = "Mis Cuentas Bancarias",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = "${accounts.size} cuentas registradas",
                             fontSize = 12.sp,
-                            color = Color(0xFF94A3B8)
+                            color = Color(0xFF94A3B8),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.width(8.dp))
 
                 // Add Account Action Button
                 Surface(
@@ -274,7 +297,7 @@ fun BankAccountsManagementScreen(
                         ) {
                             Text(
                                 text = "Room Local DB",
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 color = Color(0xFF38BDF8),
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -284,8 +307,9 @@ fun BankAccountsManagementScreen(
 
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    Text(
-                        text = MoneyFormatter.format(BigDecimal.valueOf(totalBalance), false, "COP"),
+                    CurrencyText(
+                        amountDouble = totalBalance,
+                        currencyCode = "COP",
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Black,
                         color = Color.White
@@ -433,7 +457,7 @@ fun BankAccountsManagementScreen(
                                     checked = !userPreferences.excludeAllAccountsFromDashboard,
                                     onCheckedChange = { active ->
                                         coroutineScope.launch {
-                                            settingsRepository.setExcludeAllAccountsFromDashboard(userId, !active)
+                                            settingsRepository?.setExcludeAllAccountsFromDashboard(userId, !active)
                                         }
                                     },
                                     colors = SwitchDefaults.colors(
@@ -449,33 +473,12 @@ fun BankAccountsManagementScreen(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         // Search bar
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            placeholder = { Text("Buscar por nombre o banco...", color = Color(0xFF64748B), fontSize = 13.sp) },
-                            leadingIcon = {
-                                Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = Color(0xFF64748B))
-                            },
-                            trailingIcon = {
-                                if (searchQuery.isNotEmpty()) {
-                                    IconButton(onClick = { searchQuery = "" }) {
-                                        Icon(imageVector = Icons.Default.Close, contentDescription = "Limpiar", tint = Color(0xFF94A3B8))
-                                    }
-                                }
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color(0xFF1E293B),
-                                unfocusedContainerColor = Color(0xFF1E293B),
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedBorderColor = Color(0xFF007BFF),
-                                unfocusedBorderColor = Color(0xFF334155)
-                            ),
-                            singleLine = true
+                        KashSearchBar(
+                            query = searchQuery,
+                            onQueryChange = { searchQuery = it },
+                            placeholder = "Buscar por nombre o banco...",
+                            onClear = { searchQuery = "" },
+                            modifier = Modifier.fillMaxWidth()
                         )
 
                         Spacer(modifier = Modifier.height(12.dp))
@@ -566,7 +569,7 @@ fun BankAccountsManagementScreen(
             onSave = { updatedAccount, newExcludedState ->
                 coroutineScope.launch {
                     financialRepository.updateAccount(updatedAccount)
-                    settingsRepository.setAccountExcludedFromDashboard(userId, updatedAccount.id, newExcludedState)
+                    settingsRepository?.setAccountExcludedFromDashboard(userId, updatedAccount.id, newExcludedState)
                     accountToEdit = null
                 }
             }
@@ -880,13 +883,14 @@ private fun BankAccountManagementCard(
             // Balance
             Text(
                 text = "Saldo Actual",
-                fontSize = 10.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = Color(0xFF64748B),
                 letterSpacing = 0.5.sp
             )
-            Text(
-                text = MoneyFormatter.format(BigDecimal.valueOf(account.balance), false, account.currency),
+            CurrencyText(
+                amountDouble = account.balance,
+                currencyCode = account.currency,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Black,
                 color = if (account.balance < 0) Color(0xFFEF4444) else Color.White
@@ -894,14 +898,26 @@ private fun BankAccountManagementCard(
 
             // Live Cross Currency Conversion
             val context = LocalContext.current
-            val appContainer = remember(context) { (context.applicationContext as KashAppApplication).appContainer }
+            val exchangeRateRepository = remember(context) {
+                try {
+                    (context.applicationContext as? KashAppApplication)?.appContainer?.exchangeRateRepository
+                } catch (_: Throwable) {
+                    null
+                }
+            }
             val targetConversionCurr = if (account.currency == "COP") "USD" else "COP"
             var cardEffectiveRate by remember { mutableStateOf<EffectiveRate?>(null) }
 
-            LaunchedEffect(account.currency, targetConversionCurr) {
-                cardEffectiveRate = appContainer.exchangeRateRepository.getInstantEffectiveRate(account.currency, targetConversionCurr)
-                appContainer.exchangeRateRepository.observeEffectiveRate(account.currency, targetConversionCurr).collect {
-                    cardEffectiveRate = it
+            LaunchedEffect(account.currency, targetConversionCurr, exchangeRateRepository) {
+                exchangeRateRepository?.let { repo ->
+                    try {
+                        cardEffectiveRate = repo.getInstantEffectiveRate(account.currency, targetConversionCurr)
+                        repo.observeEffectiveRate(account.currency, targetConversionCurr).collect {
+                            cardEffectiveRate = it
+                        }
+                    } catch (_: Throwable) {
+                        // Ignore rate resolution failure in offline/test mode
+                    }
                 }
             }
 
@@ -920,7 +936,7 @@ private fun BankAccountManagementCard(
                     )
                     Text(
                         text = "(${if (targetConversionCurr == "COP") "en COP" else "en USD"} en vivo)",
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         color = Color(0xFF94A3B8)
                     )
                 }
@@ -945,7 +961,7 @@ private fun BankAccountManagementCard(
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Icon(Icons.Default.VisibilityOff, contentDescription = null, tint = Color(0xFFFBBF24), modifier = Modifier.size(11.dp))
-                            Text("Excluida globalmente", fontSize = 10.sp, color = Color(0xFFFBBF24), fontWeight = FontWeight.SemiBold)
+                            Text("Excluida globalmente", fontSize = 11.sp, color = Color(0xFFFBBF24), fontWeight = FontWeight.SemiBold)
                         }
                     }
                 } else if (isIndividuallyExcluded) {
@@ -960,7 +976,7 @@ private fun BankAccountManagementCard(
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Icon(Icons.Default.VisibilityOff, contentDescription = null, tint = Color(0xFFFBBF24), modifier = Modifier.size(11.dp))
-                            Text("Excluida del Dashboard", fontSize = 10.sp, color = Color(0xFFFBBF24), fontWeight = FontWeight.SemiBold)
+                            Text("Excluida del Dashboard", fontSize = 11.sp, color = Color(0xFFFBBF24), fontWeight = FontWeight.SemiBold)
                         }
                     }
                 } else {
@@ -975,7 +991,7 @@ private fun BankAccountManagementCard(
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Icon(Icons.Default.Visibility, contentDescription = null, tint = Color(0xFF34D399), modifier = Modifier.size(11.dp))
-                            Text("Impacta Dashboard", fontSize = 10.sp, color = Color(0xFF34D399), fontWeight = FontWeight.SemiBold)
+                            Text("Impacta Dashboard", fontSize = 11.sp, color = Color(0xFF34D399), fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
@@ -987,7 +1003,7 @@ private fun BankAccountManagementCard(
                     ) {
                         Text(
                             text = "Sobregiro",
-                            fontSize = 9.sp,
+                            fontSize = 11.sp,
                             color = Color(0xFF38BDF8),
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
@@ -1018,7 +1034,7 @@ private fun BankAccountManagementCard(
                     ) {
                         Icon(imageVector = Icons.Default.Edit, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Modificar", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF38BDF8))
+                        Text("Modificar", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF38BDF8), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
 
@@ -1037,7 +1053,7 @@ private fun BankAccountManagementCard(
                     ) {
                         Icon(imageVector = Icons.Default.BarChart, contentDescription = null, tint = Color(0xFFA78BFA), modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Métricas", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFA78BFA))
+                        Text("Métricas", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFA78BFA), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
 
@@ -1056,7 +1072,7 @@ private fun BankAccountManagementCard(
                     ) {
                         Icon(imageVector = Icons.Default.ReceiptLong, contentDescription = null, tint = Color(0xFF34D399), modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Movimientos", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF34D399))
+                        Text("Movimientos", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF34D399), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
 
@@ -1298,7 +1314,7 @@ private fun EditAccountModal(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Permitir Sobregiro", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                        Text("Permite balance negativo en transacciones", fontSize = 10.sp, color = Color(0xFF94A3B8))
+                        Text("Permite balance negativo en transacciones", fontSize = 11.sp, color = Color(0xFF94A3B8))
                     }
                     Switch(
                         checked = hasOverdraft,
@@ -1323,7 +1339,7 @@ private fun EditAccountModal(
                         Text(
                             text = if (!isExcludedFromDashboard) "Esta cuenta suma al disponible y patrimonio del Dashboard"
                             else "Cuenta excluida del cálculo en Dashboard",
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             color = if (!isExcludedFromDashboard) Color(0xFF34D399) else Color(0xFFFBBF24)
                         )
                     }
@@ -1498,14 +1514,14 @@ private fun SingleAccountTransactionsModal(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp),
+                            .heightIn(min = 120.dp, max = 200.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text("No hay transacciones registradas en esta cuenta", color = Color(0xFF94A3B8), fontSize = 13.sp)
                     }
                 } else {
                     LazyColumn(
-                        modifier = Modifier.height(380.dp),
+                        modifier = Modifier.heightIn(min = 160.dp, max = 400.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(transactions, key = { it.id }) { tx ->
@@ -1543,7 +1559,7 @@ private fun SummaryPill(text: String, color: Color) {
     ) {
         Text(
             text = text,
-            fontSize = 10.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             color = color,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
@@ -1591,7 +1607,7 @@ private fun TransactionRowItem(tx: TransactionEntity) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f, fill = false)
             ) {
                 Box(
                     modifier = Modifier
@@ -1603,7 +1619,7 @@ private fun TransactionRowItem(tx: TransactionEntity) {
                     Icon(imageVector = icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(16.dp))
                 }
 
-                Column {
+                Column(modifier = Modifier.weight(1f, fill = false)) {
                     Text(
                         text = tx.description ?: tx.categoryName,
                         fontSize = 13.sp,
@@ -1614,14 +1630,20 @@ private fun TransactionRowItem(tx: TransactionEntity) {
                     )
                     Text(
                         text = "${tx.date} • ${tx.accountName}",
-                        fontSize = 10.sp,
-                        color = Color(0xFF94A3B8)
+                        fontSize = 11.sp,
+                        color = Color(0xFF94A3B8),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
 
-            Text(
-                text = "${if (isIncome) "+" else "-"} ${MoneyFormatter.format(BigDecimal.valueOf(tx.amount), false, tx.currency)}",
+            Spacer(modifier = Modifier.width(8.dp))
+
+            CurrencyText(
+                amountDouble = tx.amount,
+                currencyCode = tx.currency,
+                prefix = if (isIncome) "+ " else "- ",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = iconColor

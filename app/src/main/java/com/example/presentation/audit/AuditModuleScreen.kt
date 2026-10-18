@@ -60,6 +60,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
+import com.example.core.ui.components.KashSearchBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -220,7 +221,7 @@ fun AuditModuleScreen(
                                 )
                                 Text(
                                     text = "SOC-2 INMUTABLE",
-                                    fontSize = 8.5.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF34D399)
                                 )
@@ -229,7 +230,7 @@ fun AuditModuleScreen(
                     }
                     Text(
                         text = "Cadena de custodia criptográfica append-only • SQLCipher",
-                        fontSize = 10.5.sp,
+                        fontSize = 11.sp,
                         color = Color(0xFF94A3B8),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -244,7 +245,7 @@ fun AuditModuleScreen(
                 ) {
                     Text(
                         text = "${uiState.filteredLogs.size}/${uiState.totalCount}",
-                        fontSize = 10.5.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF38BDF8),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -452,36 +453,14 @@ fun AuditModuleScreen(
             // ==========================================
             // SEARCH BAR
             // ==========================================
-            OutlinedTextField(
-                value = uiState.searchQuery,
-                onValueChange = { viewModel.onSearchQueryChange(it) },
-                placeholder = {
-                    Text("Buscar evento, detalle o hash SHA-256...", color = Color(0xFF64748B), fontSize = 12.sp)
-                },
-                leadingIcon = {
-                    Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(17.dp))
-                },
-                trailingIcon = {
-                    if (uiState.searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                            Icon(imageVector = Icons.Default.Close, contentDescription = "Limpiar", tint = Color(0xFF94A3B8), modifier = Modifier.size(15.dp))
-                        }
-                    }
-                },
+            KashSearchBar(
+                query = uiState.searchQuery,
+                onQueryChange = { viewModel.onSearchQueryChange(it) },
+                placeholder = "Buscar evento, detalle o hash SHA-256...",
+                onClear = { viewModel.onSearchQueryChange("") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 14.dp)
-                    .height(46.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color(0xFF1E293B),
-                    unfocusedContainerColor = Color(0xFF1E293B),
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = Color(0xFF007BFF),
-                    unfocusedBorderColor = Color(0xFF334155)
-                ),
-                singleLine = true
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -718,7 +697,7 @@ private fun AuditCounterCard(
         ) {
             Text(
                 text = title,
-                fontSize = 9.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF94A3B8),
                 letterSpacing = 0.5.sp,
@@ -761,6 +740,7 @@ private fun AuditCardItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
+                    modifier = Modifier.weight(1f, fill = false),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
@@ -771,7 +751,7 @@ private fun AuditCardItem(
                     ) {
                         Text(
                             text = entry.category.label,
-                            fontSize = 9.5.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(entry.category.colorHex),
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -784,7 +764,7 @@ private fun AuditCardItem(
                     ) {
                         Text(
                             text = entry.severity.name,
-                            fontSize = 9.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = entry.severity.color,
                             modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
@@ -792,9 +772,11 @@ private fun AuditCardItem(
                     }
                 }
 
+                Spacer(modifier = Modifier.width(6.dp))
+
                 Text(
                     text = entry.relativeTime,
-                    fontSize = 10.5.sp,
+                    fontSize = 11.sp,
                     color = Color(0xFF94A3B8)
                 )
             }
@@ -832,6 +814,7 @@ private fun AuditCardItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
+                    modifier = Modifier.weight(1f, fill = false),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
@@ -843,16 +826,19 @@ private fun AuditCardItem(
                     )
                     Text(
                         text = entry.authMethodOrOrigin,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         color = Color(0xFF94A3B8),
                         fontWeight = FontWeight.Medium,
-                        maxLines = 1
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
+                Spacer(modifier = Modifier.width(6.dp))
+
                 Text(
                     text = "sha256:${entry.hashSha256.take(8)}...",
-                    fontSize = 9.5.sp,
+                    fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
                     color = Color(0xFF38BDF8)
                 )
@@ -985,7 +971,10 @@ private fun AuditDetailBottomSheetContent(
                         text = "Firma Digital SHA-256 (Inmutable)",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF38BDF8)
+                        color = Color(0xFF38BDF8),
+                        modifier = Modifier.weight(1f, fill = false),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     IconButton(
                         onClick = {
@@ -1001,7 +990,7 @@ private fun AuditDetailBottomSheetContent(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = entry.hashSha256,
-                    fontSize = 10.5.sp,
+                    fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
                     color = Color(0xFFCBD5E1),
                     lineHeight = 15.sp

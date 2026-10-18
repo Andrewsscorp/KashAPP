@@ -159,7 +159,7 @@ fun CcQuotaProgressBar(
                 Column {
                     Text(
                         text = "Utilizado (Deuda / Pasivo)",
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         color = Color(0xFF64748B)
                     )
                     Text(
@@ -173,7 +173,7 @@ fun CcQuotaProgressBar(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = "Disponible",
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         color = Color(0xFF64748B)
                     )
                     Text(
@@ -187,7 +187,7 @@ fun CcQuotaProgressBar(
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
                         text = "Cupo Total Aprobado",
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         color = Color(0xFF64748B)
                     )
                     Text(
@@ -219,7 +219,7 @@ fun CcQuotaProgressBar(
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = "Ecuación maestra validada: Total = Disponible + Utilizado",
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     color = Color(0xFF475569)
                 )
             }

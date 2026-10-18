@@ -90,7 +90,7 @@ fun SharedReceiptTicketDialog(
                     ) {
                         Text(
                             text = "KASHAPP ENTERPRISE • COMPROBANTE OFICIAL",
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = SharedExpenseThemeTokens.KashCyanLight,
                             letterSpacing = 0.7.sp,
@@ -160,7 +160,7 @@ fun SharedReceiptTicketDialog(
                     if (ticket.participantRows.isNotEmpty()) {
                         Text(
                             text = "DESGLOSE POR PARTICIPANTE",
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = SharedExpenseThemeTokens.KashTextSecondary
                         )
@@ -211,7 +211,7 @@ fun SharedReceiptTicketDialog(
                             ) {
                                 Text(
                                     text = "DATOS PARA TRANSFERENCIA / PAGO",
-                                    fontSize = 10.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = SharedExpenseThemeTokens.ReceivableTeal
                                 )
@@ -245,7 +245,7 @@ fun SharedReceiptTicketDialog(
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = ticket.verificationFooterText,
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.Bold,
                             color = SharedExpenseThemeTokens.KashTextSecondary,

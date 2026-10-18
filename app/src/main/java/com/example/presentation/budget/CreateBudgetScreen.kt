@@ -15,9 +15,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -54,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.presentation.budget.state.BudgetFormViewModel
+import com.example.core.ui.adaptive.rememberKashAdaptiveInfo
 import com.example.presentation.budget.state.BudgetKeyboardTarget
 import com.example.presentation.budget.widgets.BudgetBasicInfoCard
 import com.example.presentation.budget.widgets.BudgetCategoriesAccordionCard
@@ -74,6 +77,7 @@ fun CreateBudgetScreen(
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val adaptive = rememberKashAdaptiveInfo()
 
     BackHandler {
         if (state.activeKeyboardTarget != null) {
@@ -102,40 +106,43 @@ fun CreateBudgetScreen(
                     border = BorderStroke(1.dp, Color(0xFF1E293B)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .statusBarsPadding()
-                    ) {
-                        Row(
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .widthIn(max = adaptive.maxContentWidth)
+                                .statusBarsPadding()
                         ) {
-                            IconButton(
-                                onClick = onNavigateBack,
-                                modifier = Modifier.testTag("back_button")
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Regresar",
-                                    tint = Color.White
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column {
-                                Text(
-                                    text = "Presupuestos y Sobres",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                                Text(
-                                    text = "Planificación financiera y control por categorías",
-                                    fontSize = 11.sp,
-                                    color = Color(0xFF38BDF8)
-                                )
+                                IconButton(
+                                    onClick = onNavigateBack,
+                                    modifier = Modifier.size(44.dp).testTag("back_button")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Regresar",
+                                        tint = Color.White
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = "Presupuestos y Sobres",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                    Text(
+                                        text = "Planificación financiera y control por categorías",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF38BDF8)
+                                    )
+                                }
                             }
                         }
                     }
@@ -148,71 +155,74 @@ fun CreateBudgetScreen(
                     shadowElevation = 16.dp,
                     border = BorderStroke(1.dp, Color(0xFF1E293B))
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .padding(horizontal = 20.dp, vertical = 12.dp)
-                    ) {
-                        // Quick dynamic progress summary
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Total Techo: $ ${String.format(Locale.GERMANY, "%,.0f", state.totalAmount)}",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF94A3B8)
-                            )
-                            Text(
-                                text = if (state.isOverbudget) {
-                                    "Sobreasignado: $ ${String.format(Locale.GERMANY, "%,.0f", Math.abs(state.unassignedAmount))}"
-                                } else {
-                                    "Sin asignar: $ ${String.format(Locale.GERMANY, "%,.0f", state.unassignedAmount)}"
-                                },
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (state.isOverbudget) Color(0xFFEF4444) else if (state.isZeroBasedBalanced) Color(0xFF10B981) else Color(0xFF38BDF8)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Button(
-                            onClick = { viewModel.saveBudget() },
-                            enabled = state.isFormSubmittable,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF007BFF),
-                                disabledContainerColor = Color(0xFF334155)
-                            ),
-                            shape = RoundedCornerShape(12.dp),
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(50.dp)
-                                .testTag("save_budget_button")
+                                .widthIn(max = adaptive.maxContentWidth)
+                                .navigationBarsPadding()
+                                .padding(horizontal = 20.dp, vertical = 12.dp)
                         ) {
-                            if (state.isSaving) {
-                                CircularProgressIndicator(
-                                    color = Color.White,
-                                    strokeWidth = 2.dp,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(10.dp))
+                            // Quick dynamic progress summary
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Text(
-                                    text = "Guardando presupuesto...",
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    text = "Total Techo: $ ${String.format(Locale.GERMANY, "%,.0f", state.totalAmount)}",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF94A3B8)
                                 )
-                            } else {
                                 Text(
-                                    text = if (state.isOverbudget) "Sobreasignado (Corregir montos)" else "Guardar presupuesto",
-                                    fontSize = 15.sp,
+                                    text = if (state.isOverbudget) {
+                                        "Sobreasignado: $ ${String.format(Locale.GERMANY, "%,.0f", Math.abs(state.unassignedAmount))}"
+                                    } else {
+                                        "Sin asignar: $ ${String.format(Locale.GERMANY, "%,.0f", state.unassignedAmount)}"
+                                    },
+                                    fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    color = if (state.isOverbudget) Color(0xFFEF4444) else if (state.isZeroBasedBalanced) Color(0xFF10B981) else Color(0xFF38BDF8)
                                 )
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Button(
+                                onClick = { viewModel.saveBudget() },
+                                enabled = state.isFormSubmittable,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF007BFF),
+                                    disabledContainerColor = Color(0xFF334155)
+                                ),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp)
+                                    .testTag("save_budget_button")
+                            ) {
+                                if (state.isSaving) {
+                                    CircularProgressIndicator(
+                                        color = Color.White,
+                                        strokeWidth = 2.dp,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = "Guardando presupuesto...",
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                } else {
+                                    Text(
+                                        text = if (state.isOverbudget) "Sobreasignado (Corregir montos)" else "Guardar presupuesto",
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
                             }
                         }
                     }
@@ -220,15 +230,21 @@ fun CreateBudgetScreen(
             },
             containerColor = Color(0xFF0F172A)
         ) { paddingValues ->
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 14.dp)
-                    .widthIn(max = 700.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                    .padding(paddingValues),
+                contentAlignment = Alignment.TopCenter
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .imePadding()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 14.dp)
+                        .widthIn(max = adaptive.maxContentWidth),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
                 // 1. Configuración del presupuesto (Información básica y Monto total)
                 BudgetBasicInfoCard(
                     state = state,
@@ -264,6 +280,7 @@ fun CreateBudgetScreen(
                 Spacer(modifier = Modifier.height(80.dp))
             }
         }
+    }
 
         // Dim overlay when keyboard is active
         AnimatedVisibility(

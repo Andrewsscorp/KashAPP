@@ -10,22 +10,26 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.KashAppApplication
+import com.example.core.ui.adaptive.rememberKashAdaptiveInfo
 import com.example.data.local.entity.AccountEntity
 import com.example.features.settings.presentation.SettingsScreen
 import com.example.features.settings.presentation.SettingsViewModel
@@ -98,36 +102,48 @@ fun DashboardScreen(
     val coroutineScope = rememberCoroutineScope()
     val dashContext = LocalContext.current
     val appContainer = (dashContext.applicationContext as KashAppApplication).appContainer
+    val adaptive = rememberKashAdaptiveInfo()
 
-    // Navigation and sub-flow dialog states
-    var showQuickAddModal by remember { mutableStateOf(false) }
-    var showCreateExpense by remember { mutableStateOf(false) }
-    var showCreateIncome by remember { mutableStateOf(false) }
-    var showCreateTransfer by remember { mutableStateOf(false) }
-    var showSelectAccountTypeModal by remember { mutableStateOf(false) }
-    var showBankAccountsManagementScreen by remember { mutableStateOf(false) }
-    var selectedAccountTypeCodeForCreation by remember { mutableStateOf("SAVINGS") }
-    var showCreateAccount by remember { mutableStateOf(false) }
-    var showCreateGoal by remember { mutableStateOf(false) }
-    var showCreateCreditCard by remember { mutableStateOf(false) }
-    var showCreateCardPurchase by remember { mutableStateOf(false) }
-    var showCreateBudget by remember { mutableStateOf(false) }
-    var showBudgetsModule by remember { mutableStateOf(false) }
-    var showCurrencyTrmScreen by remember { mutableStateOf(false) }
-    var showFixedAssetsModule by remember { mutableStateOf(false) }
-    var showThirdPartiesModule by remember { mutableStateOf(false) }
-    var showReceiptScannerScreen by remember { mutableStateOf(false) }
-    var showInformesModule by remember { mutableStateOf(false) }
-    var showObjetivosModule by remember { mutableStateOf(false) }
-    var showUpcomingPaymentsModule by remember { mutableStateOf(false) }
-    var showSharedExpensesModule by remember { mutableStateOf(false) }
-    var showCreateSharedExpenseScreen by remember { mutableStateOf(false) }
-    var showSharedExpensesSettings by remember { mutableStateOf(false) }
-    var activeFinancialRubro by remember { mutableStateOf<FinancialRubroType?>(null) }
-    var currentBottomNavRoute by remember { mutableStateOf("kashapp://dashboard") }
-    var showAuditVault by remember { mutableStateOf(false) }
-    var selectedTxForModal by remember { mutableStateOf<com.example.presentation.dashboard.model.Transaction?>(null) }
-    var selectedPaymentForModal by remember { mutableStateOf<com.example.presentation.dashboard.model.ScheduledPayment?>(null) }
+    // Navigation and sub-flow dialog states (persisted across orientation and process recreation)
+    var showQuickAddModal by rememberSaveable { mutableStateOf(false) }
+    var showCreateExpense by rememberSaveable { mutableStateOf(false) }
+    var showCreateIncome by rememberSaveable { mutableStateOf(false) }
+    var showCreateTransfer by rememberSaveable { mutableStateOf(false) }
+    var showSelectAccountTypeModal by rememberSaveable { mutableStateOf(false) }
+    var showBankAccountsManagementScreen by rememberSaveable { mutableStateOf(false) }
+    var selectedAccountTypeCodeForCreation by rememberSaveable { mutableStateOf("SAVINGS") }
+    var showCreateAccount by rememberSaveable { mutableStateOf(false) }
+    var showCreateGoal by rememberSaveable { mutableStateOf(false) }
+    var showCreateCreditCard by rememberSaveable { mutableStateOf(false) }
+    var showCreateCardPurchase by rememberSaveable { mutableStateOf(false) }
+    var showCreateBudget by rememberSaveable { mutableStateOf(false) }
+    var showBudgetsModule by rememberSaveable { mutableStateOf(false) }
+    var showCurrencyTrmScreen by rememberSaveable { mutableStateOf(false) }
+    var showFixedAssetsModule by rememberSaveable { mutableStateOf(false) }
+    var showThirdPartiesModule by rememberSaveable { mutableStateOf(false) }
+    var showReceiptScannerScreen by rememberSaveable { mutableStateOf(false) }
+    var showInformesModule by rememberSaveable { mutableStateOf(false) }
+    var showObjetivosModule by rememberSaveable { mutableStateOf(false) }
+    var showUpcomingPaymentsModule by rememberSaveable { mutableStateOf(false) }
+    var showSharedExpensesModule by rememberSaveable { mutableStateOf(false) }
+    var showCreateSharedExpenseScreen by rememberSaveable { mutableStateOf(false) }
+    var showSharedExpensesSettings by rememberSaveable { mutableStateOf(false) }
+    var activeFinancialRubroName by rememberSaveable { mutableStateOf<String?>(null) }
+    val activeFinancialRubro = remember(activeFinancialRubroName) {
+        activeFinancialRubroName?.let { name ->
+            runCatching { FinancialRubroType.valueOf(name) }.getOrNull()
+        }
+    }
+    var currentBottomNavRoute by rememberSaveable { mutableStateOf("kashapp://dashboard") }
+    var showAuditVault by rememberSaveable { mutableStateOf(false) }
+    var selectedTxIdForModal by rememberSaveable { mutableStateOf<String?>(null) }
+    val selectedTxForModal = remember(selectedTxIdForModal, uiState.recentTransactions) {
+        selectedTxIdForModal?.let { id -> uiState.recentTransactions.find { it.id.toString() == id } }
+    }
+    var selectedPaymentIdForModal by rememberSaveable { mutableStateOf<String?>(null) }
+    val selectedPaymentForModal = remember(selectedPaymentIdForModal, uiState.upcomingPayments) {
+        selectedPaymentIdForModal?.let { id -> uiState.upcomingPayments.find { it.id.toString() == id } }
+    }
 
     val currentActivity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity
     LaunchedEffect(Unit) {
@@ -280,12 +296,17 @@ fun DashboardScreen(
             // ==========================================
             // DASHBOARD BODY (Parte 2, Parte 3 y Continuación de Imágenes)
             // ==========================================
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp)
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = androidx.compose.ui.Alignment.TopCenter
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = adaptive.maxContentWidth)
+                        .padding(vertical = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp)
+                ) {
 
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                     // PARTE 2: TU POSICIÓN — Así está tu dinero (2x2 Grid con apertura a análisis completo)
@@ -294,9 +315,9 @@ fun DashboardScreen(
                         isPrivacyMode = uiState.isPrivacyMode,
                         currencyCode = uiState.displayCurrency,
                         onViewDetailClick = { showInformesModule = true },
-                        onCashClick = { activeFinancialRubro = FinancialRubroType.AVAILABLE_CASH },
-                        onInvestmentsClick = { activeFinancialRubro = FinancialRubroType.INVESTMENTS },
-                        onDebtsClick = { activeFinancialRubro = FinancialRubroType.DEBTS },
+                        onCashClick = { activeFinancialRubroName = FinancialRubroType.AVAILABLE_CASH.name },
+                        onInvestmentsClick = { activeFinancialRubroName = FinancialRubroType.INVESTMENTS.name },
+                        onDebtsClick = { activeFinancialRubroName = FinancialRubroType.DEBTS.name },
                         onAssetsClick = { showFixedAssetsModule = true }
                     )
                 }
@@ -348,7 +369,7 @@ fun DashboardScreen(
                 UltimosMovimientosCard(
                     transactions = uiState.recentTransactions,
                     onTransactionClick = { txId ->
-                        selectedTxForModal = uiState.recentTransactions.find { it.id == txId }
+                        selectedTxIdForModal = txId.toString()
                     },
                     onSeeAllClick = { showInformesModule = true },
                     isPrivacyMode = uiState.isPrivacyMode
@@ -360,7 +381,7 @@ fun DashboardScreen(
                 ProximosPagosCard(
                     payments = uiState.upcomingPayments,
                     onCalendarIconClick = { showUpcomingPaymentsModule = true },
-                    onPaymentClick = { payment -> selectedPaymentForModal = payment },
+                    onPaymentClick = { payment -> selectedPaymentIdForModal = payment.id.toString() },
                     isPrivacyMode = uiState.isPrivacyMode
                 )
 
@@ -397,6 +418,7 @@ fun DashboardScreen(
 
                 Spacer(modifier = Modifier.height(72.dp))
             }
+        }
         }
     }
     }
@@ -665,23 +687,30 @@ fun DashboardScreen(
 
     // Window / Screen: Financial Rubro Complete Analysis Detail View
     if (activeFinancialRubro != null) {
+        BackHandler {
+            activeFinancialRubroName = null
+        }
         FinancialRubroDetailScreen(
-            rubroType = activeFinancialRubro!!,
+            rubroType = activeFinancialRubro,
             netWorthState = uiState.netWorth,
             financialRepository = viewModel.financialRepository,
             fixedAssetRepository = viewModel.fixedAssetRepository,
             userId = viewModel.userId,
             isPrivacyMode = uiState.isPrivacyMode,
             onOpenFixedAssetsModule = {
-                activeFinancialRubro = null
+                activeFinancialRubroName = null
                 showFixedAssetsModule = true
             },
-            onDismiss = { activeFinancialRubro = null }
+            onDismiss = { activeFinancialRubroName = null }
         )
     }
 
     // Screen: Módulo de Activos Fijos (Depreciación NIIF, Proyecciones y Exportación)
     if (showFixedAssetsModule) {
+        BackHandler {
+            showFixedAssetsModule = false
+            viewModel.onEvent(DashboardEvent.Refresh)
+        }
         val context = LocalContext.current
         val appContainer = (context.applicationContext as KashAppApplication).appContainer
         val fixedAssetsViewModel: FixedAssetsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
@@ -703,6 +732,10 @@ fun DashboardScreen(
 
     // Screen: Módulo Central de Terceros (Directorio Empresarial, Operaciones, Contactos y PDF)
     if (showThirdPartiesModule) {
+        BackHandler {
+            showThirdPartiesModule = false
+            viewModel.onEvent(DashboardEvent.Refresh)
+        }
         val context = LocalContext.current
         val appContainer = (context.applicationContext as KashAppApplication).appContainer
         val thirdPartyViewModel: com.example.presentation.thirdparty.ThirdPartyViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
@@ -873,7 +906,7 @@ fun DashboardScreen(
             )
         )
         val sharedState by sharedVm.uiState.collectAsState()
-        var showOcrItemizedModal by remember { mutableStateOf(false) }
+        var showOcrItemizedModal by rememberSaveable { mutableStateOf(false) }
 
         androidx.activity.compose.BackHandler {
             when {
@@ -1037,10 +1070,10 @@ fun DashboardScreen(
 
     if (selectedTxForModal != null) {
         TransactionDetailsBottomSheet(
-            transaction = selectedTxForModal!!,
-            onDismiss = { selectedTxForModal = null },
+            transaction = selectedTxForModal,
+            onDismiss = { selectedTxIdForModal = null },
             onDelete = {
-                selectedTxForModal = null
+                selectedTxIdForModal = null
                 viewModel.onEvent(DashboardEvent.Refresh)
             }
         )
@@ -1048,16 +1081,19 @@ fun DashboardScreen(
 
     if (selectedPaymentForModal != null) {
         ScheduledPaymentDetailsBottomSheet(
-            payment = selectedPaymentForModal!!,
-            onDismiss = { selectedPaymentForModal = null },
+            payment = selectedPaymentForModal,
+            onDismiss = { selectedPaymentIdForModal = null },
             onOpenUpcomingPayments = {
-                selectedPaymentForModal = null
+                selectedPaymentIdForModal = null
                 showUpcomingPaymentsModule = true
             }
         )
     }
 
     if (showAuditVault) {
+        BackHandler {
+            showAuditVault = false
+        }
         val auditViewModel: com.example.presentation.audit.AuditViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
             factory = com.example.presentation.audit.AuditViewModelFactory(
                 auditSecurityLogDao = appContainer.securityDatabase.auditSecurityLogDao(),

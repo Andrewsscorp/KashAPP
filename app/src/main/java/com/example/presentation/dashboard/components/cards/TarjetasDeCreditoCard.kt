@@ -8,8 +8,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,8 +36,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.core.ui.components.KashAdaptiveActionRow
 import com.example.presentation.dashboard.model.CreditCard
 import com.example.util.MoneyFormatter
 import kotlinx.collections.immutable.ImmutableList
@@ -63,15 +67,18 @@ fun TarjetasDeCreditoCard(
         ) {
             Text(
                 text = "Tarjetas de crédito",
-                fontSize = 22.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F172A)
+                color = Color(0xFF0F172A),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
 
             Row(
                 modifier = Modifier
                     .clickable { onManageCardsClick() }
-                    .padding(vertical = 4.dp, horizontal = 2.dp)
+                    .padding(vertical = 6.dp, horizontal = 4.dp)
                     .testTag("tarjetas_administrar_link"),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -141,7 +148,7 @@ fun TarjetasDeCreditoCard(
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0A192F)),
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier
-                            .height(46.dp)
+                            .defaultMinSize(minHeight = 48.dp)
                             .testTag("agregar_tarjeta_btn")
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -170,24 +177,31 @@ fun TarjetasDeCreditoCard(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column {
+                                Column(modifier = Modifier.weight(1f, fill = false)) {
                                     Text(
                                         text = card.cardName,
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF0F172A)
+                                        color = Color(0xFF0F172A),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                     Text(
                                         text = card.bankName,
                                         fontSize = 11.sp,
-                                        color = Color(0xFF64748B)
+                                        color = Color(0xFF64748B),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "Cupo: ${MoneyFormatter.format(card.availableQuota, isPrivacyMode)}",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F172A)
+                                    color = Color(0xFF0F172A),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                             Spacer(modifier = Modifier.height(6.dp))
@@ -206,15 +220,17 @@ fun TarjetasDeCreditoCard(
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    Row(
+                    KashAdaptiveActionRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalSpacing = 10.dp
                     ) {
                         Button(
                             onClick = { onRecordPurchaseClick?.invoke() },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F172A)),
                             shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier
+                                .weight(1f, fill = false)
+                                .heightIn(min = 44.dp)
                         ) {
                             Icon(Icons.Default.CreditCard, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
@@ -224,7 +240,8 @@ fun TarjetasDeCreditoCard(
                         Button(
                             onClick = onAddCreditCardClick,
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF1F5F9)),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.heightIn(min = 44.dp)
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null, tint = Color(0xFF0F172A), modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))

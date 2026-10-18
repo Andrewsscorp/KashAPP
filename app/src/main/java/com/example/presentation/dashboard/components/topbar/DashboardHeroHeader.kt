@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.presentation.dashboard.model.PeriodState
 import com.example.util.MoneyFormatter
+import com.example.core.ui.components.CurrencyText
 import java.math.BigDecimal
 import java.time.LocalTime
 import java.time.YearMonth
@@ -141,9 +142,7 @@ fun DashboardHeroHeader(
     ) {
         // Subtle decorative concentric wave arcs
         Canvas(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(340.dp)
+            modifier = Modifier.matchParentSize()
         ) {
             val w = size.width
             val h = size.height
@@ -412,7 +411,7 @@ fun DashboardHeroHeader(
                             )
                             Text(
                                 text = if (isConvertedToUsd) "🇺🇸 USD Activo" else "⇄ Ver en USD",
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isConvertedToUsd) Color.White else Color(0xFF38BDF8)
                             )
@@ -493,15 +492,26 @@ fun DashboardHeroHeader(
                         horizontalArrangement = Arrangement.Start,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = rawNetWorthStr,
-                            fontSize = dynamicHeroFontSize,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            maxLines = 1,
-                            softWrap = false,
-                            lineHeight = (dynamicHeroFontSize.value * 1.15f).sp
-                        )
+                        if (isPrivacyMode) {
+                            Text(
+                                text = "••••••",
+                                fontSize = dynamicHeroFontSize,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                maxLines = 1,
+                                softWrap = false,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                        } else {
+                            CurrencyText(
+                                amount = totalNetWorth,
+                                currencyCode = displayCurrency,
+                                fontSize = dynamicHeroFontSize,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                        }
                         Spacer(modifier = Modifier.width(8.dp))
                         
                         // Currency Badge + Interactive Swap button right beside the currency name
@@ -536,7 +546,7 @@ fun DashboardHeroHeader(
                                 )
                                 Text(
                                     text = if (isConvertedToUsd) "Volver" else "USD",
-                                    fontSize = 10.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = if (isConvertedToUsd) Color.White.copy(alpha = 0.9f) else Color.White
                                 )
@@ -559,7 +569,7 @@ fun DashboardHeroHeader(
                         ) {
                             Text(
                                 text = "Tasa: 1 USD = ${MoneyFormatter.format(BigDecimal.valueOf(usdExchangeRate), false, "COP")} · Vista convertida (Saldos reales intactos)",
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 color = Color(0xFFBAE6FD),
                                 fontWeight = FontWeight.Medium,
                                 modifier = Modifier.weight(1f)
@@ -575,7 +585,7 @@ fun DashboardHeroHeader(
                                 ) {
                                     Text(
                                         text = "Ver TRM",
-                                        fontSize = 10.sp,
+                                        fontSize = 11.sp,
                                         color = Color(0xFFBAE6FD),
                                         fontWeight = FontWeight.SemiBold,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -588,7 +598,7 @@ fun DashboardHeroHeader(
                                 ) {
                                     Text(
                                         text = "Restaurar",
-                                        fontSize = 10.sp,
+                                        fontSize = 11.sp,
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)

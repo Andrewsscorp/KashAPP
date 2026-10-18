@@ -22,18 +22,22 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import com.example.core.ui.adaptive.rememberKashAdaptiveInfo
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -274,6 +278,8 @@ fun AddCreditCardScreen(
         }
     }
 
+    val adaptive = rememberKashAdaptiveInfo()
+
     Scaffold(
         modifier = modifier
             .fillMaxSize()
@@ -284,111 +290,119 @@ fun AddCreditCardScreen(
                 color = Color(0xFF0284C7)
             ) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color(0xFF0369A1),
-                                    Color(0xFF0284C7),
-                                    Color(0xFF1E40AF)
-                                )
-                            )
-                        )
-                        .statusBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 14.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        // Back Button
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .clickable {
-                                    viewModel.resetForm()
-                                    onNavigateBack()
-                                }
-                                .padding(4.dp)
-                                .testTag("back_button")
-                        ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = Color.White.copy(alpha = 0.2f),
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = "Volver",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(18.dp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = adaptive.maxContentWidth)
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color(0xFF0369A1),
+                                        Color(0xFF0284C7),
+                                        Color(0xFF1E40AF)
                                     )
-                                }
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Volver",
-                                color = Color.White,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-
-                        // Center Title
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "Tarjeta / Pasivo",
-                                color = Color.White,
-                                fontSize = 17.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = (-0.2).sp
-                            )
-                            Text(
-                                text = "Línea de crédito & deuda",
-                                color = Color.White.copy(alpha = 0.85f),
-                                fontSize = 11.sp
-                            )
-                        }
-
-                        // TOP ACTION PILL: GUARDAR
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = if (state.totalQuota > 0 || state.debtName.isNotBlank()) Color.White else Color.White.copy(alpha = 0.3f),
-                            shadowElevation = if (state.totalQuota > 0) 3.dp else 0.dp,
-                            modifier = Modifier
-                                .clickable(enabled = !state.isSaving) {
-                                    viewModel.saveCreditCard(userId = userId, context = context)
-                                }
-                                .testTag("top_bar_save_card_btn")
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                if (state.isSaving) {
-                                    CircularProgressIndicator(
-                                        color = KashNavy,
-                                        strokeWidth = 2.dp,
-                                        modifier = Modifier.size(13.dp)
-                                    )
-                                } else {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = null,
-                                        tint = if (state.totalQuota > 0 || state.debtName.isNotBlank()) KashNavy else Color.White,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                }
-                                Text(
-                                    text = "Guardar",
-                                    color = if (state.totalQuota > 0 || state.debtName.isNotBlank()) KashNavy else Color.White,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
                                 )
+                            )
+                            .statusBarsPadding()
+                            .padding(horizontal = 16.dp, vertical = 14.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            // Back Button
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .defaultMinSize(minHeight = 44.dp)
+                                    .clickable {
+                                        viewModel.resetForm()
+                                        onNavigateBack()
+                                    }
+                                    .padding(4.dp)
+                                    .testTag("back_button")
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = Color.White.copy(alpha = 0.2f),
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "Volver",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Volver",
+                                    color = Color.White,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+
+                            // Center Title
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "Tarjeta / Pasivo",
+                                    color = Color.White,
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = (-0.2).sp
+                                )
+                                Text(
+                                    text = "Línea de crédito & deuda",
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    fontSize = 11.sp
+                                )
+                            }
+
+                            // TOP ACTION PILL: GUARDAR
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = if (state.totalQuota > 0 || state.debtName.isNotBlank()) Color.White else Color.White.copy(alpha = 0.3f),
+                                shadowElevation = if (state.totalQuota > 0) 3.dp else 0.dp,
+                                modifier = Modifier
+                                    .defaultMinSize(minHeight = 44.dp)
+                                    .clickable(enabled = !state.isSaving) {
+                                        viewModel.saveCreditCard(userId = userId, context = context)
+                                    }
+                                    .testTag("top_bar_save_card_btn")
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    if (state.isSaving) {
+                                        CircularProgressIndicator(
+                                            color = KashNavy,
+                                            strokeWidth = 2.dp,
+                                            modifier = Modifier.size(13.dp)
+                                        )
+                                    } else {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = if (state.totalQuota > 0 || state.debtName.isNotBlank()) KashNavy else Color.White,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = "Guardar",
+                                        color = if (state.totalQuota > 0 || state.debtName.isNotBlank()) KashNavy else Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                     }
@@ -404,43 +418,50 @@ fun AddCreditCardScreen(
             ) {
                 val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                        .padding(bottom = bottomPadding)
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Button(
-                        onClick = { viewModel.saveCreditCard(userId = userId, context = context) },
-                        enabled = !state.isSaving,
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp)
-                            .testTag("save_credit_card_button"),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F172A))
+                            .widthIn(max = adaptive.maxContentWidth)
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                            .padding(bottom = bottomPadding)
                     ) {
-                        if (state.isSaving) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = Color.White,
-                                strokeWidth = 2.dp
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Guardando tarjeta...", color = Color.White, fontWeight = FontWeight.Bold)
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.Save,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Guardar Tarjeta de Crédito",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
+                        Button(
+                            onClick = { viewModel.saveCreditCard(userId = userId, context = context) },
+                            enabled = !state.isSaving,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp)
+                                .defaultMinSize(minHeight = 44.dp)
+                                .testTag("save_credit_card_button"),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F172A))
+                        ) {
+                            if (state.isSaving) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Guardando tarjeta...", color = Color.White, fontWeight = FontWeight.Bold)
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Save,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Guardar Tarjeta de Crédito",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
                         }
                     }
                 }
@@ -449,14 +470,21 @@ fun AddCreditCardScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = Color(0xFFF8FAFC)
     ) { innerPadding ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 28.dp)
+                .imePadding(),
+            contentAlignment = Alignment.TopCenter
         ) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .widthIn(max = adaptive.maxContentWidth)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(top = 16.dp, bottom = 28.dp)
+            ) {
             // ==========================================
             // 1. APPLE WALLET LIVE CARD PREVIEW (VIRTUAL CARD HERO)
             // ==========================================
@@ -558,7 +586,7 @@ fun AddCreditCardScreen(
                                         modifier = Modifier.fillMaxSize(),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text("EMV", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Color(0xFF78350F))
+                                        Text("EMV", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF78350F))
                                     }
                                 }
                             }
@@ -570,7 +598,7 @@ fun AddCreditCardScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Column {
-                                        Text("Cupo Disponible", fontSize = 10.sp, color = Color.White.copy(alpha = 0.7f))
+                                        Text("Cupo Disponible", fontSize = 11.sp, color = Color.White.copy(alpha = 0.7f))
                                         Text(
                                             text = formatMoneyDisplay(state.availableQuota, state.currencyCode),
                                             fontSize = 16.sp,
@@ -580,7 +608,7 @@ fun AddCreditCardScreen(
                                     }
 
                                     Column(horizontalAlignment = Alignment.End) {
-                                        Text("Cupo Total", fontSize = 10.sp, color = Color.White.copy(alpha = 0.7f))
+                                        Text("Cupo Total", fontSize = 11.sp, color = Color.White.copy(alpha = 0.7f))
                                         Text(
                                             text = formatMoneyDisplay(state.totalQuota, state.currencyCode),
                                             fontSize = 14.sp,
@@ -608,13 +636,13 @@ fun AddCreditCardScreen(
                                 ) {
                                     Text(
                                         text = "Deuda actual: ${formatMoneyDisplay(state.usedQuota, state.currencyCode)}",
-                                        fontSize = 10.sp,
+                                        fontSize = 11.sp,
                                         color = if (state.usedQuota > 0) Color(0xFFFCA5A5) else Color.White.copy(alpha = 0.7f),
                                         fontWeight = FontWeight.Medium
                                     )
                                     Text(
                                         text = "Uso: ${(usage * 100).toInt()}%",
-                                        fontSize = 10.sp,
+                                        fontSize = 11.sp,
                                         color = Color.White.copy(alpha = 0.8f),
                                         fontWeight = FontWeight.Bold
                                     )
@@ -676,7 +704,7 @@ fun AddCreditCardScreen(
                                         fontWeight = FontWeight.Bold,
                                         color = KashBlue
                                     )
-                                    Text("▾", fontSize = 10.sp, color = KashBlue, fontWeight = FontWeight.Bold)
+                                    Text("▾", fontSize = 11.sp, color = KashBlue, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -1162,6 +1190,7 @@ fun AddCreditCardScreen(
             }
         }
     }
+}
 
     // ==========================================
     // MODAL: CATEGORY SELECTOR SHEET

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -30,12 +31,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.example.core.ui.components.CurrencyText
 import com.example.data.local.entity.BudgetItemEntity
 import com.example.data.local.entity.TransactionEntity
-import java.text.DecimalFormat
 
 @Composable
 fun EnvelopeTransactionsModal(
@@ -43,7 +45,6 @@ fun EnvelopeTransactionsModal(
     transactions: List<TransactionEntity>,
     onDismiss: () -> Unit
 ) {
-    val moneyFormatter = remember { DecimalFormat("#,##0") }
     val cardBg = Color(0xFF0B172B)
     val cardBorder = Color(0xFF132B4F)
     val primaryBlue = Color(0xFF007AFF)
@@ -71,13 +72,18 @@ fun EnvelopeTransactionsModal(
                     .fillMaxWidth()
                     .padding(20.dp)
             ) {
-                // Header
+                // Header: Flexible row preventing close button displacement
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
@@ -87,19 +93,41 @@ fun EnvelopeTransactionsModal(
                             Icon(Icons.Default.ReceiptLong, contentDescription = null, tint = accentCyan, modifier = Modifier.size(20.dp))
                         }
                         Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(envelope.categoryName, color = textPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                            Text("Consumo real: $ ${moneyFormatter.format(envelope.spentAmount)}", color = textSecondary, fontSize = 11.5.sp)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = envelope.categoryName,
+                                color = textPrimary,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Consumo real: ",
+                                    color = textSecondary,
+                                    fontSize = 11.5.sp
+                                )
+                                CurrencyText(
+                                    amountDouble = envelope.spentAmount,
+                                    color = textSecondary,
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                         }
                     }
-                    IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(36.dp)
+                    ) {
                         Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = textSecondary)
                     }
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Summary Pill
+                // Summary Pill: Flexible proportions
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = Color(0xFF061120),
@@ -110,17 +138,27 @@ fun EnvelopeTransactionsModal(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(10.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text("Asignado en sobre", color = textSecondary, fontSize = 11.sp)
-                            Text("$ ${moneyFormatter.format(envelope.allocatedAmount)}", color = textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            CurrencyText(
+                                amountDouble = envelope.allocatedAmount,
+                                color = textPrimary,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
-                        Column(horizontalAlignment = Alignment.End) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column(
+                            horizontalAlignment = Alignment.End,
+                            modifier = Modifier.weight(1f)
+                        ) {
                             Text("Disponible", color = textSecondary, fontSize = 11.sp)
                             val remaining = envelope.allocatedAmount - envelope.spentAmount
-                            Text(
-                                "$ ${moneyFormatter.format(remaining)}",
+                            CurrencyText(
+                                amountDouble = remaining,
                                 color = if (remaining < 0) Color(0xFFEF4444) else Color(0xFF00E676),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold
@@ -147,7 +185,7 @@ fun EnvelopeTransactionsModal(
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(260.dp),
+                            .heightIn(min = 100.dp, max = 340.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(filteredTx, key = { it.id }) { tx ->
@@ -164,11 +202,36 @@ fun EnvelopeTransactionsModal(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column {
-                                        Text(tx.description ?: tx.categoryName, color = textPrimary, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
-                                        Text("${tx.date} • ${tx.accountName}", color = textSecondary, fontSize = 10.5.sp)
+                                    // DEF-SCR-05 FIX: Left column constrained with weight(1f) and padding(end = 12.dp)
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(end = 12.dp)
+                                    ) {
+                                        Text(
+                                            text = tx.description ?: tx.categoryName,
+                                            color = textPrimary,
+                                            fontSize = 12.5.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = "${tx.date} • ${tx.accountName}",
+                                            color = textSecondary,
+                                            fontSize = 11.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
                                     }
-                                    Text("-$ ${moneyFormatter.format(tx.amount)}", color = Color(0xFFEF4444), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                    // Right amount guaranteed single-line without compression
+                                    CurrencyText(
+                                        amountDouble = tx.amount,
+                                        prefix = "-$ ",
+                                        color = Color(0xFFEF4444),
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
                             }
                         }

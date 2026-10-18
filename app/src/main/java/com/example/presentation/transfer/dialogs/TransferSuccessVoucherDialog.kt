@@ -179,7 +179,7 @@ fun TransferSuccessVoucherDialog(
                             }
                             Spacer(modifier = Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(text = "Desde (Débito)", fontSize = 10.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Medium)
+                                Text(text = "Desde (Débito)", fontSize = 11.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Medium)
                                 Text(
                                     text = summary.sourceAccountName,
                                     fontSize = 13.sp,
@@ -218,7 +218,7 @@ fun TransferSuccessVoucherDialog(
                             }
                             Spacer(modifier = Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(text = "Hacia (Crédito)", fontSize = 10.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Medium)
+                                Text(text = "Hacia (Crédito)", fontSize = 11.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Medium)
                                 Text(
                                     text = summary.destinationAccountName,
                                     fontSize = 13.sp,

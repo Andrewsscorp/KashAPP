@@ -125,7 +125,7 @@ fun IncomeDestinationAccount(
                             Text(
                                 text = "* Obligatorio",
                                 color = Color(0xFFDC2626),
-                                fontSize = 9.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
                             )

@@ -582,7 +582,7 @@ fun FixedAssetDetailScreen(
                                         )
                                         Text(
                                             text = if (currentAsset.noAffectDashboard) "No Afecta Dash." else "En Dashboard",
-                                            fontSize = 10.5.sp,
+                                            fontSize = 11.sp,
                                             fontWeight = FontWeight.SemiBold,
                                             color = if (currentAsset.noAffectDashboard) Color(0xFFFBBF24) else Color(0xFF38BDF8)
                                         )
@@ -666,7 +666,7 @@ fun FixedAssetDetailScreen(
                                         )
                                         Text(
                                             text = if (currentAsset.noAffectDashboard) "No Afecta Dash." else "En Dashboard",
-                                            fontSize = 10.5.sp,
+                                            fontSize = 11.sp,
                                             fontWeight = FontWeight.SemiBold,
                                             color = if (currentAsset.noAffectDashboard) Color(0xFFFBBF24) else Color(0xFF38BDF8)
                                         )
@@ -746,7 +746,7 @@ fun FixedAssetDetailScreen(
                                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
                                     Icon(Icons.Default.ZoomIn, contentDescription = "Ampliar foto", tint = Color.White, modifier = Modifier.size(14.dp))
-                                    Text("Ampliar", fontSize = 10.5.sp, color = Color.White)
+                                    Text("Ampliar", fontSize = 11.sp, color = Color.White)
                                 }
                             }
 
@@ -770,7 +770,7 @@ fun FixedAssetDetailScreen(
                                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
                                     Icon(Icons.Default.Edit, contentDescription = null, tint = accentCyan, modifier = Modifier.size(12.dp))
-                                    Text("Cambiar foto", fontSize = 10.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+                                    Text("Cambiar foto", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
                                 }
                             }
                         }
@@ -854,7 +854,7 @@ fun FixedAssetDetailScreen(
                                 AssetHardwareThumbnail(category = category, modifier = Modifier.size(44.dp))
                                 Text(
                                     text = "+ Foto",
-                                    fontSize = 9.5.sp,
+                                    fontSize = 11.sp,
                                     color = accentCyan,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -911,7 +911,7 @@ fun FixedAssetDetailScreen(
                             ) {
                                 Text(
                                     text = "En libros: ${moneyFmt.format(bookValue)}",
-                                    fontSize = 10.5.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = accentCyan,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -1127,7 +1127,7 @@ fun FixedAssetDetailScreen(
                                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                                             ) {
                                                 Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(Color(0xFF10B981)))
-                                                Text("Evidencia Verificada", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF34D399))
+                                                Text("Evidencia Verificada", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF34D399))
                                             }
                                         }
 
@@ -1143,7 +1143,7 @@ fun FixedAssetDetailScreen(
                                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                                             ) {
                                                 Icon(Icons.Default.ZoomIn, null, tint = Color.White, modifier = Modifier.size(13.dp))
-                                                Text("Tocar para ampliar", fontSize = 10.sp, color = Color.White)
+                                                Text("Tocar para ampliar", fontSize = 11.sp, color = Color.White)
                                             }
                                         }
                                     }
@@ -1250,7 +1250,7 @@ fun FixedAssetDetailScreen(
                             Icon(Icons.Default.TrendingUp, null, tint = primaryBlue, modifier = Modifier.size(16.dp))
                             Column {
                                 Text("Evolución del valor", fontSize = 13.5.sp, fontWeight = FontWeight.Bold, color = textPrimary)
-                                Text("Valor en libros vs. Amortización acumulada", fontSize = 10.5.sp, color = textSecondary)
+                                Text("Valor en libros vs. Amortización acumulada", fontSize = 11.sp, color = textSecondary)
                             }
                         }
 
@@ -1270,11 +1270,11 @@ fun FixedAssetDetailScreen(
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(primaryBlue))
-                                Text("Valor en libros (${moneyFmt.format(bookValue)})", fontSize = 10.sp, color = textSecondary)
+                                Text("Valor en libros (${moneyFmt.format(bookValue)})", fontSize = 11.sp, color = textSecondary)
                             }
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(Color(0xFF38BDF8)))
-                                Text("Depreciación (${moneyFmt.format(asset.accumulatedDepreciation)})", fontSize = 10.sp, color = textSecondary)
+                                Text("Depreciación (${moneyFmt.format(asset.accumulatedDepreciation)})", fontSize = 11.sp, color = textSecondary)
                             }
                         }
                     }
@@ -1300,7 +1300,7 @@ fun FixedAssetDetailScreen(
                             Icon(Icons.Default.AutoMode, null, tint = accentCyan, modifier = Modifier.size(16.dp))
                             Column {
                                 Text("Distribución del valor del activo", fontSize = 13.5.sp, fontWeight = FontWeight.Bold, color = textPrimary)
-                                Text("Porcentaje contable NIIF actual", fontSize = 10.5.sp, color = textSecondary)
+                                Text("Porcentaje contable NIIF actual", fontSize = 11.sp, color = textSecondary)
                             }
                         }
 
@@ -1345,7 +1345,7 @@ fun FixedAssetDetailScreen(
                                         fontWeight = FontWeight.Bold,
                                         color = textPrimary
                                     )
-                                    Text("Libros", fontSize = 8.sp, color = textSecondary)
+                                    Text("Libros", fontSize = 11.sp, color = textSecondary)
                                 }
                             }
 
@@ -2090,7 +2090,7 @@ private fun MetricMiniCard(
             }
             Text(
                 text = title,
-                fontSize = 9.5.sp,
+                fontSize = 11.sp,
                 color = Color(0xFF8EA5C4),
                 maxLines = 1
             )
@@ -2141,7 +2141,7 @@ private fun SpecItem(
                 ) {
                     Text(
                         text = badgeText,
-                        fontSize = 10.5.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF38BDF8),
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -2253,7 +2253,7 @@ private fun MovementRowItem(
                     if (!impact.isNullOrBlank()) {
                         Text(
                             text = impact,
-                            fontSize = 9.5.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFF94A3B8)
                         )
@@ -2326,7 +2326,7 @@ private fun MovementDetailChip(label: String, color: Color) {
     ) {
         Text(
             text = label,
-            fontSize = 9.5.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
             color = color,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -2341,9 +2341,9 @@ private fun LegendRow(label: String, percentage: String, color: Color) {
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(color))
-        Text(text = label, fontSize = 9.sp, color = Color(0xFF8EA5C4))
+        Text(text = label, fontSize = 11.sp, color = Color(0xFF8EA5C4))
         Spacer(modifier = Modifier.width(4.dp))
-        Text(text = percentage, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text(text = percentage, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
     }
 }
 
@@ -2683,7 +2683,7 @@ private fun DepreciationTabContent(
                     }.joinToString(" • ")
                     Text(
                         text = "Políticas restringidas: $hints (Actívalas en Opciones avanzadas).",
-                        fontSize = 10.5.sp,
+                        fontSize = 11.sp,
                         color = Color(0xFF64748B)
                     )
                 }
@@ -2784,10 +2784,10 @@ private fun SpecParamMiniCard(label: String, value: String, subValue: String? = 
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(label, fontSize = 10.sp, color = Color(0xFF8EA5C4))
+            Text(label, fontSize = 11.sp, color = Color(0xFF8EA5C4))
             Text(value, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1)
             if (subValue != null) {
-                Text(subValue, fontSize = 10.5.sp, color = Color(0xFF38BDF8))
+                Text(subValue, fontSize = 11.sp, color = Color(0xFF38BDF8))
             }
         }
     }
@@ -2980,7 +2980,7 @@ private fun MovementsTabContent(
                     ) {
                         Text(
                             text = f,
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium,
                             color = if (isSel) Color.White else Color(0xFF8EA5C4),
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
@@ -3044,7 +3044,7 @@ private fun DocumentsTabContent(
                         ) {
                             Text(
                                 text = "Evidencia Verificada",
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF34D399),
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
@@ -3074,7 +3074,7 @@ private fun DocumentsTabContent(
                             color = Color(0xCC000000),
                             modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp)
                         ) {
-                            Text("Tocar para ampliar", fontSize = 10.sp, color = Color.White, modifier = Modifier.padding(6.dp))
+                            Text("Tocar para ampliar", fontSize = 11.sp, color = Color.White, modifier = Modifier.padding(6.dp))
                         }
                     }
                 } else {

@@ -86,7 +86,10 @@ fun PreguntaKashAiCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.weight(1f, fill = false).padding(end = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Box(
                         modifier = Modifier
                             .size(40.dp)
@@ -109,7 +112,9 @@ fun PreguntaKashAiCard(
                             text = "Pregunta a KashAI",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -138,7 +143,7 @@ fun PreguntaKashAiCard(
                 ) {
                     Text(
                         text = "BETA",
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF00D2FF),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
@@ -223,7 +228,7 @@ fun PreguntaKashAiCard(
                     // Blue Send Circle Button with Up Arrow (Image 3)
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(40.dp)
                             .clip(CircleShape)
                             .background(Color(0xFF007BFF))
                             .clickable(enabled = aiState.inputText.isNotBlank() && !aiState.isProcessing) {

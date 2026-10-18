@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -141,6 +142,7 @@ fun CurrencyTrmScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .imePadding()
                 .verticalScroll(scrollState)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -408,7 +410,7 @@ fun CurrencyTrmScreen(
                                 )
                                 Text(
                                     text = "Última act: ${timeFormat.format(Date(uiState.lastUpdateTimestamp))}",
-                                    fontSize = 10.sp,
+                                    fontSize = 11.sp,
                                     color = Color(0xFF94A3B8)
                                 )
                             }
@@ -433,7 +435,7 @@ fun CurrencyTrmScreen(
                                     Spacer(modifier = Modifier.width(5.dp))
                                     Text(
                                         text = if (uiState.isConnectionOnline) "Actualización automática" else "Modo Caché Offline",
-                                        fontSize = 10.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = if (uiState.isConnectionOnline) Color(0xFF059669) else Color(0xFFD97706)
                                     )
@@ -789,7 +791,7 @@ fun CurrencyTrmScreen(
                                 if (effective != null) {
                                     Text(
                                         text = "Tasa usada: ${moneyFormatter.format(effective.rate)} • ${effective.providerName}",
-                                        fontSize = 10.sp,
+                                        fontSize = 11.sp,
                                         color = Color(0xFF64748B)
                                     )
                                 }
@@ -842,7 +844,7 @@ fun CurrencyTrmScreen(
                                         ) {
                                             Text(
                                                 text = "Manual",
-                                                fontSize = 9.sp,
+                                                fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = Color(0xFF0284C7),
                                                 modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
@@ -925,12 +927,12 @@ fun CurrencyTrmScreen(
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                         Text("Vigencia:", fontSize = 11.sp, color = Color(0xFF64748B))
-                                        Text("${activeRate.validFromDate} – ${activeRate.validToDate}", fontSize = 10.sp, color = Color(0xFF475569))
+                                        Text("${activeRate.validFromDate} – ${activeRate.validToDate}", fontSize = 11.sp, color = Color(0xFF475569))
                                     }
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                         Text("Fuente:", fontSize = 11.sp, color = Color(0xFF64748B))
-                                        Text(activeRate.note, fontSize = 10.sp, color = Color(0xFF64748B))
+                                        Text(activeRate.note, fontSize = 11.sp, color = Color(0xFF64748B))
                                     }
                                 }
                             }
@@ -997,7 +999,7 @@ fun CurrencyTrmScreen(
                             Column(modifier = Modifier.padding(10.dp)) {
                                 Icon(Icons.Default.Language, null, tint = KashBlue, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text("Proveedor", fontSize = 10.sp, color = Color(0xFF64748B))
+                                Text("Proveedor", fontSize = 11.sp, color = Color(0xFF64748B))
                                 Text("Frankfurter", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = KashNavy)
                             }
                         }
@@ -1012,7 +1014,7 @@ fun CurrencyTrmScreen(
                             Column(modifier = Modifier.padding(10.dp)) {
                                 Icon(Icons.Default.Refresh, null, tint = Color(0xFF10B981), modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text("Frecuencia", fontSize = 10.sp, color = Color(0xFF64748B))
+                                Text("Frecuencia", fontSize = 11.sp, color = Color(0xFF64748B))
                                 Text("Diaria / Instantánea", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = KashNavy)
                             }
                         }
@@ -1029,7 +1031,7 @@ fun CurrencyTrmScreen(
                             Column(modifier = Modifier.padding(10.dp)) {
                                 Icon(Icons.Default.History, null, tint = Color(0xFF6366F1), modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text("Historial", fontSize = 10.sp, color = Color(0xFF64748B))
+                                Text("Historial", fontSize = 11.sp, color = Color(0xFF64748B))
                                 Text("Ver registros >", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF6366F1))
                             }
                         }
@@ -1055,7 +1057,7 @@ fun CurrencyTrmScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Column {
                                     Text("Restablecer a tasa automática", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = KashNavy)
-                                    Text("Quita la tasa manual activa", fontSize = 10.sp, color = Color(0xFF64748B))
+                                    Text("Quita la tasa manual activa", fontSize = 11.sp, color = Color(0xFF64748B))
                                 }
                             }
                             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = Color(0xFF94A3B8), modifier = Modifier.size(18.dp))
@@ -1076,7 +1078,7 @@ fun CurrencyTrmScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                 Text("Usar fuente oficial (si aplica)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = KashNavy)
-                                Text("Referencia TRM colombiana para el par USD/COP", fontSize = 10.sp, color = Color(0xFF64748B))
+                                Text("Referencia TRM colombiana para el par USD/COP", fontSize = 11.sp, color = Color(0xFF64748B))
                             }
                         }
                         Switch(
@@ -1225,7 +1227,7 @@ private fun RateCardMini(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = "↑ +${card.variationPercent}%",
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF10B981)
                 )
@@ -1236,7 +1238,7 @@ private fun RateCardMini(
                 ) {
                     Text(
                         text = "+${String.format(Locale.US, "%.2f", card.variationDiff)}",
-                        fontSize = 9.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF059669),
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)

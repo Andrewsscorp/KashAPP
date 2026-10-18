@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import com.example.core.ui.adaptive.rememberKashAdaptiveInfo
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
@@ -91,6 +93,7 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val adaptive = rememberKashAdaptiveInfo()
 
     LaunchedEffect(uiState.statusMessage) {
         uiState.statusMessage?.let {
@@ -133,26 +136,39 @@ fun SettingsScreen(
         },
         bottomBar = {
             if (uiState.currentSubRoute != SettingsSubRoute.AUDITORIA) {
-                SettingsBottomNavBar(
-                    onHomeClick = onNavigateToHome,
-                    onTransactionsClick = onNavigateToTransactions,
-                    onFabClick = onFabAddClick,
-                    onSummaryClick = onNavigateToSummary,
-                    onSettingsClick = { viewModel.navigateBackToMain() }
-                )
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(modifier = Modifier.fillMaxWidth().widthIn(max = adaptive.maxContentWidth)) {
+                        SettingsBottomNavBar(
+                            onHomeClick = onNavigateToHome,
+                            onTransactionsClick = onNavigateToTransactions,
+                            onFabClick = onFabAddClick,
+                            onSummaryClick = onNavigateToSummary,
+                            onSettingsClick = { viewModel.navigateBackToMain() }
+                        )
+                    }
+                }
             }
         }
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(paddingValues),
+            contentAlignment = Alignment.TopCenter
         ) {
-            AnimatedContent(
-                targetState = uiState.currentSubRoute,
-                transitionSpec = { fadeIn() togetherWith fadeOut() },
-                label = "settings_subroute_transition"
-            ) { subRoute ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .widthIn(max = adaptive.maxContentWidth)
+            ) {
+                AnimatedContent(
+                    targetState = uiState.currentSubRoute,
+                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                    label = "settings_subroute_transition"
+                ) { subRoute ->
                 when (subRoute) {
                     SettingsSubRoute.MAIN -> {
                         SettingsMainContent(
@@ -327,6 +343,7 @@ fun SettingsScreen(
             }
         }
     }
+}
 
     // Modal: Logout Confirmation Dialog
     if (uiState.showLogoutConfirmationDialog) {
@@ -452,54 +469,61 @@ private fun SettingsTopBar(
     subtitle: String?,
     onBackClick: () -> Unit
 ) {
+    val adaptive = rememberKashAdaptiveInfo()
     Surface(
         color = Color.White,
         shadowElevation = 1.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 12.dp, top = 16.dp, end = 12.dp, bottom = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = onBackClick,
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFF1F5F9))
-                    .testTag("settings_back_btn")
+                    .widthIn(max = adaptive.maxContentWidth)
+                    .statusBarsPadding()
             ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Volver",
-                    tint = KashNavy,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = KashNavy
-                )
-                if (subtitle != null) {
-                    Text(
-                        text = subtitle,
-                        fontSize = 12.sp,
-                        color = Color(0xFF64748B)
-                    )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 12.dp, top = 16.dp, end = 12.dp, bottom = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = onBackClick,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFF1F5F9))
+                            .testTag("settings_back_btn")
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Volver",
+                            tint = KashNavy,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = title,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = KashNavy
+                        )
+                        if (subtitle != null) {
+                            Text(
+                                text = subtitle,
+                                fontSize = 12.sp,
+                                color = Color(0xFF64748B)
+                            )
+                        }
+                    }
                 }
             }
         }
     }
-}
 }

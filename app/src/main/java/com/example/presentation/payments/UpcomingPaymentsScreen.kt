@@ -659,7 +659,16 @@ private fun PaymentKpisHeader(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("PROYECCIÓN DE LIQUIDEZ Y CAJA", color = Color(0xFF94A3B8), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "PROYECCIÓN DE LIQUIDEZ Y CAJA",
+                        color = Color(0xFF94A3B8),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f, fill = false),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
                     Surface(
                         shape = RoundedCornerShape(6.dp),
                         color = if (remainingBalance >= 0) Color(0xFF10B981).copy(alpha = 0.2f) else Color(0xFFEF4444).copy(alpha = 0.2f),
@@ -668,7 +677,7 @@ private fun PaymentKpisHeader(
                         Text(
                             text = if (remainingBalance >= 0) "Cobertura ${coveragePercent.toInt()}%" else "Riesgo de Déficit",
                             color = if (remainingBalance >= 0) Color(0xFF34D399) else Color(0xFFFCA5A5),
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
@@ -1166,7 +1175,7 @@ private fun NotificationConfigDialog(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text("💳 Tarjetas de Crédito", color = Color.White, fontSize = 12.sp)
-                            Text("Fechas límite de pago y montos mínimos", color = Color(0xFF94A3B8), fontSize = 10.sp)
+                            Text("Fechas límite de pago y montos mínimos", color = Color(0xFF94A3B8), fontSize = 11.sp)
                         }
                         Switch(
                             checked = notifyCreditCards,
@@ -1183,7 +1192,7 @@ private fun NotificationConfigDialog(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text("🏦 Préstamos & Deudas Bancarias", color = Color.White, fontSize = 12.sp)
-                            Text("Cuotas fijas y amortizaciones periódicas", color = Color(0xFF94A3B8), fontSize = 10.sp)
+                            Text("Cuotas fijas y amortizaciones periódicas", color = Color(0xFF94A3B8), fontSize = 11.sp)
                         }
                         Switch(
                             checked = notifyLoansDebts,
@@ -1200,7 +1209,7 @@ private fun NotificationConfigDialog(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text("💡 Servicios, Arriendos & Suscripciones", color = Color.White, fontSize = 12.sp)
-                            Text("Facturas mensuales y pagos fijos", color = Color(0xFF94A3B8), fontSize = 10.sp)
+                            Text("Facturas mensuales y pagos fijos", color = Color(0xFF94A3B8), fontSize = 11.sp)
                         }
                         Switch(
                             checked = notifyServices,
@@ -1219,7 +1228,7 @@ private fun NotificationConfigDialog(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text("🚨 Alerta el día de vencimiento", color = Color.White, fontSize = 12.sp)
-                            Text("Aviso prioritario en la fecha exacta de pago", color = Color(0xFF94A3B8), fontSize = 10.sp)
+                            Text("Aviso prioritario en la fecha exacta de pago", color = Color(0xFF94A3B8), fontSize = 11.sp)
                         }
                         Switch(
                             checked = onDueDate,
@@ -1235,7 +1244,7 @@ private fun NotificationConfigDialog(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text("⚠️ Alerta diaria si está en mora", color = Color.White, fontSize = 12.sp)
-                            Text("Notificar a diario hasta marcar como pagado", color = Color(0xFF94A3B8), fontSize = 10.sp)
+                            Text("Notificar a diario hasta marcar como pagado", color = Color(0xFF94A3B8), fontSize = 11.sp)
                         }
                         Switch(
                             checked = dailyIfOverdue,
@@ -1343,7 +1352,7 @@ private fun NotificationConfigDialog(
                         Text(
                             text = "Gestionado por WorkManager: opera con ahorro de batería y persiste tras reiniciar el dispositivo.",
                             color = Color(0xFF94A3B8),
-                            fontSize = 10.sp
+                            fontSize = 11.sp
                         )
                     }
                 }

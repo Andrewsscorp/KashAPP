@@ -53,6 +53,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.local.entity.FixedAssetEntity
@@ -140,7 +141,7 @@ fun FixedAssetsDepreciationTab(
                         )
                         Text(
                             text = "Deprec. mes",
-                            fontSize = 9.sp,
+                            fontSize = 11.sp,
                             color = textSecondary,
                             maxLines = 1
                         )
@@ -183,7 +184,7 @@ fun FixedAssetsDepreciationTab(
                         )
                         Text(
                             text = "Histórico compra",
-                            fontSize = 9.sp,
+                            fontSize = 11.sp,
                             color = textSecondary,
                             maxLines = 1
                         )
@@ -226,7 +227,7 @@ fun FixedAssetsDepreciationTab(
                         )
                         Text(
                             text = "Plurianual",
-                            fontSize = 9.sp,
+                            fontSize = 11.sp,
                             color = Color(0xFFC4B5FD),
                             maxLines = 1
                         )
@@ -288,7 +289,7 @@ fun FixedAssetsDepreciationTab(
                     ) {
                         Text(
                             text = "Auditado NIIF",
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF10B981),
                             modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
@@ -300,7 +301,7 @@ fun FixedAssetsDepreciationTab(
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         text = "VALOR EN LIBROS NETO",
-                        fontSize = 10.5.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = accentCyan,
                         letterSpacing = 0.5.sp
@@ -325,7 +326,7 @@ fun FixedAssetsDepreciationTab(
                         modifier = Modifier.weight(1f)
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
-                            Text("Costo de Adquisición", fontSize = 10.5.sp, color = textSecondary)
+                            Text("Costo de Adquisición", fontSize = 11.sp, color = textSecondary)
                             Text(
                                 text = moneyFmt.format(patrimonioResumen.totalAcquisitionCost),
                                 fontSize = 14.5.sp,
@@ -342,7 +343,7 @@ fun FixedAssetsDepreciationTab(
                         modifier = Modifier.weight(1f)
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
-                            Text("Depreciación Acum.", fontSize = 10.5.sp, color = textSecondary)
+                            Text("Depreciación Acum.", fontSize = 11.sp, color = textSecondary)
                             Text(
                                 text = "- ${moneyFmt.format(patrimonioResumen.totalAccumulatedDepreciation)}",
                                 fontSize = 14.5.sp,
@@ -461,14 +462,17 @@ fun FixedAssetsDepreciationTab(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Column {
-                                            Text(pending.asset.name, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                        Column(modifier = Modifier.weight(1f, fill = false)) {
+                                            Text(pending.asset.name, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                             Text(
                                                 "${pending.asset.assetCode} • ${pending.asset.depreciationMethod}",
-                                                fontSize = 10.sp,
-                                                color = textSecondary
+                                                fontSize = 11.sp,
+                                                color = textSecondary,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
                                             )
                                         }
+                                        Spacer(modifier = Modifier.width(8.dp))
                                         Column(horizontalAlignment = Alignment.End) {
                                             Text(
                                                 moneyFmt.format(pending.totalPendingAmount),
@@ -476,7 +480,7 @@ fun FixedAssetsDepreciationTab(
                                                 fontWeight = FontWeight.Bold,
                                                 color = accentCyan
                                             )
-                                            Text("Cuota calculada", fontSize = 9.5.sp, color = textSecondary)
+                                            Text("Cuota calculada", fontSize = 11.sp, color = textSecondary)
                                         }
                                     }
                                 }
@@ -519,7 +523,7 @@ fun FixedAssetsDepreciationTab(
 
                 Text(
                     text = "Toca para ver asientos",
-                    fontSize = 10.5.sp,
+                    fontSize = 11.sp,
                     color = textSecondary
                 )
             }
@@ -585,7 +589,7 @@ fun FixedAssetsDepreciationTab(
                                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
                                         Text(text = batch.date, fontSize = 11.sp, color = textSecondary)
-                                        Text(text = "•", fontSize = 10.sp, color = Color(0xFF475569))
+                                        Text(text = "•", fontSize = 11.sp, color = Color(0xFF475569))
                                         Text(text = "${batch.assetsCount} activos", fontSize = 11.sp, color = accentCyan)
                                     }
                                 }
@@ -602,7 +606,7 @@ fun FixedAssetsDepreciationTab(
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFFF87171)
                                     )
-                                    Text(text = "Depreciado", fontSize = 10.sp, color = textSecondary)
+                                    Text(text = "Depreciado", fontSize = 11.sp, color = textSecondary)
                                 }
                                 Icon(
                                     Icons.AutoMirrored.Filled.ArrowForward,
@@ -724,14 +728,17 @@ fun FixedAssetsDepreciationTab(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(item.assetName, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                    Column(modifier = Modifier.weight(1f, fill = false)) {
+                                        Text(item.assetName, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                         Text(
                                             "${item.assetCode} • ${item.category} • ${item.depreciationMethod}",
-                                            fontSize = 10.5.sp,
-                                            color = textSecondary
+                                            fontSize = 11.sp,
+                                            color = textSecondary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Column(horizontalAlignment = Alignment.End) {
                                         Text(
                                             text = "- ${moneyFmt.format(item.amount)}",
@@ -739,7 +746,7 @@ fun FixedAssetsDepreciationTab(
                                             fontWeight = FontWeight.Bold,
                                             color = Color(0xFFF87171)
                                         )
-                                        Text("Cuota del mes", fontSize = 9.5.sp, color = textSecondary)
+                                        Text("Cuota del mes", fontSize = 11.sp, color = textSecondary)
                                     }
                                 }
 
@@ -751,14 +758,21 @@ fun FixedAssetsDepreciationTab(
                                 ) {
                                     Text(
                                         text = "Acumulada: ${moneyFmt.format(item.newAccumulated)}",
-                                        fontSize = 10.5.sp,
-                                        color = textSecondary
+                                        fontSize = 11.sp,
+                                        color = textSecondary,
+                                        modifier = Modifier.weight(1f, fill = false),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = "Valor en libros: ${moneyFmt.format(item.bookValueAfter)}",
-                                        fontSize = 10.5.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = accentCyan
+                                        color = accentCyan,
+                                        modifier = Modifier.weight(1f, fill = false),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
                             }

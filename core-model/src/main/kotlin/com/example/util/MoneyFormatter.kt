@@ -5,7 +5,7 @@ import java.util.Locale
 
 /**
  * Enterprise financial currency formatter with BigDecimal precision, multi-currency support,
- * and Privacy masking.
+ * and Privacy masking. Central SSOT for monetary formatting across all modules.
  */
 object MoneyFormatter {
 
@@ -46,6 +46,14 @@ object MoneyFormatter {
         }
     }
 
+    fun format(amount: Double?, isPrivacyMode: Boolean = false, currencyCode: String = "COP"): String {
+        return format(amount?.let { BigDecimal.valueOf(it) }, isPrivacyMode, currencyCode)
+    }
+
+    fun format(amount: Long?, isPrivacyMode: Boolean = false, currencyCode: String = "COP"): String {
+        return format(amount?.let { BigDecimal.valueOf(it) }, isPrivacyMode, currencyCode)
+    }
+
     fun formatCompact(amount: BigDecimal?, isPrivacyMode: Boolean = false, currencyCode: String = "COP"): String {
         if (isPrivacyMode) return "••••"
         val safeAmount = amount ?: BigDecimal.ZERO
@@ -66,5 +74,31 @@ object MoneyFormatter {
             absVal >= 1_000 -> "$symbol%.1fk%s".format(Locale.ROOT, value / 1_000, suffix)
             else -> format(amount, isPrivacyMode, currencyCode)
         }
+    }
+
+    fun formatCompact(amount: Double?, isPrivacyMode: Boolean = false, currencyCode: String = "COP"): String {
+        return formatCompact(amount?.let { BigDecimal.valueOf(it) }, isPrivacyMode, currencyCode)
+    }
+
+    fun formatCompact(amount: Long?, isPrivacyMode: Boolean = false, currencyCode: String = "COP"): String {
+        return formatCompact(amount?.let { BigDecimal.valueOf(it) }, isPrivacyMode, currencyCode)
+    }
+
+    fun formatNumber(amount: BigDecimal?, isZeroDecimal: Boolean = true): String {
+        val safeAmount = amount ?: BigDecimal.ZERO
+        val symbols = java.text.DecimalFormatSymbols(Locale("es", "CO")).apply {
+            groupingSeparator = '.'
+            decimalSeparator = ','
+        }
+        val pattern = if (isZeroDecimal) "#,##0" else "#,##0.00"
+        return java.text.DecimalFormat(pattern, symbols).format(safeAmount.toDouble())
+    }
+
+    fun formatNumber(amount: Double?, isZeroDecimal: Boolean = true): String {
+        return formatNumber(amount?.let { BigDecimal.valueOf(it) }, isZeroDecimal)
+    }
+
+    fun formatNumber(amount: Long?, isZeroDecimal: Boolean = true): String {
+        return formatNumber(amount?.let { BigDecimal.valueOf(it) }, isZeroDecimal)
     }
 }

@@ -15,8 +15,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.core.ui.components.CurrencyText
 import com.example.feature.informes.domain.model.*
 import com.example.feature.informes.presentation.FinancialStatementSubTab
 import com.example.feature.informes.ui.components.HorizontalScrollHint
@@ -446,12 +448,28 @@ private fun CambiosPatrimonioView(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(row.concept, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                    row.note?.let { Text(it, color = Color(0xFF64748B), fontSize = 10.sp) }
+                Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                    Text(
+                        text = row.concept,
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    row.note?.let {
+                        Text(
+                            text = it,
+                            color = Color(0xFF64748B),
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
-                Text(
-                    text = InformesFormatters.formatMoney(row.amount, currency),
+                CurrencyText(
+                    amountDouble = row.amount,
+                    currencyCode = currency,
                     color = if (row.isPositive) Color(0xFF34D399) else Color(0xFFF87171),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
@@ -485,10 +503,15 @@ private fun StatementSectionCard(
                     color = colorAccent,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
+                    letterSpacing = 1.sp,
+                    modifier = Modifier.weight(1f, fill = false),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = InformesFormatters.formatMoney(total, currency),
+                Spacer(modifier = Modifier.width(8.dp))
+                CurrencyText(
+                    amountDouble = total,
+                    currencyCode = currency,
                     color = Color.White,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.ExtraBold
@@ -506,10 +529,26 @@ private fun StatementSubHeader(title: String, amount: Double, currency: String) 
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(title, color = Color(0xFF94A3B8), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        Text(InformesFormatters.formatMoney(amount, currency), color = Color(0xFFCBD5E1), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text = title,
+            color = Color(0xFF94A3B8),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f, fill = false),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        CurrencyText(
+            amountDouble = amount,
+            currencyCode = currency,
+            color = Color(0xFFCBD5E1),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
@@ -528,13 +567,28 @@ private fun StatementItemRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, color = Color(0xFFE2E8F0), fontSize = 12.sp)
-            subtitle?.let { Text(it, color = Color(0xFF64748B), fontSize = 10.sp) }
+        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+            Text(
+                text = title,
+                color = Color(0xFFE2E8F0),
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            subtitle?.let {
+                Text(
+                    text = it,
+                    color = Color(0xFF64748B),
+                    fontSize = 11.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = InformesFormatters.formatMoney(amount, currency),
+            CurrencyText(
+                amountDouble = amount,
+                currencyCode = currency,
                 color = Color.White,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold
@@ -544,7 +598,7 @@ private fun StatementItemRow(
                 Text(
                     text = "(%.1f%%)".format(it),
                     color = Color(0xFF94A3B8),
-                    fontSize = 10.sp
+                    fontSize = 11.sp
                 )
             }
         }
@@ -557,11 +611,21 @@ private fun FlowStepRow(label: String, amount: Double, isPositive: Boolean, curr
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, color = Color(0xFFCBD5E1), fontSize = 12.sp)
         Text(
-            text = InformesFormatters.formatMoney(amount, currency),
+            text = label,
+            color = Color(0xFFCBD5E1),
+            fontSize = 12.sp,
+            modifier = Modifier.weight(1f, fill = false),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        CurrencyText(
+            amountDouble = amount,
+            currencyCode = currency,
             color = if (isPositive) Color(0xFF34D399) else Color.White,
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold

@@ -186,7 +186,7 @@ fun FixedAssetsInventoryTab(
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
-                            Text("Excluye bajas patrimoniales", fontSize = 9.5.sp, color = Color(0xFF10B981))
+                            Text("Excluye bajas patrimoniales", fontSize = 11.sp, color = Color(0xFF10B981))
                         }
                     }
 
@@ -204,7 +204,7 @@ fun FixedAssetsInventoryTab(
                                 fontWeight = FontWeight.Bold,
                                 color = accentCyan
                             )
-                            Text("Valuación NIIF vigente", fontSize = 9.5.sp, color = textSecondary)
+                            Text("Valuación NIIF vigente", fontSize = 11.sp, color = textSecondary)
                         }
                     }
                 }
@@ -345,7 +345,7 @@ fun FixedAssetsInventoryTab(
                             Icon(Icons.Default.Place, contentDescription = null, tint = if (isSelected) accentCyan else textSecondary, modifier = Modifier.size(11.dp))
                             Text(
                                 text = loc,
-                                fontSize = 10.5.sp,
+                                fontSize = 11.sp,
                                 color = if (isSelected) Color.White else textSecondary,
                                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                             )

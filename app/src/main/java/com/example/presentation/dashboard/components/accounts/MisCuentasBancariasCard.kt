@@ -296,13 +296,13 @@ private fun BankCardItem(
 
                 IconButton(
                     onClick = onMoreClick,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(40.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.MoreHoriz,
                         contentDescription = "Opciones",
                         tint = Color(0xFF94A3B8),
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -314,7 +314,9 @@ private fun BankCardItem(
                 text = "${MoneyFormatter.format(account.balance, isPrivacyMode)} ${account.currency}",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F172A)
+                color = Color(0xFF0F172A),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -328,7 +330,9 @@ private fun BankCardItem(
                 Text(
                     text = "Cta principal · •• ${account.id.toString().takeLast(4)}",
                     fontSize = 11.sp,
-                    color = Color(0xFF94A3B8)
+                    color = Color(0xFF94A3B8),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Surface(
@@ -343,7 +347,7 @@ private fun BankCardItem(
                             com.example.presentation.dashboard.model.AccountType.INVESTMENT, com.example.presentation.dashboard.model.AccountType.CDT -> "Inversión"
                             com.example.presentation.dashboard.model.AccountType.CASH -> "Efectivo"
                         },
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF007BFF),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)

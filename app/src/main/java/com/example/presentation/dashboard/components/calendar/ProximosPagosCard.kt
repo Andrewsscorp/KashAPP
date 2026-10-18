@@ -65,7 +65,7 @@ fun ProximosPagosCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f, fill = false)) {
                 Text(
                     text = "CALENDARIO",
                     fontSize = 11.sp,
@@ -76,16 +76,18 @@ fun ProximosPagosCard(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "Próximos pagos",
-                    fontSize = 24.sp,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = Color(0xFF0F172A),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
             // Calendar Icon Button
             Box(
                 modifier = Modifier
-                    .size(38.dp)
+                    .size(44.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(Color(0xFFE0F2FE))
                     .clickable { onCalendarIconClick() }
@@ -246,11 +248,15 @@ private fun PaymentRowItem(
             )
         }
 
+        Spacer(modifier = Modifier.width(8.dp))
+
         Text(
             text = if (isPrivacyMode) "••••••" else if (payment.isIncome) "+$ ${MoneyFormatter.format(payment.amount, false).removePrefix("$").trim()}" else MoneyFormatter.format(payment.amount, false),
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
-            color = if (payment.isIncome) Color(0xFF10B981) else Color(0xFF0F172A)
+            color = if (payment.isIncome) Color(0xFF10B981) else Color(0xFF0F172A),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

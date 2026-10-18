@@ -59,6 +59,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.local.entity.FixedAssetEntity
@@ -188,14 +189,14 @@ fun FixedAssetsMaintenanceTab(
                         modifier = Modifier.weight(1f)
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
-                            Text("Gasto Operacional", fontSize = 10.5.sp, color = textSecondary)
+                            Text("Gasto Operacional", fontSize = 11.sp, color = textSecondary)
                             Text(
                                 text = moneyFmt.format(totalExpense),
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
-                            Text("No altera patrimonio", fontSize = 9.sp, color = Color(0xFF94A3B8))
+                            Text("No altera patrimonio", fontSize = 11.sp, color = Color(0xFF94A3B8))
                         }
                     }
 
@@ -206,14 +207,14 @@ fun FixedAssetsMaintenanceTab(
                         modifier = Modifier.weight(1f)
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
-                            Text("Órdenes en Taller", fontSize = 10.5.sp, color = textSecondary)
+                            Text("Órdenes en Taller", fontSize = 11.sp, color = textSecondary)
                             Text(
                                 text = "$inProgressCount en curso",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (inProgressCount > 0) Color(0xFF38BDF8) else Color(0xFF10B981)
                             )
-                            Text("$pendingCount pendientes", fontSize = 9.sp, color = Color(0xFFF59E0B))
+                            Text("$pendingCount pendientes", fontSize = 11.sp, color = Color(0xFFF59E0B))
                         }
                     }
                 }
@@ -337,7 +338,7 @@ fun FixedAssetsMaintenanceTab(
                                             fontWeight = FontWeight.SemiBold,
                                             color = accentCyan
                                         )
-                                        Text(text = "•", fontSize = 10.sp, color = Color(0xFF475569))
+                                        Text(text = "•", fontSize = 11.sp, color = Color(0xFF475569))
                                         Text(text = order.assetCode, fontSize = 11.5.sp, color = textSecondary)
                                     }
                                 }
@@ -355,7 +356,7 @@ fun FixedAssetsMaintenanceTab(
                                         Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(order.status.color))
                                         Text(
                                             text = order.status.label,
-                                            fontSize = 10.5.sp,
+                                            fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = order.status.color
                                         )
@@ -369,20 +370,26 @@ fun FixedAssetsMaintenanceTab(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column {
+                                Column(modifier = Modifier.weight(1f, fill = false)) {
                                     Text(
                                         text = "${order.maintenanceType}  •  ${order.date}",
                                         fontSize = 11.sp,
-                                        color = textSecondary
+                                        color = textSecondary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                     if (!order.provider.isNullOrBlank()) {
                                         Text(
                                             text = "Taller: ${order.provider}",
                                             fontSize = 11.sp,
-                                            color = Color(0xFFCBD5E1)
+                                            color = Color(0xFFCBD5E1),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
                                 }
+
+                                Spacer(modifier = Modifier.width(8.dp))
 
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text(
@@ -393,7 +400,7 @@ fun FixedAssetsMaintenanceTab(
                                     )
                                     Text(
                                         text = if (order.isCapitalizable) "Mejora NIC 16" else "Gasto Operacional",
-                                        fontSize = 9.5.sp,
+                                        fontSize = 11.sp,
                                         color = if (order.isCapitalizable) Color(0xFF10B981) else Color(0xFF94A3B8)
                                     )
                                 }
@@ -410,8 +417,11 @@ fun FixedAssetsMaintenanceTab(
                                 // Impacto contable
                                 Text(
                                     text = if (order.isCapitalizable) "✓ Incrementa valor del activo" else "Gasto en Estado de Resultados",
-                                    fontSize = 10.sp,
-                                    color = Color(0xFF64748B)
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF64748B),
+                                    modifier = Modifier.weight(1f, fill = false),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
 
                                 // Acciones de transición
@@ -615,7 +625,7 @@ fun FixedAssetsMaintenanceTab(
                         ) {
                             Text(
                                 text = t,
-                                fontSize = 10.5.sp,
+                                fontSize = 11.sp,
                                 fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
                                 color = Color.White,
                                 modifier = Modifier.padding(vertical = 6.dp),
@@ -681,7 +691,7 @@ fun FixedAssetsMaintenanceTab(
                                     "Aumentará el valor contable del activo en libros."
                                 else
                                     "Se contabiliza como Gasto Operacional sin alterar patrimonio.",
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 color = if (isCapitalizable) Color(0xFF10B981) else textSecondary
                             )
                         }

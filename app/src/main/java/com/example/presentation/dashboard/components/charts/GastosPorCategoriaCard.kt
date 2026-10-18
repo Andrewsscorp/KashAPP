@@ -70,6 +70,10 @@ fun GastosPorCategoriaCard(
         ((topCategory.amount.toDouble() / effectiveTotal.toDouble()) * 100).toInt()
     } else 0
 
+    val adaptive = com.example.core.ui.adaptive.rememberKashAdaptiveInfo()
+    val cardPadding = if (adaptive.isCompact) 14.dp else 20.dp
+    val donutSize = if (adaptive.isUltraCompact) 104.dp else 124.dp
+
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -82,7 +86,7 @@ fun GastosPorCategoriaCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp)
+                .padding(cardPadding)
         ) {
             // Header: "Gastos por categoría" + "$ 2.850.000" (Defensive layout, no line break before decimals)
             Row(
@@ -113,7 +117,7 @@ fun GastosPorCategoriaCard(
                     amount = effectiveTotal,
                     isPrivacyMode = isPrivacyMode,
                     fontSize = 20.sp,
-                    minFontSize = 14.sp,
+                    minFontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF0F172A),
                     testTag = "gastos_por_categoria_total"
@@ -129,30 +133,31 @@ fun GastosPorCategoriaCard(
             ) {
                 // Donut Ring Canvas with Center Percentage (Strictly bounded within inner circle radius)
                 Box(
-                    modifier = Modifier.size(124.dp),
+                    modifier = Modifier.size(donutSize),
                     contentAlignment = Alignment.Center
                 ) {
                     CategoryDonutRingCanvas(
                         categories = displayCategories,
-                        total = effectiveTotal
+                        total = effectiveTotal,
+                        sizeDp = if (adaptive.isUltraCompact) 100.dp else 120.dp
                     )
 
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
-                            .widthIn(max = 76.dp)
+                            .widthIn(max = if (adaptive.isUltraCompact) 66.dp else 76.dp)
                             .padding(horizontal = 4.dp)
                     ) {
                         Text(
                             text = if (topPercentage > 0) "$topPercentage%" else "0%",
-                            fontSize = 20.sp,
+                            fontSize = if (adaptive.isUltraCompact) 17.sp else 20.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF0F172A),
                             maxLines = 1
                         )
                         Text(
                             text = topCategory?.categoryName?.lowercase() ?: "general",
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             color = Color(0xFF64748B),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -161,7 +166,7 @@ fun GastosPorCategoriaCard(
                     }
                 }
 
-                Spacer(modifier = Modifier.width(14.dp))
+                Spacer(modifier = Modifier.width(if (adaptive.isUltraCompact) 10.dp else 14.dp))
 
                 // Breakdown List with priority width and responsive numbers
                 Column(
@@ -208,7 +213,7 @@ fun GastosPorCategoriaCard(
                                 amount = cat.amount,
                                 isPrivacyMode = isPrivacyMode,
                                 fontSize = 13.sp,
-                                minFontSize = 10.sp,
+                                minFontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF0F172A)
                             )
@@ -223,9 +228,10 @@ fun GastosPorCategoriaCard(
 @Composable
 private fun CategoryDonutRingCanvas(
     categories: List<CategorySpend>,
-    total: BigDecimal
+    total: BigDecimal,
+    sizeDp: androidx.compose.ui.unit.Dp = 120.dp
 ) {
-    Canvas(modifier = Modifier.size(120.dp)) {
+    Canvas(modifier = Modifier.size(sizeDp)) {
         val strokeWidth = 14.dp.toPx()
         val arcSize = Size(size.width - strokeWidth, size.height - strokeWidth)
         val topLeft = Offset(strokeWidth / 2, strokeWidth / 2)

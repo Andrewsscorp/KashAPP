@@ -191,7 +191,7 @@ fun SettleSharedDebtBottomSheet(
 
                 Text(
                     text = "MEDIO DE PAGO UTILIZADO",
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = SharedExpenseThemeTokens.KashBlue
                 )
@@ -219,7 +219,7 @@ fun SettleSharedDebtBottomSheet(
                 if (owesMe) {
                     Text(
                         text = "TRATAMIENTO CONTABLE DEL REEMBOLSO (NIIF)",
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = SharedExpenseThemeTokens.KashBlue
                     )
@@ -247,7 +247,7 @@ fun SettleSharedDebtBottomSheet(
                 if (accounts.isNotEmpty()) {
                     Text(
                         text = if (owesMe) "CUENTA DESTINO EN KASHAPP" else "CUENTA ORIGEN EN KASHAPP",
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = SharedExpenseThemeTokens.KashBlue
                     )

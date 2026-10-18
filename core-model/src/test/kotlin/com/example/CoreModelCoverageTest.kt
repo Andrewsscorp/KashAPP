@@ -97,11 +97,19 @@ class CoreModelCoverageTest {
         assertEquals("$ 1.234,56 USD", MoneyFormatter.format(BigDecimal("1234.56"), currencyCode = "usd"))
         assertEquals("€ 12,34 EUR", MoneyFormatter.format(BigDecimal("12.34"), currencyCode = "EUR"))
         assertEquals("¥ 1.234 JPY", MoneyFormatter.format(BigDecimal("1234"), currencyCode = "JPY"))
-        assertEquals("$ 0", MoneyFormatter.format(null))
+        assertEquals("$ 0", MoneyFormatter.format(null as BigDecimal?))
+        assertEquals("$ 0", MoneyFormatter.format(null as Double?))
         assertEquals("••••••", MoneyFormatter.format(BigDecimal("100"), isPrivacyMode = true))
         assertEquals("$1.5M", MoneyFormatter.formatCompact(BigDecimal("1500000")))
         assertEquals("€2.5k EUR", MoneyFormatter.formatCompact(BigDecimal("2500"), currencyCode = "EUR"))
-        assertEquals("••••", MoneyFormatter.formatCompact(BigDecimal("100"), isPrivacyMode = true))
+        assertEquals("$ 1.234.567", MoneyFormatter.format(1234567.0, currencyCode = "COP"))
+        assertEquals("$ 1.234.567", MoneyFormatter.format(1234567L, currencyCode = "COP"))
+        assertEquals("$1.5M", MoneyFormatter.formatCompact(1500000.0))
+        assertEquals("$1.5M", MoneyFormatter.formatCompact(1500000L))
+        assertEquals("1.234.567", MoneyFormatter.formatNumber(1234567.0))
+        assertEquals("1.234.567", MoneyFormatter.formatNumber(1234567L))
+        assertEquals("1.234,50", MoneyFormatter.formatNumber(1234.50, isZeroDecimal = false))
+        assertEquals("••••", MoneyFormatter.formatCompact(100.0, isPrivacyMode = true))
     }
 
     @Test

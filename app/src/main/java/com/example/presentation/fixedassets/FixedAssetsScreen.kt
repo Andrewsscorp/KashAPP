@@ -127,11 +127,18 @@ import java.util.Locale
 fun FixedAssetsScreen(
     viewModel: FixedAssetsViewModel,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    customSettingsRepository: com.example.features.settings.domain.repository.SettingsRepository? = null
 ) {
     val context = LocalContext.current
-    val appContainer = remember(context) { (context.applicationContext as? com.example.KashAppApplication)?.appContainer }
-    val userPrefs by (appContainer?.settingsRepository?.observePreferences(viewModel.userId) ?: kotlinx.coroutines.flow.flowOf(com.example.features.settings.domain.model.UserPreferencesDomain()))
+    val settingsRepository = remember(context, customSettingsRepository) {
+        customSettingsRepository ?: try {
+            (context.applicationContext as? com.example.KashAppApplication)?.appContainer?.settingsRepository
+        } catch (_: Throwable) {
+            null
+        }
+    }
+    val userPrefs by (settingsRepository?.observePreferences(viewModel.userId) ?: kotlinx.coroutines.flow.flowOf(com.example.features.settings.domain.model.UserPreferencesDomain()))
         .collectAsState(initial = com.example.features.settings.domain.model.UserPreferencesDomain())
     val uiState by viewModel.uiState.collectAsState()
     val moneyFmt = DecimalFormat("$ #,##0")
@@ -610,7 +617,7 @@ fun FixedAssetsScreen(
                                     accentCyan = accentCyan,
                                     textPrimary = textPrimary,
                                     textSecondary = textSecondary,
-                                    modifier = Modifier.width(185.dp)
+                                    modifier = Modifier.widthIn(min = 160.dp, max = 220.dp)
                                 )
 
                                 val depPct = if (uiState.totalAcquisitionCost > 0) {
@@ -626,7 +633,7 @@ fun FixedAssetsScreen(
                                     accentCyan = accentCyan,
                                     textPrimary = textPrimary,
                                     textSecondary = textSecondary,
-                                    modifier = Modifier.width(185.dp)
+                                    modifier = Modifier.widthIn(min = 160.dp, max = 220.dp)
                                 )
 
                                 ExecutiveKpiCard(
@@ -639,7 +646,7 @@ fun FixedAssetsScreen(
                                     accentCyan = accentCyan,
                                     textPrimary = textPrimary,
                                     textSecondary = textSecondary,
-                                    modifier = Modifier.width(185.dp)
+                                    modifier = Modifier.widthIn(min = 160.dp, max = 220.dp)
                                 )
                             }
                         }
@@ -1078,7 +1085,7 @@ private fun ExecutiveKpiCard(
             ) {
                 Icon(icon, null, tint = accentCyan, modifier = Modifier.size(17.dp))
             }
-            Text(text = title, fontSize = 10.5.sp, color = textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(text = title, fontSize = 11.sp, color = textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
                 text = amount,
                 fontSize = 15.sp,
@@ -1087,7 +1094,7 @@ private fun ExecutiveKpiCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Text(text = subtitle, fontSize = 10.sp, color = Color(0xFF10B981), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(text = subtitle, fontSize = 11.sp, color = Color(0xFF10B981), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

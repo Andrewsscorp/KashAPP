@@ -39,6 +39,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.core.ui.components.CurrencyText
 import com.example.feature.objetivos.domain.model.GoalSummaryOverview
 import java.text.DecimalFormat
 
@@ -179,8 +180,9 @@ fun GoalSummaryCard(
                             )
                         }
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = if (isPrivacyMode) "$ ••••••••" else "$ ${moneyFormatter.format(summary.totalSaved)}",
+                        CurrencyText(
+                            amountDouble = summary.totalSaved,
+                            isPrivacyMode = isPrivacyMode,
                             color = Color.White,
                             fontSize = if (isNarrow) 22.sp else 25.sp,
                             fontWeight = FontWeight.Black
@@ -203,17 +205,34 @@ fun GoalSummaryCard(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(
-                                text = "Meta global: " + if (isPrivacyMode) "$ ••••••••" else "$ ${moneyFormatter.format(summary.totalTarget)}",
-                                color = Color(0xFF94A3B8),
-                                fontSize = 11.5.sp
-                            )
-                            Text(
-                                text = "Resta: " + if (isPrivacyMode) "$ ••••••••" else "$ ${moneyFormatter.format(summary.totalPending)}",
-                                color = Color(0xFF38BDF8),
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Meta: ",
+                                    color = Color(0xFF94A3B8),
+                                    fontSize = 11.5.sp
+                                )
+                                CurrencyText(
+                                    amountDouble = summary.totalTarget,
+                                    isPrivacyMode = isPrivacyMode,
+                                    color = Color(0xFF94A3B8),
+                                    fontSize = 11.5.sp
+                                )
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Resta: ",
+                                    color = Color(0xFF38BDF8),
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                CurrencyText(
+                                    amountDouble = summary.totalPending,
+                                    isPrivacyMode = isPrivacyMode,
+                                    color = Color(0xFF38BDF8),
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                         }
                     }
                 }
@@ -248,14 +267,15 @@ fun GoalSummaryCard(
                                 Text(
                                     text = "COMPROMETIDO",
                                     color = Color(0xFF94A3B8),
-                                    fontSize = 10.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     letterSpacing = 0.4.sp
                                 )
                             }
                             Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                text = if (isPrivacyMode) "$ ••••" else "$ ${moneyFormatter.format(committedAmount.ifZero(summary.totalSaved))}",
+                            CurrencyText(
+                                amountDouble = committedAmount.ifZero(summary.totalSaved),
+                                isPrivacyMode = isPrivacyMode,
                                 color = Color.White,
                                 fontSize = if (isNarrow) 14.sp else 16.sp,
                                 fontWeight = FontWeight.Bold
@@ -263,7 +283,7 @@ fun GoalSummaryCard(
                             Text(
                                 text = "Solo aportes hechos",
                                 color = Color(0xFF00E676),
-                                fontSize = 10.sp
+                                fontSize = 11.sp
                             )
                         }
                     }
@@ -293,7 +313,7 @@ fun GoalSummaryCard(
                                 Text(
                                     text = "LOGROS",
                                     color = Color(0xFF94A3B8),
-                                    fontSize = 10.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     letterSpacing = 0.4.sp
                                 )
@@ -308,7 +328,7 @@ fun GoalSummaryCard(
                             Text(
                                 text = "${summary.activeGoalsCount} en ejecución",
                                 color = Color(0xFF38BDF8),
-                                fontSize = 10.sp
+                                fontSize = 11.sp
                             )
                         }
                     }

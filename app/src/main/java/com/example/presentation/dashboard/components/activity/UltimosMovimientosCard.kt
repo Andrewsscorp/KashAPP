@@ -64,7 +64,7 @@ fun UltimosMovimientosCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f, fill = false)) {
                 Text(
                     text = "ACTIVIDAD",
                     fontSize = 11.sp,
@@ -75,16 +75,18 @@ fun UltimosMovimientosCard(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "Últimos movimientos",
-                    fontSize = 24.sp,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = Color(0xFF0F172A),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
             Row(
                 modifier = Modifier
                     .clickable { onSeeAllClick() }
-                    .padding(vertical = 4.dp, horizontal = 2.dp)
+                    .padding(vertical = 6.dp, horizontal = 4.dp)
                     .testTag("movimientos_ver_todos"),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -220,11 +222,15 @@ private fun MovimientoRowItem(
             )
         }
 
+        Spacer(modifier = Modifier.width(8.dp))
+
         Text(
             text = if (isPrivacyMode) "••••••" else "$amountPrefix ${MoneyFormatter.format(transaction.amount, false).removePrefix("$").trim()}",
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
-            color = amountColor
+            color = amountColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

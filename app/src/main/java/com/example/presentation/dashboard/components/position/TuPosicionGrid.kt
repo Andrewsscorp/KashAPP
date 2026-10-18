@@ -67,7 +67,7 @@ fun TuPosicionGrid(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f, fill = false)) {
                 Text(
                     text = "TU POSICIÓN",
                     fontSize = 11.sp,
@@ -78,16 +78,18 @@ fun TuPosicionGrid(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "Así está tu dinero",
-                    fontSize = 24.sp,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = Color(0xFF0F172A),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
             Row(
                 modifier = Modifier
                     .clickable { onViewDetailClick() }
-                    .padding(vertical = 4.dp, horizontal = 2.dp)
+                    .padding(vertical = 6.dp, horizontal = 4.dp)
                     .testTag("posicion_ver_detalle"),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)

@@ -179,7 +179,7 @@ fun GoalBasicInfoCard(
                                 trailingIcon = {
                                     Text(
                                         text = "${state.nameLength}/50",
-                                        fontSize = 10.sp,
+                                        fontSize = 11.sp,
                                         color = if (state.nameLength >= 50) Color(0xFFEF4444) else Color(0xFF94A3B8),
                                         modifier = Modifier.padding(end = 8.dp)
                                     )
@@ -352,7 +352,7 @@ fun GoalBasicInfoCard(
                                 ) {
                                     Text(
                                         text = "${state.descriptionLength}/200",
-                                        fontSize = 10.sp,
+                                        fontSize = 11.sp,
                                         color = if (state.descriptionLength >= 200) Color(0xFFEF4444) else Color(0xFF94A3B8)
                                     )
                                 }

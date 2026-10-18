@@ -222,7 +222,7 @@ fun FixedAssetProjectionsScreen(
                             Column(modifier = Modifier.padding(14.dp)) {
                                 Text(
                                     text = "VALOR EN LIBROS FINAL",
-                                    fontSize = 9.5.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = textSecondary
                                 )
@@ -235,7 +235,7 @@ fun FixedAssetProjectionsScreen(
                                 )
                                 Text(
                                     text = "Actual: ${moneyFmt.format(projection.currentTotalBookValue)}",
-                                    fontSize = 10.sp,
+                                    fontSize = 11.sp,
                                     color = textSecondary
                                 )
                             }
@@ -250,7 +250,7 @@ fun FixedAssetProjectionsScreen(
                             Column(modifier = Modifier.padding(14.dp)) {
                                 Text(
                                     text = "VALOR MERCADO ESTIMADO",
-                                    fontSize = 9.5.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF34D399)
                                 )
@@ -263,7 +263,7 @@ fun FixedAssetProjectionsScreen(
                                 )
                                 Text(
                                     text = "Plusvalía incluida",
-                                    fontSize = 10.sp,
+                                    fontSize = 11.sp,
                                     color = Color(0xFF6EE7B7)
                                 )
                             }
@@ -363,7 +363,7 @@ fun FixedAssetProjectionsScreen(
                                     if (pt.yearOffset > 0) {
                                         Text(
                                             text = "Dep. Año: -${moneyFmt.format(pt.depreciationInYear)}",
-                                            fontSize = 10.5.sp,
+                                            fontSize = 11.sp,
                                             color = Color(0xFFF87171)
                                         )
                                     }
@@ -443,7 +443,7 @@ fun FixedAssetProjectionsScreen(
                                         ) {
                                             Text(
                                                 text = m.urgencyStatus,
-                                                fontSize = 10.sp,
+                                                fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = badgeColor,
                                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)

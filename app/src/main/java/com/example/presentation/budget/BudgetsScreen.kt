@@ -75,7 +75,19 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.text.style.TextOverflow
+import com.example.core.ui.components.CurrencyText
+import com.example.core.ui.components.KashAdaptiveActionRow
+import com.example.core.ui.components.KashCompactButton
+import com.example.core.ui.components.KashCompactOutlinedButton
+import com.example.core.ui.components.KashSearchBar
+import com.example.core.ui.components.KashStatusBadge
 import com.example.data.local.entity.BudgetItemEntity
 import com.example.data.local.entity.BudgetWithItems
 import com.example.presentation.budget.dialogs.BudgetConfigModal
@@ -86,7 +98,7 @@ import com.example.presentation.budget.dialogs.SweepSurplusModal
 import com.example.presentation.budget.state.BudgetsViewModel
 import java.text.DecimalFormat
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun BudgetsScreen(
     viewModel: BudgetsViewModel,
@@ -97,8 +109,8 @@ fun BudgetsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    var showTopMenu by remember { mutableStateOf(false) }
-    var showBudgetSelectorDropdown by remember { mutableStateOf(false) }
+    var showTopMenu by rememberSaveable { mutableStateOf(false) }
+    var showBudgetSelectorDropdown by rememberSaveable { mutableStateOf(false) }
     val moneyFormatter = remember { DecimalFormat("#,##0") }
 
     val bgDark = Color(0xFF07101E)
@@ -198,7 +210,12 @@ fun BudgetsScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             IconButton(
                                 onClick = onNavigateBack,
                                 modifier = Modifier
@@ -212,17 +229,21 @@ fun BudgetsScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.width(6.dp))
-                            Column {
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = "Presupuestos & Sobres",
                                     fontSize = 17.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = textPrimary
+                                    color = textPrimary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
                                     text = "Planificación financiera y control por categorías",
                                     fontSize = 11.sp,
-                                    color = textSecondary
+                                    color = textSecondary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
@@ -264,13 +285,21 @@ fun BudgetsScreen(
                                 onClick = onOpenCreateBudget,
                                 colors = ButtonDefaults.buttonColors(containerColor = primaryBlue),
                                 shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                                 modifier = Modifier
-                                    .height(36.dp)
+                                    .heightIn(min = 36.dp)
                                     .testTag("btn_new_budget_top")
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(15.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Nuevo", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                Text(
+                                    "Nuevo",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
                             }
 
                             // Overflow Menu
@@ -359,6 +388,7 @@ fun BudgetsScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .testTag("budgets_lazy_column")
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -379,9 +409,26 @@ fun BudgetsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column {
-                                Text(activeBudget.budget.name, color = textPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                Text("${activeBudget.budget.startDate} al ${activeBudget.budget.endDate}", color = textSecondary, fontSize = 11.5.sp)
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(end = 8.dp)
+                            ) {
+                                Text(
+                                    activeBudget.budget.name,
+                                    color = textPrimary,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    "${activeBudget.budget.startDate} al ${activeBudget.budget.endDate}",
+                                    color = textSecondary,
+                                    fontSize = 11.5.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                             }
                             if (state.budgets.size > 1) {
                                 Box {
@@ -391,7 +438,15 @@ fun BudgetsScreen(
                                         border = BorderStroke(1.dp, Color(0xFF1E3A8A)),
                                         modifier = Modifier.clickable { showBudgetSelectorDropdown = true }
                                     ) {
-                                        Text("Cambiar presupuesto ▼", color = accentCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                                        Text(
+                                            "Cambiar presupuesto ▼",
+                                            color = accentCyan,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
                                     }
                                     DropdownMenu(
                                         expanded = showBudgetSelectorDropdown,
@@ -443,13 +498,20 @@ fun BudgetsScreen(
                                 text = "Sobres por Categoría (${activeBudget.items.size})",
                                 color = textPrimary,
                                 fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(end = 8.dp)
                             )
                             Text(
                                 text = "Rebalancear fondos →",
                                 color = accentCyan,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                softWrap = false,
                                 modifier = Modifier
                                     .clickable { viewModel.openRebalanceDialog() }
                                     .padding(4.dp)
@@ -460,31 +522,15 @@ fun BudgetsScreen(
                     // Search & Filter Envelopes Bar
                     item {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedTextField(
-                                value = state.categorySearchQuery,
-                                onValueChange = { viewModel.setCategorySearchQuery(it) },
-                                placeholder = { Text("Buscar sobre por categoría...", color = textSecondary, fontSize = 12.sp) },
-                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = accentCyan, modifier = Modifier.size(18.dp)) },
-                                trailingIcon = {
-                                    if (state.categorySearchQuery.isNotEmpty()) {
-                                        IconButton(onClick = { viewModel.setCategorySearchQuery("") }, modifier = Modifier.size(24.dp)) {
-                                            Icon(Icons.Default.Clear, contentDescription = "Limpiar", tint = textSecondary, modifier = Modifier.size(16.dp))
-                                        }
-                                    }
-                                },
-                                singleLine = true,
-                                shape = RoundedCornerShape(12.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedContainerColor = cardBg,
-                                    unfocusedContainerColor = cardBg,
-                                    focusedBorderColor = primaryBlue,
-                                    unfocusedBorderColor = cardBorder,
-                                    focusedTextColor = textPrimary,
-                                    unfocusedTextColor = textPrimary
-                                ),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(48.dp)
+                            KashSearchBar(
+                                query = state.categorySearchQuery,
+                                onQueryChange = { viewModel.setCategorySearchQuery(it) },
+                                placeholder = "Buscar sobre por categoría...",
+                                containerColor = cardBg,
+                                borderColor = cardBorder,
+                                textColor = textPrimary,
+                                placeholderColor = textSecondary,
+                                modifier = Modifier.fillMaxWidth()
                             )
 
                             // Status Filter Chips
@@ -581,28 +627,35 @@ fun BudgetsScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                        ) {
                             Text(
                                 text = "Distribución: ${state.configuration.distributionRule.title}",
                                 color = textPrimary,
                                 fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             Text(
                                 text = "Diagnóstico de gastos vs metas (${state.fiftyThirtyTwenty.targetNeedsPct.toInt()}/${state.fiftyThirtyTwenty.targetWantsPct.toInt()}/${state.fiftyThirtyTwenty.targetSavingsPct.toInt()})",
                                 color = textSecondary,
-                                fontSize = 11.5.sp
+                                fontSize = 11.5.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
-                        Button(
+                        KashCompactOutlinedButton(
+                            text = "Configurar",
                             onClick = { viewModel.toggleConfigDialog(true) },
-                            colors = ButtonDefaults.buttonColors(containerColor = primaryBlue.copy(alpha = 0.2f)),
-                            border = BorderStroke(1.dp, accentCyan),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.height(32.dp)
-                        ) {
-                            Text("Configurar", color = accentCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        }
+                            borderColor = accentCyan,
+                            containerColor = primaryBlue.copy(alpha = 0.2f),
+                            contentColor = accentCyan,
+                            fontSize = 11.sp
+                        )
                     }
                 }
 
@@ -753,15 +806,24 @@ fun BudgetsScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Historial de Presupuestos", color = textPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Button(
+                        Text(
+                            text = "Historial de Presupuestos",
+                            color = textPrimary,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                        )
+                        KashCompactButton(
+                            text = "+ Crear",
                             onClick = onOpenCreateBudget,
-                            colors = ButtonDefaults.buttonColors(containerColor = primaryBlue),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.height(32.dp)
-                        ) {
-                            Text("+ Crear", fontSize = 11.sp, color = Color.White)
-                        }
+                            containerColor = primaryBlue,
+                            contentColor = Color.White,
+                            fontSize = 11.sp
+                        )
                     }
                 }
 
@@ -825,7 +887,12 @@ private fun BudgetHeroExecutionCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Box(
                         modifier = Modifier
                             .size(38.dp)
@@ -835,9 +902,22 @@ private fun BudgetHeroExecutionCard(
                         Icon(Icons.Default.PieChart, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(20.dp))
                     }
                     Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text("Ejecución Global", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                        Text("${burnRate.daysRemaining} días restantes del periodo", color = Color(0xFF8EA5C4), fontSize = 11.5.sp)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Ejecución Global",
+                            color = Color.White,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            "${burnRate.daysRemaining} días restantes del periodo",
+                            color = Color(0xFF8EA5C4),
+                            fontSize = 11.5.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
 
@@ -847,10 +927,12 @@ private fun BudgetHeroExecutionCard(
                     border = BorderStroke(1.dp, progressColor.copy(alpha = 0.4f))
                 ) {
                     Text(
-                        text = "${String.format("%.1f", percentage)}% Usado",
+                        text = "${String.format(java.util.Locale.US, "%.1f", percentage)}% Usado",
                         color = progressColor,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
@@ -874,12 +956,24 @@ private fun BudgetHeroExecutionCard(
                         letterSpacing = 0.5.sp
                     )
                     Spacer(modifier = Modifier.height(3.dp))
-                    Text(
-                        text = if (isPrivacyMode) "$ ••••••••" else "$ ${moneyFormatter.format(remaining)}",
-                        color = if (remaining < 0) Color(0xFFEF4444) else Color.White,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Black
-                    )
+                    if (isPrivacyMode) {
+                        Text(
+                            text = "$ ••••••••",
+                            color = if (remaining < 0) Color(0xFFEF4444) else Color.White,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Black,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    } else {
+                        CurrencyText(
+                            amountDouble = remaining,
+                            color = if (remaining < 0) Color(0xFFEF4444) else Color.White,
+                            fontSize = 24.sp,
+                            minFontSize = 14.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
                     Spacer(modifier = Modifier.height(6.dp))
 
                     LinearProgressIndicator(
@@ -896,18 +990,27 @@ private fun BudgetHeroExecutionCard(
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Gastado: $ ${moneyFormatter.format(totalSpent)}",
+                        CurrencyText(
+                            amountDouble = totalSpent,
+                            prefix = "Gastado: ",
                             color = Color(0xFF8EA5C4),
-                            fontSize = 11.5.sp
+                            fontSize = 11.5.sp,
+                            modifier = Modifier
+                                .weight(1f, fill = false)
+                                .padding(end = 4.dp)
                         )
-                        Text(
-                            text = "Techo: $ ${moneyFormatter.format(totalCeiling)}",
+                        CurrencyText(
+                            amountDouble = totalCeiling,
+                            prefix = "Techo: ",
                             color = Color(0xFF38BDF8),
                             fontSize = 11.5.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .weight(1f, fill = false)
+                                .padding(start = 4.dp)
                         )
                     }
                 }
@@ -920,32 +1023,27 @@ private fun BudgetHeroExecutionCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedButton(
+                KashCompactOutlinedButton(
+                    text = "Editar Techo",
                     onClick = onEditCeiling,
-                    shape = RoundedCornerShape(10.dp),
-                    border = BorderStroke(1.dp, Color(0xFF1E3A8A)),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF38BDF8)),
-                    modifier = Modifier.weight(1f).height(38.dp)
-                ) {
-                    Text("Editar Techo", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
-                }
-                OutlinedButton(
+                    borderColor = Color(0xFF1E3A8A),
+                    contentColor = Color(0xFF38BDF8),
+                    modifier = Modifier.weight(1f)
+                )
+                KashCompactOutlinedButton(
+                    text = "Rebalancear",
                     onClick = onRebalance,
-                    shape = RoundedCornerShape(10.dp),
-                    border = BorderStroke(1.dp, Color(0xFF1E3A8A)),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF38BDF8)),
-                    modifier = Modifier.weight(1f).height(38.dp)
-                ) {
-                    Text("Rebalancear", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
-                }
-                Button(
+                    borderColor = Color(0xFF1E3A8A),
+                    contentColor = Color(0xFF38BDF8),
+                    modifier = Modifier.weight(1f)
+                )
+                KashCompactButton(
+                    text = "Barrer Meta",
                     onClick = onSweep,
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00C853)),
-                    modifier = Modifier.weight(1f).height(38.dp)
-                ) {
-                    Text("Barrer Meta", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
+                    containerColor = Color(0xFF00C853),
+                    contentColor = Color.White,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }
@@ -970,10 +1068,22 @@ private fun BurnRateSummaryCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Icon(Icons.Default.TrendingUp, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Ritmo Diario Permitido (Burn Rate)", color = Color.White, fontSize = 13.5.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Ritmo Diario Permitido (Burn Rate)",
+                        color = Color.White,
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
                 Surface(
                     shape = RoundedCornerShape(6.dp),
@@ -983,8 +1093,10 @@ private fun BurnRateSummaryCard(
                     Text(
                         text = if (burnRate.burnStatus == "DENTRO_DEL_RITMO") "En Ritmo" else "Riesgo Sobregiro",
                         color = if (burnRate.burnStatus == "DENTRO_DEL_RITMO") Color(0xFF00E676) else Color(0xFFEF4444),
-                        fontSize = 10.5.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
@@ -994,31 +1106,80 @@ private fun BurnRateSummaryCard(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text("Límite diario recomendado", color = Color(0xFF8EA5C4), fontSize = 11.sp)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 6.dp)
+                ) {
                     Text(
-                        text = if (isPrivacyMode) "$ ••••" else "$ ${moneyFormatter.format(burnRate.allowedDailySpending)}/día",
-                        color = Color(0xFF00E676),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
+                        "Límite diario recomendado",
+                        color = Color(0xFF8EA5C4),
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
+                    if (isPrivacyMode) {
+                        Text(
+                            text = "$ ••••",
+                            color = Color(0xFF00E676),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    } else {
+                        CurrencyText(
+                            amountDouble = burnRate.allowedDailySpending,
+                            suffix = "/día",
+                            color = Color(0xFF00E676),
+                            fontSize = 13.sp,
+                            minFontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text("Ritmo real consumido", color = Color(0xFF8EA5C4), fontSize = 11.sp)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 6.dp),
+                    horizontalAlignment = Alignment.End
+                ) {
                     Text(
-                        text = if (isPrivacyMode) "$ ••••" else "$ ${moneyFormatter.format(burnRate.actualDailySpending)}/día",
-                        color = if (burnRate.actualDailySpending > burnRate.allowedDailySpending) Color(0xFFEF4444) else Color(0xFF38BDF8),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
+                        "Ritmo real consumido",
+                        color = Color(0xFF8EA5C4),
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
+                    if (isPrivacyMode) {
+                        Text(
+                            text = "$ ••••",
+                            color = if (burnRate.actualDailySpending > burnRate.allowedDailySpending) Color(0xFFEF4444) else Color(0xFF38BDF8),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    } else {
+                        CurrencyText(
+                            amountDouble = burnRate.actualDailySpending,
+                            suffix = "/día",
+                            color = if (burnRate.actualDailySpending > burnRate.allowedDailySpending) Color(0xFFEF4444) else Color(0xFF38BDF8),
+                            fontSize = 13.sp,
+                            minFontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun EnvelopeItemCard(
     envelope: BudgetItemEntity,
@@ -1051,7 +1212,12 @@ private fun EnvelopeItemCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Box(
                         modifier = Modifier
                             .size(32.dp)
@@ -1061,12 +1227,21 @@ private fun EnvelopeItemCard(
                         Icon(Icons.Default.Category, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(16.dp))
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Column {
-                        Text(envelope.categoryName, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = if (remaining < 0) "Sobregiro de $ ${moneyFormatter.format(Math.abs(remaining))}" else "Quedan $ ${moneyFormatter.format(remaining)}",
+                            envelope.categoryName,
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        CurrencyText(
+                            amountDouble = Math.abs(remaining),
+                            prefix = if (remaining < 0) "Sobregiro de " else "Quedan ",
                             color = if (remaining < 0) Color(0xFFEF4444) else Color(0xFF00E676),
                             fontSize = 11.5.sp,
+                            minFontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -1078,10 +1253,12 @@ private fun EnvelopeItemCard(
                     border = BorderStroke(1.dp, barColor.copy(alpha = 0.35f))
                 ) {
                     Text(
-                        text = "${String.format("%.1f", pct)}%",
+                        text = "${String.format(java.util.Locale.US, "%.1f", pct)}%",
                         color = barColor,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
@@ -1107,27 +1284,46 @@ private fun EnvelopeItemCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "Gastado: $ ${moneyFormatter.format(spent)}",
+                FlowRow(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    CurrencyText(
+                        amountDouble = spent,
+                        prefix = "Gastado: ",
                         color = Color(0xFF8EA5C4),
                         fontSize = 11.sp
                     )
-                    Text(
-                        text = "• Asignado: $ ${moneyFormatter.format(allocated)}",
+                    CurrencyText(
+                        amountDouble = allocated,
+                        prefix = "• Asignado: ",
                         color = Color(0xFF8EA5C4),
                         fontSize = 11.sp
                     )
                 }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Surface(
                         onClick = onViewTransactions,
                         shape = RoundedCornerShape(6.dp),
                         color = Color(0xFF061120),
                         border = BorderStroke(1.dp, Color(0xFF1E3A8A))
                     ) {
-                        Text("Ver Gastos", color = Color(0xFF38BDF8), fontSize = 10.5.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp))
+                        Text(
+                            "Ver Gastos",
+                            color = Color(0xFF38BDF8),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                        )
                     }
                     Surface(
                         onClick = { onQuickAdd(50_000.0) },
@@ -1135,7 +1331,15 @@ private fun EnvelopeItemCard(
                         color = Color(0xFF061120),
                         border = BorderStroke(1.dp, Color(0xFF1E3A8A))
                     ) {
-                        Text("+$50K", color = Color(0xFF00E676), fontSize = 10.5.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp))
+                        Text(
+                            "+$50K",
+                            color = Color(0xFF00E676),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                        )
                     }
                 }
             }
@@ -1162,13 +1366,31 @@ private fun FiftyThirtyTwentyCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Distribución Actual vs Ideal", color = Color.White, fontSize = 14.5.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    "Distribución Actual vs Ideal",
+                    color = Color.White,
+                    fontSize = 14.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
+                )
                 Surface(
                     shape = RoundedCornerShape(6.dp),
                     color = Color(0xFF0F2544),
                     border = BorderStroke(1.dp, Color(0xFF1E3A8A))
                 ) {
-                    Text(fifty.statusLabel, color = Color(0xFF38BDF8), fontSize = 10.5.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                    Text(
+                        fifty.statusLabel,
+                        color = Color(0xFF38BDF8),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
                 }
             }
 
@@ -1176,9 +1398,29 @@ private fun FiftyThirtyTwentyCard(
 
             // 50% Needs
             Column {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("50% Necesidades Básicas", color = Color(0xFF8EA5C4), fontSize = 12.sp)
-                    Text("${String.format("%.1f", fifty.needsPct)}% ($ ${moneyFormatter.format(fifty.needsAllocated)})", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "50% Necesidades Básicas",
+                        color = Color(0xFF8EA5C4),
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 6.dp)
+                    )
+                    Text(
+                        "${String.format(java.util.Locale.US, "%.1f", fifty.needsPct)}% ($ ${moneyFormatter.format(fifty.needsAllocated)})",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false
+                    )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 LinearProgressIndicator(
@@ -1193,9 +1435,29 @@ private fun FiftyThirtyTwentyCard(
 
             // 30% Wants
             Column {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("30% Deseos y Estilo de Vida", color = Color(0xFF8EA5C4), fontSize = 12.sp)
-                    Text("${String.format("%.1f", fifty.wantsPct)}% ($ ${moneyFormatter.format(fifty.wantsAllocated)})", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "30% Deseos y Estilo de Vida",
+                        color = Color(0xFF8EA5C4),
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 6.dp)
+                    )
+                    Text(
+                        "${String.format(java.util.Locale.US, "%.1f", fifty.wantsPct)}% ($ ${moneyFormatter.format(fifty.wantsAllocated)})",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false
+                    )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 LinearProgressIndicator(
@@ -1210,9 +1472,29 @@ private fun FiftyThirtyTwentyCard(
 
             // 20% Savings
             Column {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("20% Metas de Ahorro e Inversión", color = Color(0xFF8EA5C4), fontSize = 12.sp)
-                    Text("${String.format("%.1f", fifty.savingsPct)}% ($ ${moneyFormatter.format(fifty.savingsAllocated)})", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "20% Metas de Ahorro e Inversión",
+                        color = Color(0xFF8EA5C4),
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 6.dp)
+                    )
+                    Text(
+                        "${String.format(java.util.Locale.US, "%.1f", fifty.savingsPct)}% ($ ${moneyFormatter.format(fifty.savingsAllocated)})",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false
+                    )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 LinearProgressIndicator(
@@ -1266,7 +1548,12 @@ private fun SurplusSweepActionCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Box(
                         modifier = Modifier
                             .size(36.dp)
@@ -1276,20 +1563,32 @@ private fun SurplusSweepActionCard(
                         Icon(Icons.Default.Savings, contentDescription = null, tint = Color(0xFF00E676), modifier = Modifier.size(18.dp))
                     }
                     Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text("Barrer Excedente a Metas", color = Color.White, fontSize = 14.5.sp, fontWeight = FontWeight.Bold)
-                        Text("$activeGoalsCount metas activas disponibles para abonar", color = Color(0xFF8EA5C4), fontSize = 11.sp)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Barrer Excedente a Metas",
+                            color = Color.White,
+                            fontSize = 14.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            "$activeGoalsCount metas activas disponibles para abonar",
+                            color = Color(0xFF8EA5C4),
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
 
-                Button(
+                KashCompactButton(
+                    text = "Barrer",
                     onClick = onOpenSweep,
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00C853)),
-                    modifier = Modifier.height(34.dp)
-                ) {
-                    Text("Barrer", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
+                    containerColor = Color(0xFF00C853),
+                    contentColor = Color.White,
+                    fontSize = 11.5.sp
+                )
             }
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -1324,16 +1623,41 @@ private fun GoalBudgetLinkCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(goal.name, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                    Text("Cuenta: ${goal.targetAccountName} • Cuota: $ ${moneyFormatter.format(monthlyPledge)}/mes", color = Color(0xFF8EA5C4), fontSize = 11.5.sp)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
+                ) {
+                    Text(
+                        goal.name,
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        "Cuenta: ${goal.targetAccountName} • Cuota: $ ${moneyFormatter.format(monthlyPledge)}/mes",
+                        color = Color(0xFF8EA5C4),
+                        fontSize = 11.5.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
                 Surface(
                     shape = RoundedCornerShape(6.dp),
                     color = Color(0xFF0F2544),
                     border = BorderStroke(1.dp, Color(0xFF1E3A8A))
                 ) {
-                    Text("${String.format("%.1f", pct)}%", color = Color(0xFF38BDF8), fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                    Text(
+                        "${String.format(java.util.Locale.US, "%.1f", pct)}%",
+                        color = Color(0xFF38BDF8),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
                 }
             }
 
@@ -1356,18 +1680,21 @@ private fun GoalBudgetLinkCard(
                 Text(
                     text = "Ahorrado: $ ${moneyFormatter.format(goal.savedAmount)} / $ ${moneyFormatter.format(goal.targetAmount)}",
                     color = Color(0xFF8EA5C4),
-                    fontSize = 11.5.sp
+                    fontSize = 11.5.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
                 )
 
-                OutlinedButton(
+                KashCompactOutlinedButton(
+                    text = "Aportar $ ${moneyFormatter.format(monthlyPledge)}",
                     onClick = { onContribute(monthlyPledge) },
-                    shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, Color(0xFF00E676)),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF00E676)),
-                    modifier = Modifier.height(32.dp)
-                ) {
-                    Text("Aportar $ ${moneyFormatter.format(monthlyPledge)}", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                }
+                    borderColor = Color(0xFF00E676),
+                    contentColor = Color(0xFF00E676),
+                    fontSize = 11.sp
+                )
             }
         }
     }
@@ -1387,7 +1714,12 @@ private fun RebalanceActionBanner(onOpenRebalance: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Box(
                         modifier = Modifier
                             .size(36.dp)
@@ -1397,20 +1729,32 @@ private fun RebalanceActionBanner(onOpenRebalance: () -> Unit) {
                         Icon(Icons.Default.SwapHoriz, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(20.dp))
                     }
                     Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text("Rebalanceo Entre Sobres", color = Color.White, fontSize = 14.5.sp, fontWeight = FontWeight.Bold)
-                        Text("Mueve dinero sin romper tu presupuesto mensual", color = Color(0xFF8EA5C4), fontSize = 11.sp)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Rebalanceo Entre Sobres",
+                            color = Color.White,
+                            fontSize = 14.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            "Mueve dinero sin romper tu presupuesto mensual",
+                            color = Color(0xFF8EA5C4),
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
 
-                Button(
+                KashCompactButton(
+                    text = "Rebalancear",
                     onClick = onOpenRebalance,
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
-                    modifier = Modifier.height(34.dp)
-                ) {
-                    Text("Rebalancear", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
+                    containerColor = Color(0xFF007AFF),
+                    contentColor = Color.White,
+                    fontSize = 11.5.sp
+                )
             }
         }
     }
@@ -1440,66 +1784,104 @@ private fun BudgetHistoryCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(b.name, color = Color.White, fontSize = 14.5.sp, fontWeight = FontWeight.Bold)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            b.name,
+                            color = Color.White,
+                            fontSize = 14.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
                         if (isActive) {
-                            Spacer(modifier = Modifier.width(6.dp))
                             Surface(
                                 shape = RoundedCornerShape(4.dp),
                                 color = Color(0xFF00C853).copy(alpha = 0.2f),
                                 border = BorderStroke(1.dp, Color(0xFF00E676))
                             ) {
-                                Text("ACTIVO", color = Color(0xFF00E676), fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp))
+                                Text(
+                                    "ACTIVO",
+                                    color = Color(0xFF00E676),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                )
                             }
                         }
                     }
-                    Text("${b.startDate} al ${b.endDate} • ${budgetWithItems.items.size} sobres", color = Color(0xFF8EA5C4), fontSize = 11.sp)
+                    Text(
+                        "${b.startDate} al ${b.endDate} • ${budgetWithItems.items.size} sobres",
+                        color = Color(0xFF8EA5C4),
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
 
-                Text(
-                    text = if (isPrivacyMode) "$ ••••••••" else "$ ${moneyFormatter.format(b.totalAmount)}",
-                    color = Color(0xFF38BDF8),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                if (isPrivacyMode) {
+                    Text(
+                        text = "$ ••••••••",
+                        color = Color(0xFF38BDF8),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                } else {
+                    CurrencyText(
+                        amountDouble = b.totalAmount,
+                        color = Color(0xFF38BDF8),
+                        fontSize = 14.sp,
+                        minFontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 if (!isActive) {
-                    OutlinedButton(
+                    KashCompactOutlinedButton(
+                        text = "Activar",
                         onClick = onSelect,
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(1.dp, Color(0xFF1E3A8A)),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF38BDF8)),
-                        modifier = Modifier.weight(1f).height(32.dp)
-                    ) {
-                        Text("Activar", fontSize = 11.sp)
-                    }
+                        borderColor = Color(0xFF1E3A8A),
+                        contentColor = Color(0xFF38BDF8),
+                        fontSize = 11.sp,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
 
-                OutlinedButton(
+                KashCompactOutlinedButton(
+                    text = "Clonar mes sig.",
                     onClick = onClone,
-                    shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, Color(0xFF1E3A8A)),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF38BDF8)),
-                    modifier = Modifier.weight(1f).height(32.dp)
-                ) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(12.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Clonar mes sig.", fontSize = 11.sp)
-                }
+                    icon = Icons.Default.ContentCopy,
+                    borderColor = Color(0xFF1E3A8A),
+                    contentColor = Color(0xFF38BDF8),
+                    fontSize = 11.sp,
+                    modifier = Modifier.weight(1f)
+                )
 
                 IconButton(
                     onClick = onDelete,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(36.dp)
                 ) {
-                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color(0xFFEF4444), modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color(0xFFEF4444), modifier = Modifier.size(18.dp))
                 }
             }
         }

@@ -47,6 +47,10 @@ import androidx.compose.ui.window.Dialog
 import com.example.data.local.entity.BudgetItemEntity
 import java.text.DecimalFormat
 
+import androidx.compose.ui.text.style.TextOverflow
+import com.example.core.ui.components.CurrencyText
+import com.example.core.ui.components.KashCompactButton
+
 @Composable
 fun RebalanceEnvelopesModal(
     availableEnvelopes: List<BudgetItemEntity>,
@@ -88,7 +92,12 @@ fun RebalanceEnvelopesModal(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
@@ -98,12 +107,25 @@ fun RebalanceEnvelopesModal(
                             Icon(Icons.Default.SwapHoriz, contentDescription = null, tint = accentCyan, modifier = Modifier.size(20.dp))
                         }
                         Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text("Rebalancear Sobres", color = textPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                            Text("Mover fondos sin alterar el techo global", color = textSecondary, fontSize = 11.sp)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Rebalancear Sobres",
+                                color = textPrimary,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = "Mover fondos sin alterar el techo global",
+                                color = textSecondary,
+                                fontSize = 11.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
-                    IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(36.dp)) {
                         Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = textSecondary)
                     }
                 }
@@ -129,8 +151,24 @@ fun RebalanceEnvelopesModal(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(sourceEnvelope?.categoryName ?: "Seleccionar sobre", color = textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                            Text("Disp: $ ${moneyFormatter.format(sourceAvailable.coerceAtLeast(0.0))}", color = accentCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text(
+                                text = sourceEnvelope?.categoryName ?: "Seleccionar sobre",
+                                color = textPrimary,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(end = 8.dp)
+                            )
+                            CurrencyText(
+                                amountDouble = sourceAvailable.coerceAtLeast(0.0),
+                                prefix = "Disp: ",
+                                color = accentCyan,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
 
@@ -172,8 +210,24 @@ fun RebalanceEnvelopesModal(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(targetEnvelope?.categoryName ?: "Seleccionar sobre", color = textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                            Text("Actual: $ ${moneyFormatter.format(targetEnvelope?.allocatedAmount ?: 0.0)}", color = Color(0xFF00E676), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text(
+                                text = targetEnvelope?.categoryName ?: "Seleccionar sobre",
+                                color = textPrimary,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(end = 8.dp)
+                            )
+                            CurrencyText(
+                                amountDouble = targetEnvelope?.allocatedAmount ?: 0.0,
+                                prefix = "Actual: ",
+                                color = Color(0xFF00E676),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
 
@@ -228,35 +282,32 @@ fun RebalanceEnvelopesModal(
                 Spacer(modifier = Modifier.height(18.dp))
 
                 // Action Button
-                Button(
+                KashCompactButton(
+                    text = "Ejecutar Rebalanceo",
                     onClick = {
                         val parsed = amountInput.toDoubleOrNull() ?: 0.0
                         if (sourceEnvelope == null || targetEnvelope == null) {
                             errorMessage = "Selecciona sobre origen y sobre destino"
-                            return@Button
+                            return@KashCompactButton
                         }
                         if (sourceEnvelope?.id == targetEnvelope?.id) {
                             errorMessage = "El sobre de origen y destino no pueden ser el mismo"
-                            return@Button
+                            return@KashCompactButton
                         }
                         if (parsed <= 0) {
                             errorMessage = "Ingresa un monto válido superior a cero"
-                            return@Button
+                            return@KashCompactButton
                         }
                         if (parsed > sourceAvailable && sourceAvailable > 0) {
                             errorMessage = "El sobre origen solo tiene $ ${moneyFormatter.format(sourceAvailable)} disponible"
-                            return@Button
+                            return@KashCompactButton
                         }
                         onConfirmRebalance(sourceEnvelope!!.id, targetEnvelope!!.id, parsed)
                     },
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = primaryBlue),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(46.dp)
-                ) {
-                    Text("Ejecutar Rebalanceo", fontSize = 13.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
+                    modifier = Modifier.fillMaxWidth(),
+                    minHeight = 44.dp,
+                    containerColor = primaryBlue
+                )
             }
         }
     }

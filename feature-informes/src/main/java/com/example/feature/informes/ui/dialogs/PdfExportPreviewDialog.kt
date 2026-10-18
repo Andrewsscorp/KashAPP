@@ -83,7 +83,7 @@ fun PdfExportPreviewDialog(
                             Text(
                                 text = "PDF GENERADO CON ÉXITO",
                                 color = Color(0xFFEF4444),
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 1.sp
                             )

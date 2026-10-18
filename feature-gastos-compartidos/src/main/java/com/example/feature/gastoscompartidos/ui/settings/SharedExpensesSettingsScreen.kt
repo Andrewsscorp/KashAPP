@@ -223,7 +223,7 @@ fun SharedExpensesSettingsScreen(
                                 ) {
                                     Text(
                                         text = "VISTA PREVIA EN VIVO",
-                                        fontSize = 10.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = SharedExpenseThemeTokens.KashCyanLight,
                                         letterSpacing = 0.5.sp

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -117,6 +118,7 @@ import com.example.presentation.income.dialogs.IncomeCalculatorSheet
 import com.example.presentation.income.model.DefaultIncomeCategories
 import com.example.presentation.income.model.IncomeFormState
 import com.example.presentation.income.model.buildIncomeDisplayCategories
+import com.example.core.ui.adaptive.rememberKashAdaptiveInfo
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -163,6 +165,8 @@ fun CreateIncomeScreen(
 
     val prefs = remember { context.getSharedPreferences("kashapp_preferences", Context.MODE_PRIVATE) }
     val lastUsedCurrency = remember { prefs.getString("last_used_currency", "COP") ?: "COP" }
+
+    val adaptive = rememberKashAdaptiveInfo()
 
     var formState by remember {
         mutableStateOf(
@@ -279,11 +283,13 @@ fun CreateIncomeScreen(
         modifier = modifier
             .fillMaxSize()
             .navigationBarsPadding()
-            .background(Color(0xFFF8FAFC))
+            .background(Color(0xFFF8FAFC)),
+        contentAlignment = Alignment.TopCenter
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .widthIn(max = adaptive.maxContentWidth)
                 .verticalScroll(rememberScrollState())
                 .imePadding()
         ) {
@@ -308,7 +314,7 @@ fun CreateIncomeScreen(
                         IconButton(
                             onClick = onDismiss,
                             modifier = Modifier
-                                .size(40.dp)
+                                .size(44.dp)
                                 .clip(CircleShape)
                                 .background(Color(0x26FFFFFF))
                                 .testTag("back_button_income")
@@ -321,6 +327,7 @@ fun CreateIncomeScreen(
                             color = if (formState.isAmountValid && !formState.isSubmitting) Color(0xFF10B981) else Color(0x33FFFFFF),
                             shadowElevation = if (formState.isAmountValid) 4.dp else 0.dp,
                             modifier = Modifier
+                                .defaultMinSize(minHeight = 44.dp)
                                 .clip(RoundedCornerShape(20.dp))
                                 .clickable(enabled = formState.isAmountValid && !formState.isSubmitting) { onPerformSaveIncome() }
                                 .testTag("top_bar_save_income_btn")

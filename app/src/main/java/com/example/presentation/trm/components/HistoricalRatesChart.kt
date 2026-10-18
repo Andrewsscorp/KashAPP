@@ -223,7 +223,7 @@ fun HistoricalRatesChart(
                 if (p != null) {
                     Text(
                         text = p.displayDate,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         color = Color(0xFF94A3B8),
                         fontWeight = FontWeight.Medium
                     )

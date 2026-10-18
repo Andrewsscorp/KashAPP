@@ -51,6 +51,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.core.ui.components.CurrencyText
+import com.example.core.ui.components.KashCompactButton
+import com.example.core.ui.components.KashCompactOutlinedButton
 import com.example.feature.objetivos.domain.model.GoalDetailMetric
 import com.example.feature.objetivos.domain.model.GoalStatus
 import java.text.DecimalFormat
@@ -123,7 +126,7 @@ fun GoalIndividualCard(
                         )
                     }
                     Spacer(modifier = Modifier.width(12.dp))
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -154,6 +157,8 @@ fun GoalIndividualCard(
                     }
                 }
 
+                Spacer(modifier = Modifier.width(8.dp))
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // Badge Comprometido (si virtualPocketEnabled)
                     if (goal.virtualPocketEnabled) {
@@ -176,7 +181,7 @@ fun GoalIndividualCard(
                                 Text(
                                     text = "Comprometido",
                                     color = Color(0xFF00E676),
-                                    fontSize = 10.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
                             }
@@ -193,7 +198,7 @@ fun GoalIndividualCard(
                         Text(
                             text = statusLabel,
                             color = statusColor,
-                            fontSize = 10.5.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
                         )
@@ -269,20 +274,33 @@ fun GoalIndividualCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Bottom
             ) {
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        text = if (isPrivacyMode) "$ ••••••••" else "$ ${moneyFormatter.format(goal.savedAmount)}",
+                Row(
+                    modifier = Modifier.weight(1f, fill = false),
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    CurrencyText(
+                        amountDouble = goal.savedAmount,
+                        isPrivacyMode = isPrivacyMode,
                         color = textPrimary,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = " / " + if (isPrivacyMode) "$ ••••••••" else "$ ${moneyFormatter.format(goal.targetAmount)}",
+                        text = " / ",
+                        color = textSecondary,
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    CurrencyText(
+                        amountDouble = goal.targetAmount,
+                        isPrivacyMode = isPrivacyMode,
                         color = textSecondary,
                         fontSize = 12.5.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
+
+                Spacer(modifier = Modifier.width(8.dp))
 
                 Text(
                     text = "${String.format("%.1f", goal.progressPercentage)}%",
@@ -313,7 +331,10 @@ fun GoalIndividualCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.weight(1f, fill = false),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Icon(
                         imageVector = Icons.Default.CalendarMonth,
                         contentDescription = null,
@@ -329,17 +350,30 @@ fun GoalIndividualCard(
                             else -> "Sin plazo definido"
                         },
                         color = if (goal.isOverdue) Color(0xFFEF4444) else textSecondary,
-                        fontSize = 11.5.sp
+                        fontSize = 11.5.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
+                Spacer(modifier = Modifier.width(8.dp))
+
                 if (goal.pendingAmount > 0) {
-                    Text(
-                        text = "Faltan $ ${moneyFormatter.format(goal.pendingAmount)}",
-                        color = accentCyan,
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Faltan ",
+                            color = accentCyan,
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        CurrencyText(
+                            amountDouble = goal.pendingAmount,
+                            isPrivacyMode = isPrivacyMode,
+                            color = accentCyan,
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 } else {
                     Text(
                         text = "¡Meta alcanzada!",
@@ -357,49 +391,25 @@ fun GoalIndividualCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedButton(
+                KashCompactOutlinedButton(
+                    text = "Detalles",
                     onClick = onCardClick,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(42.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = accentCyan
-                    ),
-                    border = BorderStroke(1.dp, Color(0xFF1E3A8A))
-                ) {
-                    Text(
-                        text = "Detalles",
-                        fontSize = 12.5.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+                    modifier = Modifier.weight(1f),
+                    minHeight = 38.dp,
+                    contentColor = accentCyan,
+                    borderColor = Color(0xFF1E3A8A)
+                )
 
-                Button(
+                KashCompactButton(
+                    text = "Aportar",
+                    icon = Icons.Default.Savings,
                     onClick = onRegisterContribution,
                     modifier = Modifier
                         .weight(1.3f)
-                        .height(42.dp)
                         .testTag("btn_aportar_${goal.id}"),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = primaryBlue
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Savings,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(15.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Aportar",
-                        color = Color.White,
-                        fontSize = 12.5.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                    minHeight = 38.dp,
+                    containerColor = primaryBlue
+                )
             }
         }
     }

@@ -47,6 +47,10 @@ import androidx.compose.ui.window.Dialog
 import com.example.data.local.entity.FinancialGoalEntity
 import java.text.DecimalFormat
 
+import androidx.compose.ui.text.style.TextOverflow
+import com.example.core.ui.components.CurrencyText
+import com.example.core.ui.components.KashCompactButton
+
 @Composable
 fun SweepSurplusModal(
     availableSurplus: Double,
@@ -85,7 +89,12 @@ fun SweepSurplusModal(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
@@ -95,12 +104,25 @@ fun SweepSurplusModal(
                             Icon(Icons.Default.Savings, contentDescription = null, tint = Color(0xFF00E676), modifier = Modifier.size(20.dp))
                         }
                         Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text("Barrer Excedente a Meta", color = textPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                            Text("Convertir ahorro presupuestal en logro financiero", color = textSecondary, fontSize = 11.sp)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Barrer Excedente a Meta",
+                                color = textPrimary,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = "Convertir ahorro presupuestal en logro financiero",
+                                color = textSecondary,
+                                fontSize = 11.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
-                    IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(36.dp)) {
                         Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = textSecondary)
                     }
                 }
@@ -115,9 +137,14 @@ fun SweepSurplusModal(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text("EXCEDENTE NO GASTADO DISPONIBLE", color = Color(0xFF00E676), fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
+                        Text("EXCEDENTE NO GASTADO DISPONIBLE", color = Color(0xFF00E676), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(2.dp))
-                        Text("$ ${moneyFormatter.format(availableSurplus)}", color = textPrimary, fontSize = 20.sp, fontWeight = FontWeight.Black)
+                        CurrencyText(
+                            amountDouble = availableSurplus,
+                            color = textPrimary,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Black
+                        )
                     }
                 }
 
@@ -145,11 +172,28 @@ fun SweepSurplusModal(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(selectedGoal?.name ?: "Seleccionar meta", color = textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                Text(
+                                    text = selectedGoal?.name ?: "Seleccionar meta",
+                                    color = textPrimary,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(end = 8.dp)
+                                )
                                 val pct = selectedGoal?.let {
                                     if (it.targetAmount > 0) ((it.savedAmount / it.targetAmount) * 100.0) else 0.0
                                 } ?: 0.0
-                                Text("${String.format("%.1f", pct)}% de avance", color = accentCyan, fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                                Text(
+                                    text = "${String.format("%.1f", pct)}% de avance",
+                                    color = accentCyan,
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
                             }
                         }
 
@@ -203,34 +247,30 @@ fun SweepSurplusModal(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                Button(
+                KashCompactButton(
+                    text = "Barrer Fondos a la Meta",
+                    icon = Icons.Default.TrendingUp,
                     onClick = {
                         val parsed = amountInput.toDoubleOrNull() ?: 0.0
                         if (selectedGoal == null) {
                             errorMessage = "Selecciona una meta financiera de destino"
-                            return@Button
+                            return@KashCompactButton
                         }
                         if (parsed <= 0) {
                             errorMessage = "Ingresa un monto válido"
-                            return@Button
+                            return@KashCompactButton
                         }
                         if (parsed > availableSurplus) {
                             errorMessage = "No puedes transferir más del excedente disponible ($ ${moneyFormatter.format(availableSurplus)})"
-                            return@Button
+                            return@KashCompactButton
                         }
                         onConfirmSweep(selectedGoal!!.id, parsed)
                     },
                     enabled = activeGoals.isNotEmpty(),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00C853)),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(46.dp)
-                ) {
-                    Icon(Icons.Default.TrendingUp, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Barrer $ ${moneyFormatter.format(amountInput.toDoubleOrNull() ?: 0.0)} a la Meta", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
+                    modifier = Modifier.fillMaxWidth(),
+                    minHeight = 44.dp,
+                    containerColor = Color(0xFF00C853)
+                )
             }
         }
     }

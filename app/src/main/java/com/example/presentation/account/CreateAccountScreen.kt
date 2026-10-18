@@ -22,10 +22,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -127,6 +130,7 @@ import com.example.presentation.account.components.LiveCurrencyConversionPreview
 import com.example.presentation.account.components.WORLD_CURRENCIES_CATALOG
 import com.example.ui.theme.KashBlue
 import com.example.ui.theme.KashNavy
+import com.example.core.ui.adaptive.rememberKashAdaptiveInfo
 import kotlinx.coroutines.launch
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
@@ -235,6 +239,7 @@ fun CreateAccountScreen(
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val appContainer = remember { (context.applicationContext as KashAppApplication).appContainer }
+    val adaptive = rememberKashAdaptiveInfo()
     val standardFieldColors = standardFieldColors()
 
     var isSaving by remember { mutableStateOf(false) }
@@ -523,92 +528,99 @@ fun CreateAccountScreen(
                         .statusBarsPadding()
                         .padding(horizontal = 16.dp, vertical = 14.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        // Back Button
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .widthIn(max = adaptive.maxContentWidth),
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .clickable { onDismiss() }
-                                .padding(4.dp)
-                                .testTag("back_button")
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = Color.White.copy(alpha = 0.2f),
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = "Volver",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Volver",
-                                color = Color.White,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-
-                        // Center Title
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = if (isPayroll) "Cuenta Nómina" else "Nueva Cuenta",
-                                color = Color.White,
-                                fontSize = 17.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = (-0.2).sp
-                            )
-                            Text(
-                                text = "Gestión de liquidez y ahorros",
-                                color = Color.White.copy(alpha = 0.85f),
-                                fontSize = 11.sp
-                            )
-                        }
-
-                        // Top Guardar Pill Action Button
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = if (accountName.isNotBlank()) Color.White else Color.White.copy(alpha = 0.3f),
-                            shadowElevation = if (accountName.isNotBlank()) 3.dp else 0.dp,
-                            modifier = Modifier
-                                .clickable(enabled = !isSaving) { performSaveAccount() }
-                                .testTag("top_bar_save_account_btn")
-                        ) {
+                            // Back Button
                             Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                modifier = Modifier
+                                    .defaultMinSize(minHeight = 44.dp)
+                                    .clickable { onDismiss() }
+                                    .padding(4.dp)
+                                    .testTag("back_button")
                             ) {
-                                if (isSaving) {
-                                    CircularProgressIndicator(
-                                        color = KashNavy,
-                                        strokeWidth = 2.dp,
-                                        modifier = Modifier.size(13.dp)
-                                    )
-                                } else {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = null,
-                                        tint = if (accountName.isNotBlank()) KashNavy else Color.White,
-                                        modifier = Modifier.size(14.dp)
+                                Surface(
+                                    shape = CircleShape,
+                                    color = Color.White.copy(alpha = 0.2f),
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "Volver",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Volver",
+                                    color = Color.White,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+
+                            // Center Title
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = if (isPayroll) "Cuenta Nómina" else "Nueva Cuenta",
+                                    color = Color.White,
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = (-0.2).sp
+                                )
+                                Text(
+                                    text = "Gestión de liquidez y ahorros",
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    fontSize = 11.sp
+                                )
+                            }
+
+                            // Top Guardar Pill Action Button
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = if (accountName.isNotBlank()) Color.White else Color.White.copy(alpha = 0.3f),
+                                shadowElevation = if (accountName.isNotBlank()) 3.dp else 0.dp,
+                                modifier = Modifier
+                                    .defaultMinSize(minHeight = 44.dp)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .clickable(enabled = !isSaving) { performSaveAccount() }
+                                    .testTag("top_bar_save_account_btn")
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    if (isSaving) {
+                                        CircularProgressIndicator(
+                                            color = KashNavy,
+                                            strokeWidth = 2.dp,
+                                            modifier = Modifier.size(13.dp)
+                                        )
+                                    } else {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = if (accountName.isNotBlank()) KashNavy else Color.White,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = "Guardar",
+                                        color = if (accountName.isNotBlank()) KashNavy else Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
                                     )
                                 }
-                                Text(
-                                    text = "Guardar",
-                                    color = if (accountName.isNotBlank()) KashNavy else Color.White,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
                             }
                         }
                     }
@@ -624,34 +636,40 @@ fun CreateAccountScreen(
             ) {
                 val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                        .padding(bottom = bottomPadding)
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Button(
-                        onClick = { performSaveAccount() },
-                        enabled = !isSaving && accountName.isNotBlank(),
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp)
-                            .testTag("save_account_button_bottom"),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F172A))
+                            .widthIn(max = adaptive.maxContentWidth)
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                            .padding(bottom = bottomPadding)
                     ) {
-                        if (isSaving) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Guardando cuenta...", color = Color.White, fontWeight = FontWeight.Bold)
-                        } else {
-                            Icon(imageVector = Icons.Default.Save, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = if (isPayroll) "Guardar Cuenta de Nómina" else "Guardar Cuenta Bancaria",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
+                        Button(
+                            onClick = { performSaveAccount() },
+                            enabled = !isSaving && accountName.isNotBlank(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp)
+                                .testTag("save_account_button_bottom"),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F172A))
+                        ) {
+                            if (isSaving) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Guardando cuenta...", color = Color.White, fontWeight = FontWeight.Bold)
+                            } else {
+                                Icon(imageVector = Icons.Default.Save, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (isPayroll) "Guardar Cuenta de Nómina" else "Guardar Cuenta Bancaria",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
                         }
                     }
                 }
@@ -660,14 +678,21 @@ fun CreateAccountScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = Color(0xFFF8FAFC)
     ) { innerPadding ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 28.dp)
+                .padding(innerPadding),
+            contentAlignment = Alignment.TopCenter
         ) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .widthIn(max = adaptive.maxContentWidth)
+                    .imePadding()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(top = 16.dp, bottom = 28.dp)
+            ) {
             // ==========================================
             // 1. APPLE WALLET LIVE VIRTUAL CARD PREVIEW
             // ==========================================
@@ -733,7 +758,7 @@ fun CreateAccountScreen(
                                             else -> "AHORROS"
                                         },
                                         color = Color.White,
-                                        fontSize = 10.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                     )
@@ -770,7 +795,7 @@ fun CreateAccountScreen(
                                     Text(
                                         text = "SALDO DISPONIBLE",
                                         color = Color.White.copy(alpha = 0.7f),
-                                        fontSize = 9.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold
                                     )
                                     Text(
@@ -789,7 +814,7 @@ fun CreateAccountScreen(
                                         Text(
                                             text = "${interestRateEaInput.ifBlank { "0" }}% E.A.",
                                             color = Color.White,
-                                            fontSize = 10.sp,
+                                            fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
                                             modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
                                         )
@@ -1429,6 +1454,7 @@ fun CreateAccountScreen(
             }
         }
     }
+}
 
     // ==========================================
     // MODAL: UNIVERSAL CURRENCY PICKER (164 WORLD CURRENCIES + CREATION)

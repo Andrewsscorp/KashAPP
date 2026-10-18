@@ -142,7 +142,7 @@ fun CompactCategorySelector(
                 ) {
                     Text(
                         text = "Tocar para cambiar",
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF38BDF8),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
@@ -197,7 +197,7 @@ fun CompactCategorySelector(
                                     ) {
                                         Text(
                                             text = selectedCode,
-                                            fontSize = 10.sp,
+                                            fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = catColor,
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -414,7 +414,7 @@ fun CategoryPickerBottomSheet(
                                             ) {
                                                 Text(
                                                     text = cat.code,
-                                                    fontSize = 9.sp,
+                                                    fontSize = 11.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     color = catColor,
                                                     modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
@@ -430,7 +430,7 @@ fun CategoryPickerBottomSheet(
                                     }
                                     Text(
                                         text = if (cat.isSystem) "Sistema NIIF" else "Personalizada por el usuario",
-                                        fontSize = 10.5.sp,
+                                        fontSize = 11.sp,
                                         color = Color(0xFF8EA5C4)
                                     )
                                 }

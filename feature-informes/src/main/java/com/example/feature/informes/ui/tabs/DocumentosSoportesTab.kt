@@ -235,7 +235,7 @@ private fun DocumentCardItem(
                         Text(
                             text = doc.type.label,
                             color = Color(0xFF38BDF8),
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
                         )
@@ -248,7 +248,7 @@ private fun DocumentCardItem(
                         Text(
                             text = doc.fileFormat.extension,
                             color = Color(0xFFCBD5E1),
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
                         )
@@ -272,7 +272,7 @@ private fun DocumentCardItem(
                             SupportVerificationStatus.PENDIENTE -> Color(0xFFFBBF24)
                             SupportVerificationStatus.OBSERVADO -> Color(0xFFF87171)
                         },
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                     )
@@ -316,7 +316,7 @@ private fun DocumentCardItem(
                 Text(
                     text = "Fecha: ${doc.date} • ${doc.fileSizeFormatted}",
                     color = Color(0xFF64748B),
-                    fontSize = 10.sp
+                    fontSize = 11.sp
                 )
 
                 Row {

@@ -69,6 +69,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.core.ui.components.KashCompactButton
 import com.example.feature.objetivos.domain.engine.GoalVelocityMetrics
 import com.example.feature.objetivos.domain.engine.ProjectedScenarioResult
 import com.example.feature.objetivos.presentation.ObjetivosViewModel
@@ -177,7 +178,10 @@ fun ObjetivosScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             IconButton(
                                 onClick = onNavigateBack,
                                 modifier = Modifier
@@ -191,17 +195,21 @@ fun ObjetivosScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.width(6.dp))
-                            Column {
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = "Mis objetivos",
                                     fontSize = 17.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = textPrimary
+                                    color = textPrimary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
                                     text = "Mental Accounting y Fondos Comprometidos",
                                     fontSize = 11.sp,
-                                    color = textSecondary
+                                    color = textSecondary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
@@ -224,28 +232,13 @@ fun ObjetivosScreen(
                             }
 
                             // Professional "+ Nuevo objetivo" Button (Instant Click)
-                            Button(
+                            KashCompactButton(
+                                text = "Nuevo",
+                                icon = Icons.Default.Add,
                                 onClick = onOpenCreateGoalForm,
-                                colors = ButtonDefaults.buttonColors(containerColor = primaryBlue),
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier
-                                    .height(36.dp)
-                                    .testTag("add_goal_top_button")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(15.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "Nuevo",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                            }
+                                minHeight = 36.dp,
+                                modifier = Modifier.testTag("add_goal_top_button")
+                            )
 
                             // Overflow menu
                             Box {
@@ -328,7 +321,8 @@ fun ObjetivosScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 16.dp)
+                .testTag("objetivos_lazy_column"),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // TAB 0: RESUMEN

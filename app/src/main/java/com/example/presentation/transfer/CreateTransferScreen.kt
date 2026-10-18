@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -111,6 +112,7 @@ import com.example.presentation.transfer.model.TransferFormState
 import com.example.presentation.transfer.model.TransferSuccessSummary
 import com.example.presentation.transfer.model.formatTransferMoney
 import com.example.presentation.transfer.model.formatTransferNumberOnly
+import com.example.core.ui.adaptive.rememberKashAdaptiveInfo
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -154,6 +156,7 @@ fun CreateTransferScreen(
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val adaptive = rememberKashAdaptiveInfo()
 
     // Live Accounts from Local Room DB
     val accountsList by (financialRepository?.getAccounts(userId)?.collectAsState(initial = emptyList())
@@ -305,9 +308,14 @@ fun CreateTransferScreen(
             .fillMaxSize()
             .background(Color(0xFFF8FAFC))
             .navigationBarsPadding()
-            .imePadding()
+            .imePadding(),
+        contentAlignment = Alignment.TopCenter
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .widthIn(max = adaptive.maxContentWidth)
+        ) {
             // TOP HEADER CON GRADIENTE PREMIUM
             Surface(modifier = Modifier.fillMaxWidth(), color = Color(0xFF0284C7)) {
                 Box(
@@ -326,7 +334,7 @@ fun CreateTransferScreen(
                             IconButton(
                                 onClick = { handleBackAttempt() },
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(44.dp)
                                     .clip(CircleShape)
                                     .background(Color.White.copy(alpha = 0.2f))
                                     .testTag("transfer_back_button")
@@ -339,12 +347,13 @@ fun CreateTransferScreen(
                                 color = if (formState.isFormValid) Color(0xFF0284C7) else Color.White.copy(alpha = 0.2f),
                                 shadowElevation = if (formState.isFormValid) 4.dp else 0.dp,
                                 modifier = Modifier
+                                    .defaultMinSize(minHeight = 44.dp)
                                     .clip(RoundedCornerShape(20.dp))
                                     .clickable(enabled = formState.isFormValid) { onPerformTransfer() }
                                     .testTag("top_bar_transfer_btn")
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {

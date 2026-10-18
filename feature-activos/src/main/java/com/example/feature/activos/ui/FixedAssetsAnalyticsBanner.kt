@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.core.ui.components.CurrencyText
 import java.text.DecimalFormat
 
 /**
@@ -47,6 +48,7 @@ fun FixedAssetsAnalyticsBanner(
     totalAccumulatedDepreciation: Double,
     totalBookValue: Double,
     activeAssetsCount: Int,
+    currency: String = "COP",
     modifier: Modifier = Modifier
 ) {
     val moneyFormatter = remember { DecimalFormat("#,##0") }
@@ -176,11 +178,14 @@ fun FixedAssetsAnalyticsBanner(
                             )
                         }
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "$ ${moneyFormatter.format(totalBookValue)}",
-                            color = Color.White,
-                            fontSize = if (isNarrow) 22.sp else 25.sp,
-                            fontWeight = FontWeight.Black
+                        CurrencyText(
+                            amountDouble = totalBookValue,
+                            currencyCode = currency,
+                            style = androidx.compose.material3.MaterialTheme.typography.headlineMedium.copy(
+                                fontSize = if (isNarrow) 22.sp else 25.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White
+                            )
                         )
                         Spacer(modifier = Modifier.height(3.dp))
                         Text(
@@ -211,11 +216,14 @@ fun FixedAssetsAnalyticsBanner(
                                 fontSize = 11.sp
                             )
                             Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                text = "$ ${moneyFormatter.format(totalAcquisitionValue)}",
-                                color = Color(0xFFF1F5F9),
-                                fontSize = if (isNarrow) 13.5.sp else 15.sp,
-                                fontWeight = FontWeight.Bold
+                            CurrencyText(
+                                amountDouble = totalAcquisitionValue,
+                                currencyCode = currency,
+                                style = androidx.compose.material3.MaterialTheme.typography.titleMedium.copy(
+                                    fontSize = if (isNarrow) 13.5.sp else 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFF1F5F9)
+                                )
                             )
                         }
                     }
@@ -235,11 +243,14 @@ fun FixedAssetsAnalyticsBanner(
                                 fontSize = 11.sp
                             )
                             Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                text = "-$ ${moneyFormatter.format(totalAccumulatedDepreciation)}",
-                                color = Color(0xFFF87171),
-                                fontSize = if (isNarrow) 13.5.sp else 15.sp,
-                                fontWeight = FontWeight.Bold
+                            CurrencyText(
+                                amountDouble = -totalAccumulatedDepreciation,
+                                currencyCode = currency,
+                                style = androidx.compose.material3.MaterialTheme.typography.titleMedium.copy(
+                                    fontSize = if (isNarrow) 13.5.sp else 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFF87171)
+                                )
                             )
                         }
                     }

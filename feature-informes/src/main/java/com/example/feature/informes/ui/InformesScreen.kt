@@ -13,7 +13,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -67,8 +69,14 @@ fun InformesScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = onNavigateBack) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(
+                                onClick = onNavigateBack,
+                                modifier = Modifier.testTag("back_button_informes")
+                            ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = "Regresar",
@@ -76,20 +84,26 @@ fun InformesScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.width(4.dp))
-                            Column {
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = "Informes Financieros",
                                     color = Color.White,
                                     fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
                                     text = uiState.filter.periodLabel,
                                     color = Color(0xFF38BDF8),
-                                    fontSize = 11.sp
+                                    fontSize = 11.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
+
+                        Spacer(modifier = Modifier.width(6.dp))
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             // Filter Trigger Button
@@ -161,6 +175,7 @@ fun InformesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .testTag("informes_screen_content")
         ) {
             when (uiState.activeTab) {
                 InformesMainTab.RESUMEN -> {

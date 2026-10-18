@@ -221,15 +221,15 @@ private fun AccountsReportSection(
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
-                        Text("Saldo Inicial", color = Color(0xFF64748B), fontSize = 10.sp)
+                        Text("Saldo Inicial", color = Color(0xFF64748B), fontSize = 11.sp)
                         Text(InformesFormatters.formatMoney(acc.initialBalance, currency), color = Color(0xFFCBD5E1), fontSize = 12.sp)
                     }
                     Column {
-                        Text("Entradas", color = Color(0xFF64748B), fontSize = 10.sp)
+                        Text("Entradas", color = Color(0xFF64748B), fontSize = 11.sp)
                         Text(InformesFormatters.formatMoney(acc.totalInflows, currency), color = Color(0xFF34D399), fontSize = 12.sp)
                     }
                     Column {
-                        Text("Salidas", color = Color(0xFF64748B), fontSize = 10.sp)
+                        Text("Salidas", color = Color(0xFF64748B), fontSize = 11.sp)
                         Text(InformesFormatters.formatMoney(acc.totalOutflows, currency), color = Color(0xFFF87171), fontSize = 12.sp)
                     }
                 }
@@ -283,15 +283,15 @@ private fun CreditCardsReportSection(
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
-                        Text("Cupo Total", color = Color(0xFF64748B), fontSize = 10.sp)
+                        Text("Cupo Total", color = Color(0xFF64748B), fontSize = 11.sp)
                         Text(InformesFormatters.formatMoney(card.quotaTotal, currency), color = Color(0xFFCBD5E1), fontSize = 11.sp)
                     }
                     Column {
-                        Text("Utilizado", color = Color(0xFF64748B), fontSize = 10.sp)
+                        Text("Utilizado", color = Color(0xFF64748B), fontSize = 11.sp)
                         Text(InformesFormatters.formatMoney(card.quotaUsed, currency), color = Color(0xFFF87171), fontSize = 11.sp)
                     }
                     Column {
-                        Text("Disponible", color = Color(0xFF64748B), fontSize = 10.sp)
+                        Text("Disponible", color = Color(0xFF64748B), fontSize = 11.sp)
                         Text(InformesFormatters.formatMoney(card.quotaAvailable, currency), color = Color(0xFF34D399), fontSize = 11.sp)
                     }
                 }
@@ -335,15 +335,15 @@ private fun DebtsReportSection(
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
-                        Text("Saldo Inicial", color = Color(0xFF64748B), fontSize = 10.sp)
+                        Text("Saldo Inicial", color = Color(0xFF64748B), fontSize = 11.sp)
                         Text(InformesFormatters.formatMoney(debt.initialBalance, currency), color = Color(0xFFCBD5E1), fontSize = 11.sp)
                     }
                     Column {
-                        Text("Amortizado", color = Color(0xFF64748B), fontSize = 10.sp)
+                        Text("Amortizado", color = Color(0xFF64748B), fontSize = 11.sp)
                         Text(InformesFormatters.formatMoney(debt.amortizedCapital, currency), color = Color(0xFF34D399), fontSize = 11.sp)
                     }
                     Column {
-                        Text("Saldo Pendiente", color = Color(0xFF64748B), fontSize = 10.sp)
+                        Text("Saldo Pendiente", color = Color(0xFF64748B), fontSize = 11.sp)
                         Text(InformesFormatters.formatMoney(debt.currentBalance, currency), color = Color(0xFFF59E0B), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
@@ -387,15 +387,15 @@ private fun FixedAssetsReportSection(
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
-                        Text("Costo Adquisición", color = Color(0xFF64748B), fontSize = 10.sp)
+                        Text("Costo Adquisición", color = Color(0xFF64748B), fontSize = 11.sp)
                         Text(InformesFormatters.formatMoney(asset.acquisitionCost, currency), color = Color(0xFFCBD5E1), fontSize = 11.sp)
                     }
                     Column {
-                        Text("Deprec. Acumulada", color = Color(0xFF64748B), fontSize = 10.sp)
+                        Text("Deprec. Acumulada", color = Color(0xFF64748B), fontSize = 11.sp)
                         Text(InformesFormatters.formatMoney(asset.accumulatedDepreciation, currency), color = Color(0xFFF87171), fontSize = 11.sp)
                     }
                     Column {
-                        Text("Valor en Libros", color = Color(0xFF64748B), fontSize = 10.sp)
+                        Text("Valor en Libros", color = Color(0xFF64748B), fontSize = 11.sp)
                         Text(InformesFormatters.formatMoney(asset.bookValue, currency), color = Color(0xFF34D399), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
@@ -439,15 +439,15 @@ private fun InvestmentsReportSection(
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
-                        Text("Capital Invertido", color = Color(0xFF64748B), fontSize = 10.sp)
+                        Text("Capital Invertido", color = Color(0xFF64748B), fontSize = 11.sp)
                         Text(InformesFormatters.formatMoney(inv.investedCapital, currency), color = Color(0xFFCBD5E1), fontSize = 11.sp)
                     }
                     Column {
-                        Text("Rendimiento Neto", color = Color(0xFF64748B), fontSize = 10.sp)
+                        Text("Rendimiento Neto", color = Color(0xFF64748B), fontSize = 11.sp)
                         Text(InformesFormatters.formatMoney(inv.generatedYields, currency), color = Color(0xFF34D399), fontSize = 11.sp)
                     }
                     Column {
-                        Text("Valor Actual", color = Color(0xFF64748B), fontSize = 10.sp)
+                        Text("Valor Actual", color = Color(0xFF64748B), fontSize = 11.sp)
                         Text(InformesFormatters.formatMoney(inv.currentValue, currency), color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }

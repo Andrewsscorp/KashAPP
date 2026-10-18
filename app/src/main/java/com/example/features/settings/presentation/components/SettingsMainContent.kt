@@ -8,12 +8,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import com.example.core.ui.adaptive.rememberKashAdaptiveInfo
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -482,38 +485,45 @@ fun SettingsBottomNavBar(
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val adaptive = rememberKashAdaptiveInfo()
     Surface(
         color = Color.White,
         shadowElevation = 8.dp,
         modifier = modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
-            BottomNavActionItem(label = "Inicio", icon = Icons.Default.Home, isSelected = false, onClick = onHomeClick)
-            BottomNavActionItem(label = "Movimientos", icon = Icons.Default.SwapHoriz, isSelected = false, onClick = onTransactionsClick)
-            
-            // Central action button
-            Surface(
-                shape = CircleShape,
-                color = KashBlue,
-                shadowElevation = 4.dp,
+            Row(
                 modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .clickable { onFabClick() }
+                    .fillMaxWidth()
+                    .widthIn(max = adaptive.maxContentWidth)
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = "Nuevo movimiento", tint = Color.White, modifier = Modifier.size(24.dp))
+                BottomNavActionItem(label = "Inicio", icon = Icons.Default.Home, isSelected = false, onClick = onHomeClick)
+                BottomNavActionItem(label = "Movimientos", icon = Icons.Default.SwapHoriz, isSelected = false, onClick = onTransactionsClick)
+                
+                // Central action button
+                Surface(
+                    shape = CircleShape,
+                    color = KashBlue,
+                    shadowElevation = 4.dp,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .clickable { onFabClick() }
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = "Nuevo movimiento", tint = Color.White, modifier = Modifier.size(24.dp))
+                    }
                 }
-            }
 
-            BottomNavActionItem(label = "Resumen", icon = Icons.Default.TableChart, isSelected = false, onClick = onSummaryClick)
-            BottomNavActionItem(label = "Ajustes", icon = Icons.Default.Settings, isSelected = true, onClick = onSettingsClick)
+                BottomNavActionItem(label = "Resumen", icon = Icons.Default.TableChart, isSelected = false, onClick = onSummaryClick)
+                BottomNavActionItem(label = "Ajustes", icon = Icons.Default.Settings, isSelected = true, onClick = onSettingsClick)
+            }
         }
     }
 }
@@ -529,6 +539,7 @@ fun BottomNavActionItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .clickable { onClick() }
+            .defaultMinSize(minWidth = 48.dp, minHeight = 44.dp)
             .padding(horizontal = 12.dp, vertical = 4.dp)
     ) {
         Icon(

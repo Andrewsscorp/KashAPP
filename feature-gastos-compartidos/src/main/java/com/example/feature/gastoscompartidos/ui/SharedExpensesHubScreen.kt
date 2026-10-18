@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -57,6 +58,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.core.ui.components.CurrencyText
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
@@ -312,19 +314,20 @@ fun SharedNetPositionHeroCard(
                 Column(modifier = Modifier.weight(1f, fill = false)) {
                     Text(
                         text = "POSICIÓN NETA EN GASTOS COMPARTIDOS",
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = SharedExpenseThemeTokens.KashTextMuted,
                         letterSpacing = 0.6.sp
                     )
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = SharedReceiptTicketEngine.formatMoney(netPosition, currency),
-                        fontSize = if (responsive.isUltraCompactWidth) 22.sp else 26.sp,
-                        fontWeight = FontWeight.Black,
-                        color = if (netPosition >= 0.0) Color(0xFF34D399) else Color(0xFFFB7185),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                    CurrencyText(
+                        amountDouble = netPosition,
+                        currencyCode = currency,
+                        style = androidx.compose.material3.MaterialTheme.typography.headlineMedium.copy(
+                            fontSize = if (responsive.isUltraCompactWidth) 22.sp else 26.sp,
+                            fontWeight = FontWeight.Black,
+                            color = if (netPosition >= 0.0) Color(0xFF34D399) else Color(0xFFFB7185)
+                        )
                     )
                 }
 
@@ -422,7 +425,7 @@ private fun ReceivablePayableMetricBox(
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
                 text = title,
-                fontSize = 10.sp,
+                fontSize = 11.sp,
                 color = titleColor,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
@@ -536,15 +539,18 @@ private fun ParticipantBalanceCard(
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
                         text = if (owesMe) "Te debe" else "Le debes",
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (owesMe) SharedExpenseThemeTokens.ReceivableTeal else SharedExpenseThemeTokens.PayableRose
                     )
-                    Text(
-                        text = SharedReceiptTicketEngine.formatMoney(abs(item.netBalanceWithUser), currency),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Black,
-                        color = if (owesMe) SharedExpenseThemeTokens.ReceivableTeal else SharedExpenseThemeTokens.PayableRose
+                    CurrencyText(
+                        amountDouble = abs(item.netBalanceWithUser),
+                        currencyCode = currency,
+                        style = androidx.compose.material3.MaterialTheme.typography.titleMedium.copy(
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Black,
+                            color = if (owesMe) SharedExpenseThemeTokens.ReceivableTeal else SharedExpenseThemeTokens.PayableRose
+                        )
                     )
                 }
             }
@@ -559,6 +565,7 @@ private fun ParticipantBalanceCard(
             ) {
                 Button(
                     onClick = { onSettleClick(item.participant.id) },
+                    modifier = Modifier.heightIn(min = 44.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (owesMe) SharedExpenseThemeTokens.ReceivableTeal else SharedExpenseThemeTokens.KashNavy
@@ -865,7 +872,7 @@ private fun TicketsAndConsecutivesTabContent(
                                 ) {
                                     Text(
                                         text = item.expense.consecutiveCode,
-                                        fontSize = 10.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = SharedExpenseThemeTokens.KashBlue,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -877,7 +884,7 @@ private fun TicketsAndConsecutivesTabContent(
                                 ) {
                                     Text(
                                         text = item.expense.receiptTicketCode,
-                                        fontSize = 10.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = SharedExpenseThemeTokens.ReceivableTeal,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -905,11 +912,14 @@ private fun TicketsAndConsecutivesTabContent(
                         Spacer(modifier = Modifier.width(8.dp))
 
                         Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = SharedReceiptTicketEngine.formatMoney(item.expense.totalAmount, item.expense.currency),
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Black,
-                                color = SharedExpenseThemeTokens.KashTextPrimary
+                            CurrencyText(
+                                amountDouble = item.expense.totalAmount,
+                                currencyCode = item.expense.currency,
+                                style = androidx.compose.material3.MaterialTheme.typography.titleMedium.copy(
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = SharedExpenseThemeTokens.KashTextPrimary
+                                )
                             )
                             Icon(
                                 imageVector = Icons.Default.ReceiptLong,

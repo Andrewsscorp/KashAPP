@@ -15,9 +15,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -57,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.presentation.goals.state.GoalFormViewModel
+import com.example.core.ui.adaptive.rememberKashAdaptiveInfo
 import com.example.presentation.goals.widgets.GoalBasicInfoCard
 import com.example.presentation.goals.widgets.GoalFinancialTargetCard
 import com.example.presentation.goals.widgets.GoalFundingSourceCard
@@ -76,6 +79,7 @@ fun CreateGoalScreen(
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val adaptive = rememberKashAdaptiveInfo()
 
     BackHandler {
         if (state.activeKeyboardTarget != null) {
@@ -105,40 +109,43 @@ fun CreateGoalScreen(
                     shadowElevation = 2.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .statusBarsPadding()
-                    ) {
-                        Row(
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .widthIn(max = adaptive.maxContentWidth)
+                                .statusBarsPadding()
                         ) {
-                            IconButton(
-                                onClick = onNavigateBack,
-                                modifier = Modifier.testTag("back_button")
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Regresar",
-                                    tint = KashNavy
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column {
-                                Text(
-                                    text = "Crear objetivo",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = KashNavy
-                                )
-                                Text(
-                                    text = "Planificación y Mental Accounting",
-                                    fontSize = 12.sp,
-                                    color = Color(0xFF64748B)
-                                )
+                                IconButton(
+                                    onClick = onNavigateBack,
+                                    modifier = Modifier.size(44.dp).testTag("back_button")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Regresar",
+                                        tint = KashNavy
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = "Crear objetivo",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = KashNavy
+                                    )
+                                    Text(
+                                        text = "Planificación y Mental Accounting",
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF64748B)
+                                    )
+                                }
                             }
                         }
                     }
@@ -151,67 +158,70 @@ fun CreateGoalScreen(
                     shadowElevation = 8.dp,
                     border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .padding(horizontal = 20.dp, vertical = 12.dp)
-                    ) {
-                        // Quick dynamic progress summary
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Meta: $ ${String.format(Locale.GERMANY, "%,.0f", state.targetAmount)}",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF64748B)
-                            )
-                            Text(
-                                text = "Faltan: $ ${String.format(Locale.GERMANY, "%,.0f", state.remainingAmount)}",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = KashBlue
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Button(
-                            onClick = { viewModel.saveGoal() },
-                            enabled = state.isFormSubmittable,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = KashBlue,
-                                disabledContainerColor = Color(0xFFCBD5E1)
-                            ),
-                            shape = RoundedCornerShape(12.dp),
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(50.dp)
-                                .testTag("save_goal_button")
+                                .widthIn(max = adaptive.maxContentWidth)
+                                .navigationBarsPadding()
+                                .padding(horizontal = 20.dp, vertical = 12.dp)
                         ) {
-                            if (state.isSaving) {
-                                CircularProgressIndicator(
-                                    color = Color.White,
-                                    strokeWidth = 2.dp,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(10.dp))
+                            // Quick dynamic progress summary
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Text(
-                                    text = "Guardando objetivo...",
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    text = "Meta: $ ${String.format(Locale.GERMANY, "%,.0f", state.targetAmount)}",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF64748B)
                                 )
-                            } else {
                                 Text(
-                                    text = "Guardar objetivo",
-                                    fontSize = 15.sp,
+                                    text = "Faltan: $ ${String.format(Locale.GERMANY, "%,.0f", state.remainingAmount)}",
+                                    fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    color = KashBlue
                                 )
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Button(
+                                onClick = { viewModel.saveGoal() },
+                                enabled = state.isFormSubmittable,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = KashBlue,
+                                    disabledContainerColor = Color(0xFFCBD5E1)
+                                ),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp)
+                                    .testTag("save_goal_button")
+                            ) {
+                                if (state.isSaving) {
+                                    CircularProgressIndicator(
+                                        color = Color.White,
+                                        strokeWidth = 2.dp,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = "Guardando objetivo...",
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                } else {
+                                    Text(
+                                        text = "Guardar objetivo",
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
                             }
                         }
                     }
@@ -219,15 +229,21 @@ fun CreateGoalScreen(
             },
             containerColor = Color(0xFFF8FAFC)
         ) { paddingValues ->
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 14.dp)
-                    .widthIn(max = 700.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                    .padding(paddingValues),
+                contentAlignment = Alignment.TopCenter
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .imePadding()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 14.dp)
+                        .widthIn(max = adaptive.maxContentWidth),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
                 // 1. Información Básica
                 GoalBasicInfoCard(
                     state = state,
@@ -285,6 +301,7 @@ fun CreateGoalScreen(
                 Spacer(modifier = Modifier.height(20.dp))
             }
         }
+    }
 
         // Overlay & In-App Numeric Keyboard
         AnimatedVisibility(

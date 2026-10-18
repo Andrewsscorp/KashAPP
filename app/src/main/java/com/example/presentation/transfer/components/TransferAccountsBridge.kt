@@ -126,7 +126,7 @@ fun TransferAccountsBridge(
                             ) {
                                 Text(
                                     text = "* Obligatorio",
-                                    fontSize = 9.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF7C3AED),
                                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
@@ -276,7 +276,7 @@ fun TransferAccountsBridge(
                             ) {
                                 Text(
                                     text = "* Obligatorio",
-                                    fontSize = 9.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF16A34A),
                                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)

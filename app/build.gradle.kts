@@ -71,6 +71,7 @@ googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.W
 dependencies {
   implementation(project(":core-model"))
   implementation(project(":core-database"))
+  implementation(project(":core-ui"))
   implementation(project(":feature-activos"))
   implementation(project(":feature-ocr"))
   implementation(project(":feature-informes"))

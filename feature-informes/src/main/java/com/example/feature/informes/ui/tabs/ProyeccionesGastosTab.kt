@@ -118,7 +118,7 @@ fun ProyeccionesGastosTab(
                         Text(
                             text = "TIEMPO DE RUNWAY ESTIMADO",
                             color = Color(0xFF94A3B8),
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
@@ -138,7 +138,7 @@ fun ProyeccionesGastosTab(
                         Text(
                             text = "GASTO DIARIO (BURN RATE)",
                             color = Color(0xFF94A3B8),
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
@@ -150,7 +150,7 @@ fun ProyeccionesGastosTab(
                         Text(
                             text = "Promedio diario estimado",
                             color = Color(0xFF64748B),
-                            fontSize = 10.sp
+                            fontSize = 11.sp
                         )
                     }
                 }
@@ -244,7 +244,7 @@ fun ProyeccionesGastosTab(
                                 } catch (e: Exception) {
                                     Color(0xFF38BDF8)
                                 },
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
@@ -259,7 +259,7 @@ fun ProyeccionesGastosTab(
                         verticalAlignment = Alignment.Bottom
                     ) {
                         Column {
-                            Text(cat.frequencyDescription, color = Color(0xFF64748B), fontSize = 10.sp)
+                            Text(cat.frequencyDescription, color = Color(0xFF64748B), fontSize = 11.sp)
                             Text("Vencimiento: ${cat.nextDueDateEstimated}", color = Color(0xFF94A3B8), fontSize = 11.sp)
                         }
                         Column(horizontalAlignment = Alignment.End) {
@@ -272,7 +272,7 @@ fun ProyeccionesGastosTab(
                             Text(
                                 text = "%.1f%% del presupuesto".format(cat.percentageOfTotal),
                                 color = Color(0xFF38BDF8),
-                                fontSize = 10.sp
+                                fontSize = 11.sp
                             )
                         }
                     }
@@ -339,7 +339,7 @@ fun ProyeccionesGastosTab(
                                 Text(
                                     text = "${sc.probabilityPct}% Prob.",
                                     color = Color(0xFF38BDF8),
-                                    fontSize = 10.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -349,7 +349,7 @@ fun ProyeccionesGastosTab(
 
                             HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color(0xFF334155))
 
-                            Text("Patrimonio Final Proyectado:", color = Color(0xFF64748B), fontSize = 10.sp)
+                            Text("Patrimonio Final Proyectado:", color = Color(0xFF64748B), fontSize = 11.sp)
                             Text(
                                 text = InformesFormatters.formatMoney(sc.projectedFinalNetWorth, currency),
                                 color = Color(0xFF34D399),
@@ -363,15 +363,15 @@ fun ProyeccionesGastosTab(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Column {
-                                    Text("Ingreso 12M", color = Color(0xFF64748B), fontSize = 9.sp)
+                                    Text("Ingreso 12M", color = Color(0xFF64748B), fontSize = 11.sp)
                                     Text(InformesFormatters.formatCompactMoney(sc.projectedIncome), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                                 }
                                 Column {
-                                    Text("Gasto 12M", color = Color(0xFF64748B), fontSize = 9.sp)
+                                    Text("Gasto 12M", color = Color(0xFF64748B), fontSize = 11.sp)
                                     Text(InformesFormatters.formatCompactMoney(sc.projectedExpenses), color = Color(0xFFF87171), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                                 }
                                 Column {
-                                    Text("Ahorro 12M", color = Color(0xFF64748B), fontSize = 9.sp)
+                                    Text("Ahorro 12M", color = Color(0xFF64748B), fontSize = 11.sp)
                                     Text(InformesFormatters.formatCompactMoney(sc.projectedNetSavings), color = Color(0xFF34D399), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
@@ -410,18 +410,18 @@ fun ProyeccionesGastosTab(
                         modifier = Modifier.width(130.dp)
                     ) {
                         Column(modifier = Modifier.padding(10.dp)) {
-                            Text(pt.dayLabel, color = Color(0xFF38BDF8), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text(pt.dayLabel, color = Color(0xFF38BDF8), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                             Text(pt.dateString, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = Color(0xFF334155))
 
                             if (pt.expectedInflow > 0) {
-                                Text("+${InformesFormatters.formatCompactMoney(pt.expectedInflow)}", color = Color(0xFF34D399), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                Text("+${InformesFormatters.formatCompactMoney(pt.expectedInflow)}", color = Color(0xFF34D399), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                             }
                             if (pt.expectedOutflow > 0) {
-                                Text("-${InformesFormatters.formatCompactMoney(pt.expectedOutflow)}", color = Color(0xFFF87171), fontSize = 10.sp)
+                                Text("-${InformesFormatters.formatCompactMoney(pt.expectedOutflow)}", color = Color(0xFFF87171), fontSize = 11.sp)
                             }
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text("Saldo:", color = Color(0xFF64748B), fontSize = 9.sp)
+                            Text("Saldo:", color = Color(0xFF64748B), fontSize = 11.sp)
                             Text(InformesFormatters.formatCompactMoney(pt.projectedEndBalance), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     }

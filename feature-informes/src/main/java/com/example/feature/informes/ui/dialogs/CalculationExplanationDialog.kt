@@ -71,7 +71,7 @@ fun CalculationExplanationDialog(
                             Text(
                                 text = "TRAZABILIDAD DEL CÁLCULO",
                                 color = Color(0xFF38BDF8),
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 1.sp
                             )
@@ -99,7 +99,7 @@ fun CalculationExplanationDialog(
                         Text(
                             text = "VALOR CONSOLIDADO RESULTANTE",
                             color = Color(0xFF94A3B8),
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 0.8.sp
                         )
@@ -196,7 +196,7 @@ fun CalculationExplanationDialog(
                                         Text(
                                             text = "(${source.recordCount} registros)",
                                             color = Color(0xFF64748B),
-                                            fontSize = 10.sp
+                                            fontSize = 11.sp
                                         )
                                     }
                                     Text(
@@ -250,9 +250,9 @@ fun CalculationExplanationDialog(
                             Text(text = "Norma Contable y Certificación", color = Color(0xFF10B981), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = trace.accountingStandardNote, color = Color(0xFF94A3B8), fontSize = 10.sp)
+                        Text(text = trace.accountingStandardNote, color = Color(0xFF94A3B8), fontSize = 11.sp)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = trace.auditConfidenceStatus, color = Color(0xFF34D399), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text(text = trace.auditConfidenceStatus, color = Color(0xFF34D399), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
 

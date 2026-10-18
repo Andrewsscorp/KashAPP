@@ -79,6 +79,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.core.ui.adaptive.rememberKashAdaptiveInfo
 import com.example.presentation.login.components.LoginFaqBottomSheet
 import com.example.presentation.login.components.LoginHelpDropdown
 import kotlinx.coroutines.delay
@@ -105,6 +106,7 @@ fun LoginScreen(
     onSwitchAccount: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val adaptive = rememberKashAdaptiveInfo()
     val scrollState = rememberScrollState()
 
     var showHelpDropdown by remember { mutableStateOf(false) }
@@ -157,10 +159,11 @@ fun LoginScreen(
                     )
             ) {
                 // Subtle decorative concentric wave lines
+                val heroCanvasHeight = if (adaptive.isCompactHeight) 140.dp else 260.dp
                 Canvas(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(280.dp)
+                        .height(heroCanvasHeight)
                 ) {
                     val w = size.width
                     val h = size.height
@@ -199,7 +202,10 @@ fun LoginScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Logo & Brand Name
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier.weight(1f, fill = false),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Surface(
                                 shape = CircleShape,
                                 color = Color.White,
@@ -226,7 +232,9 @@ fun LoginScreen(
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White,
-                                letterSpacing = 0.5.sp
+                                letterSpacing = 0.5.sp,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                             )
                         }
 
@@ -234,7 +242,7 @@ fun LoginScreen(
                         Box {
                             Box(
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(44.dp)
                                     .clip(CircleShape)
                                     .background(Color.White.copy(alpha = 0.12f))
                                     .border(1.dp, Color.White.copy(alpha = 0.25f), CircleShape)
@@ -246,7 +254,7 @@ fun LoginScreen(
                                     imageVector = Icons.Default.QuestionMark,
                                     contentDescription = "Ayuda y Soporte",
                                     tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
 
@@ -261,19 +269,19 @@ fun LoginScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(28.dp))
+                    Spacer(modifier = Modifier.height(if (adaptive.isCompactHeight) 14.dp else 28.dp))
 
                     // Tagline in Cursive Script (Screenshot 1: "Tu dinero, en movimiento.")
                     Text(
                         text = "Tu dinero, en\nmovimiento.",
-                        fontSize = 32.sp,
+                        fontSize = if (adaptive.isUltraCompact) 26.sp else 32.sp,
                         fontStyle = FontStyle.Italic,
                         fontWeight = FontWeight.Normal,
                         color = Color.White,
-                        lineHeight = 38.sp
+                        lineHeight = if (adaptive.isUltraCompact) 32.sp else 38.sp
                     )
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(if (adaptive.isCompactHeight) 6.dp else 10.dp))
 
                     // Subtitle
                     Text(
@@ -283,21 +291,26 @@ fun LoginScreen(
                         lineHeight = 20.sp
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(if (adaptive.isCompactHeight) 12.dp else 24.dp))
                 }
             }
 
             // ==========================================
             // MAIN CARD SECTION (White Rounded Base)
             // ==========================================
-            Surface(
-                color = Color.White,
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                shadowElevation = 8.dp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .offset(y = (-16).dp)
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.TopCenter
             ) {
+                Surface(
+                    color = Color.White,
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    shadowElevation = 8.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = adaptive.maxContentWidth)
+                        .offset(y = (-16).dp)
+                ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -669,6 +682,7 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
                 }
+            }
             }
         }
     }

@@ -328,7 +328,7 @@ fun AdaptiveWheelDatePickerDialog(
                             Text(
                                 text = "FECHA ELEGIDA",
                                 color = Color(0xFF64748B),
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 0.5.sp
                             )
@@ -447,7 +447,7 @@ fun AdaptiveWheelDatePickerDialog(
                             Text(
                                 text = "DÍA",
                                 color = Color(0xFF64748B),
-                                fontSize = 10.5.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(bottom = 4.dp)
                             )
@@ -467,7 +467,7 @@ fun AdaptiveWheelDatePickerDialog(
                             Text(
                                 text = "MES",
                                 color = Color(0xFF64748B),
-                                fontSize = 10.5.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(bottom = 4.dp)
                             )
@@ -488,7 +488,7 @@ fun AdaptiveWheelDatePickerDialog(
                             Text(
                                 text = "AÑO",
                                 color = Color(0xFF64748B),
-                                fontSize = 10.5.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(bottom = 4.dp)
                             )

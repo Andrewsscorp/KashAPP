@@ -245,7 +245,7 @@ fun CreateOrEditParticipantBottomSheet(
                 // 2. Medio de Pago / Llave para Reembolsos y Cobros
                 Text(
                     text = "MEDIO DE PAGO PREFERIDO / LLAVE DE RECAUDO",
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = SharedExpenseThemeTokens.KashBlue
                 )
@@ -307,7 +307,7 @@ fun CreateOrEditParticipantBottomSheet(
                 // 3. Reglas Financieras: Cupo de Confianza Crediticia e Ingreso Mensual
                 Text(
                     text = "CONTROL DE RIESGO Y EQUIDAD PROPORCIONAL",
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = SharedExpenseThemeTokens.KashBlue
                 )

@@ -50,10 +50,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.core.ui.components.KashCompactButton
+import com.example.core.ui.components.KashCompactOutlinedButton
 import com.example.presentation.budget.state.BudgetConfiguration
 import com.example.presentation.budget.state.BudgetCycleType
 import com.example.presentation.budget.state.BudgetDistributionRule
@@ -110,7 +113,12 @@ fun BudgetConfigModal(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Box(
                             modifier = Modifier
                                 .size(38.dp)
@@ -126,24 +134,28 @@ fun BudgetConfigModal(
                             )
                         }
                         Spacer(modifier = Modifier.width(10.dp))
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "Configuración de Presupuesto",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = textPrimary
+                                color = textPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             Text(
                                 text = "Reglas, alertas de consumo y estilos",
                                 fontSize = 11.sp,
-                                color = textSecondary
+                                color = textSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
 
                     IconButton(
                         onClick = onDismiss,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
@@ -428,7 +440,7 @@ fun BudgetConfigModal(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Alerta al llegar al $warningThreshold% del sobre", fontSize = 12.sp, color = textPrimary)
-                        Text("Notifica preventivamente antes de sobregirarse", fontSize = 10.sp, color = textSecondary)
+                        Text("Notifica preventivamente antes de sobregirarse", fontSize = 11.sp, color = textSecondary)
                     }
                     Switch(
                         checked = notifyOnThreshold,
@@ -446,7 +458,7 @@ fun BudgetConfigModal(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Alerta de sobregiro (100%+)", fontSize = 12.sp, color = textPrimary)
-                        Text("Alerta crítica si una categoría supera el monto asignado", fontSize = 10.sp, color = textSecondary)
+                        Text("Alerta crítica si una categoría supera el monto asignado", fontSize = 11.sp, color = textSecondary)
                     }
                     Switch(
                         checked = notifyOnOverdraft,
@@ -464,7 +476,7 @@ fun BudgetConfigModal(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Alerta de Ritmo de Gasto (Burn Rate)", fontSize = 12.sp, color = textPrimary)
-                        Text("Advierte si la proyección diaria gastará todo antes de fin de mes", fontSize = 10.sp, color = textSecondary)
+                        Text("Advierte si la proyección diaria gastará todo antes de fin de mes", fontSize = 11.sp, color = textSecondary)
                     }
                     Switch(
                         checked = notifyOnBurnRateRisk,
@@ -480,16 +492,17 @@ fun BudgetConfigModal(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    OutlinedButton(
+                    KashCompactOutlinedButton(
+                        text = "Cancelar",
                         onClick = onDismiss,
-                        border = BorderStroke(1.dp, cardBorder),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Cancelar", color = textSecondary)
-                    }
+                        modifier = Modifier.weight(1f),
+                        minHeight = 44.dp,
+                        borderColor = cardBorder,
+                        contentColor = textSecondary
+                    )
 
-                    Button(
+                    KashCompactButton(
+                        text = "Guardar Cambios",
                         onClick = {
                             val newConfig = BudgetConfiguration(
                                 distributionRule = selectedRule,
@@ -505,12 +518,10 @@ fun BudgetConfigModal(
                             )
                             onSaveConfig(newConfig)
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = primaryBlue),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Guardar Cambios", color = Color.White, fontWeight = FontWeight.Bold)
-                    }
+                        modifier = Modifier.weight(1f),
+                        minHeight = 44.dp,
+                        containerColor = primaryBlue
+                    )
                 }
             }
         }

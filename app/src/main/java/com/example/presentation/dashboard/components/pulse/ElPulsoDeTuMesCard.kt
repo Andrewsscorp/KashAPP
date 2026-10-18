@@ -94,7 +94,7 @@ fun ElPulsoDeTuMesCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f, fill = false)) {
                 Text(
                     text = monthTag,
                     fontSize = 11.sp,
@@ -105,9 +105,11 @@ fun ElPulsoDeTuMesCard(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "El pulso de tu mes",
-                    fontSize = 24.sp,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = Color(0xFF0F172A),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
@@ -252,14 +254,21 @@ fun ElPulsoDeTuMesCard(
                         text = "Presupuesto mensual →",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF007BFF)
+                        color = Color(0xFF007BFF),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
+
+                    Spacer(modifier = Modifier.width(8.dp))
 
                     Text(
                         text = "${MoneyFormatter.format(kpiState.expenses, isPrivacyMode)} / ${MoneyFormatter.format(kpiState.budgetLimit, isPrivacyMode)}",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFD97706)
+                        color = Color(0xFFD97706),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 

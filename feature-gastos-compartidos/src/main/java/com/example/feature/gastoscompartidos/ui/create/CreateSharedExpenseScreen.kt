@@ -67,6 +67,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.core.ui.components.CurrencyText
 import com.example.data.local.entity.AccountEntity
 import com.example.domain.models.shared.BudgetImpactPolicy
 import com.example.domain.models.shared.RealMoneyImpactMode
@@ -474,7 +475,7 @@ fun CreateSharedExpenseScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column {
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = "GRAN TOTAL A DIVIDIR",
                                             fontSize = 11.sp,
@@ -484,15 +485,19 @@ fun CreateSharedExpenseScreen(
                                         )
                                         Text(
                                             text = "Subtotal + Impuestos + Propina - Dcto",
-                                            fontSize = 10.sp,
+                                            fontSize = 11.sp,
                                             color = Color.White.copy(alpha = 0.7f)
                                         )
                                     }
-                                    Text(
-                                        text = SharedReceiptTicketEngine.formatMoney(computedTotal, uiState.currencyCode),
-                                        fontSize = 20.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = Color.White
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    CurrencyText(
+                                        amountDouble = computedTotal,
+                                        currencyCode = uiState.currencyCode,
+                                        style = androidx.compose.material3.MaterialTheme.typography.titleLarge.copy(
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = Color.White
+                                        )
                                     )
                                 }
                             }
@@ -1012,7 +1017,7 @@ fun SharedPayerSelectorCard(
                                 )
                                 Text(
                                     text = "Disp: ${SharedReceiptTicketEngine.formatMoney(acc.availableBalance, currency)}",
-                                    fontSize = 10.sp,
+                                    fontSize = 11.sp,
                                     color = SharedExpenseThemeTokens.KashTextSecondary
                                 )
                             }

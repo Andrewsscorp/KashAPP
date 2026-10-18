@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -66,9 +67,12 @@ fun MisObjetivosCard(
         ) {
             Text(
                 text = "Mis objetivos",
-                fontSize = 22.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F172A)
+                color = Color(0xFF0F172A),
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
 
             Row(
@@ -78,7 +82,7 @@ fun MisObjetivosCard(
                 Row(
                     modifier = Modifier
                         .clickable { onAddGoalClick() }
-                        .padding(vertical = 4.dp, horizontal = 2.dp)
+                        .padding(vertical = 6.dp, horizontal = 4.dp)
                         .testTag("objetivos_nuevo_button"),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(2.dp)
@@ -90,7 +94,7 @@ fun MisObjetivosCard(
                 Row(
                     modifier = Modifier
                         .clickable { onSeeAllClick() }
-                        .padding(vertical = 4.dp, horizontal = 2.dp)
+                        .padding(vertical = 6.dp, horizontal = 4.dp)
                         .testTag("objetivos_ver_todos"),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(2.dp)
@@ -162,7 +166,7 @@ fun MisObjetivosCard(
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0A192F)),
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier
-                            .height(46.dp)
+                            .defaultMinSize(minHeight = 48.dp)
                             .testTag("crear_primer_objetivo_btn")
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -191,12 +195,18 @@ fun MisObjetivosCard(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    modifier = Modifier.weight(1f, fill = false),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
                                     Text(
                                         text = goal.title,
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF0F172A)
+                                        color = Color(0xFF0F172A),
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f, fill = false)
                                     )
                                     if (goal.isCommitted) {
                                         Spacer(modifier = Modifier.width(6.dp))
@@ -219,17 +229,20 @@ fun MisObjetivosCard(
                                                 Text(
                                                     text = "Comprometido",
                                                     color = Color(0xFF2563EB),
-                                                    fontSize = 10.sp,
+                                                    fontSize = 11.sp,
                                                     fontWeight = FontWeight.SemiBold
                                                 )
                                             }
                                         }
                                     }
                                 }
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "${MoneyFormatter.format(goal.currentAmount, isPrivacyMode)} / ${MoneyFormatter.format(goal.targetAmount, isPrivacyMode)}",
                                     fontSize = 12.sp,
-                                    color = Color(0xFF64748B)
+                                    color = Color(0xFF64748B),
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                 )
                             }
                             Spacer(modifier = Modifier.height(6.dp))

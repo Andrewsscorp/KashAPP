@@ -126,7 +126,7 @@ fun AnalisisFinancieroTab(
                                     modifier = Modifier.size(13.dp)
                                 )
                             }
-                            Text("Categoría: ${ratio.category} • Fórmula: ${ratio.formula}", color = Color(0xFF64748B), fontSize = 10.sp)
+                            Text("Categoría: ${ratio.category} • Fórmula: ${ratio.formula}", color = Color(0xFF64748B), fontSize = 11.sp)
                         }
 
                         // Status badge (Semáforo)
@@ -146,7 +146,7 @@ fun AnalisisFinancieroTab(
                                     RatioHealthStatus.WARNING -> Color(0xFFFBBF24)
                                     RatioHealthStatus.CRITICAL -> Color(0xFFF87171)
                                 },
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
                             )
@@ -161,11 +161,11 @@ fun AnalisisFinancieroTab(
                         verticalAlignment = Alignment.Bottom
                     ) {
                         Column {
-                            Text("VALOR CALCULADO", color = Color(0xFF94A3B8), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text("VALOR CALCULADO", color = Color(0xFF94A3B8), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                             Text(ratio.formattedValue, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("BENCHMARK SEGURO", color = Color(0xFF64748B), fontSize = 10.sp)
+                            Text("BENCHMARK SEGURO", color = Color(0xFF64748B), fontSize = 11.sp)
                             Text(ratio.benchmark, color = Color(0xFF38BDF8), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                         }
                     }
@@ -279,7 +279,7 @@ fun AnalisisFinancieroTab(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            Text("Patrimonio Proyectado", color = Color(0xFF64748B), fontSize = 10.sp)
+                            Text("Patrimonio Proyectado", color = Color(0xFF64748B), fontSize = 11.sp)
                             Text(
                                 text = InformesFormatters.formatMoney(proj.projectedNetWorth, currency),
                                 color = Color(0xFF34D399),
@@ -288,7 +288,7 @@ fun AnalisisFinancieroTab(
                             )
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("Ahorro Acumulado", color = Color(0xFF64748B), fontSize = 10.sp)
+                            Text("Ahorro Acumulado", color = Color(0xFF64748B), fontSize = 11.sp)
                             Text(
                                 text = InformesFormatters.formatMoney(proj.projectedSavings, currency),
                                 color = Color.White,

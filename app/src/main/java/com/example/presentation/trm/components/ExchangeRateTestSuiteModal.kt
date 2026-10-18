@@ -286,7 +286,7 @@ private fun TestResultCard(item: TestSuiteItemResult) {
                         )
                         Text(
                             text = item.category,
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             color = Color(0xFF94A3B8)
                         )
                     }
@@ -307,7 +307,7 @@ private fun TestResultCard(item: TestSuiteItemResult) {
                                 TestStatus.ERROR -> "ERROR"
                                 else -> "RUNNING"
                             },
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = when (item.status) {
                                 TestStatus.OK -> Color(0xFF34D399)
@@ -349,7 +349,7 @@ private fun TestResultCard(item: TestSuiteItemResult) {
                 ) {
                     Text(
                         text = "DETALLE TÉCNICO:",
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF38BDF8)
                     )
@@ -364,13 +364,13 @@ private fun TestResultCard(item: TestSuiteItemResult) {
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = "PAYLOAD JSON:",
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF38BDF8)
                         )
                         Text(
                             text = item.payloadSnippet,
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             color = Color(0xFF34D399),
                             fontFamily = FontFamily.Monospace
                         )

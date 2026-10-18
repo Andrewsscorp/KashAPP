@@ -60,22 +60,27 @@ fun TuSaludFinancieraCard(
             .fillMaxWidth()
             .testTag("tu_salud_financiera_card")
     ) {
+        val adaptive = com.example.core.ui.adaptive.rememberKashAdaptiveInfo()
+        val cardPadding = if (adaptive.isCompact) 14.dp else 20.dp
+        val donutBoxSize = if (adaptive.isUltraCompact) 88.dp else 110.dp
+        val donutCanvasSize = if (adaptive.isUltraCompact) 80.dp else 100.dp
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(cardPadding),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Circular Donut Ring Gauge
             Box(
-                modifier = Modifier.size(110.dp),
+                modifier = Modifier.size(donutBoxSize),
                 contentAlignment = Alignment.Center
             ) {
-                CircularHealthDonutCanvas(score = healthScore.score)
+                CircularHealthDonutCanvas(score = healthScore.score, sizeDp = donutCanvasSize)
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = "${healthScore.score}",
-                        fontSize = 26.sp,
+                        fontSize = if (adaptive.isUltraCompact) 22.sp else 26.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF0F172A)
                     )
@@ -87,7 +92,7 @@ fun TuSaludFinancieraCard(
                 }
             }
 
-            Spacer(modifier = Modifier.width(18.dp))
+            Spacer(modifier = Modifier.width(if (adaptive.isUltraCompact) 12.dp else 18.dp))
 
             // Right Content
             Column(modifier = Modifier.weight(1f)) {
@@ -103,9 +108,11 @@ fun TuSaludFinancieraCard(
 
                 Text(
                     text = statusTitle,
-                    fontSize = 22.sp,
+                    fontSize = if (adaptive.isUltraCompact) 18.sp else 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = Color(0xFF0F172A),
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -114,7 +121,7 @@ fun TuSaludFinancieraCard(
                     text = healthScore.insightMessage.ifBlank { "Vas por buen camino. Ajustar tus gastos variables puede elevar tu puntaje." },
                     fontSize = 12.sp,
                     color = Color(0xFF64748B),
-                    lineHeight = 17.sp
+                    lineHeight = 16.sp
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -122,7 +129,7 @@ fun TuSaludFinancieraCard(
                 Row(
                     modifier = Modifier
                         .clickable { onViewRecommendationsClick() }
-                        .padding(vertical = 2.dp)
+                        .padding(vertical = 6.dp, horizontal = 2.dp)
                         .testTag("ver_recomendaciones_link"),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -146,11 +153,11 @@ fun TuSaludFinancieraCard(
 }
 
 @Composable
-private fun CircularHealthDonutCanvas(score: Int) {
+private fun CircularHealthDonutCanvas(score: Int, sizeDp: androidx.compose.ui.unit.Dp = 100.dp) {
     val clampedScore = score.coerceIn(0, 100)
     val sweepAngle = (clampedScore / 100f) * 360f
 
-    Canvas(modifier = Modifier.size(100.dp)) {
+    Canvas(modifier = Modifier.size(sizeDp)) {
         val strokeWidth = 12.dp.toPx()
         val arcSize = Size(size.width - strokeWidth, size.height - strokeWidth)
         val topLeft = Offset(strokeWidth / 2, strokeWidth / 2)

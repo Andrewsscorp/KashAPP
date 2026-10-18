@@ -107,7 +107,7 @@ fun TransferGmfBanner(
                 ) {
                     Text(
                         text = if (applyGmf) "APLICA 4x1000" else "EXENTA",
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = if (applyGmf) Color(0xFFB45309) else Color(0xFF15803D),
                         modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
@@ -140,7 +140,7 @@ fun TransferGmfBanner(
                         )
                         Text(
                             text = "Desactívalo si tu cuenta origen está exonerada ante la DIAN",
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             color = Color(0xFF94A3B8)
                         )
                     }
@@ -220,7 +220,7 @@ fun TransferGmfBanner(
                         if (applyGmf) {
                             Text(
                                 text = "Incluye impuesto GMF",
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 color = Color(0xFFEA580C)
                             )
                         }

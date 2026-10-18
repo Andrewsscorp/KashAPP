@@ -25,6 +25,7 @@ android {
 dependencies {
     implementation(project(":core-model"))
     implementation(project(":core-database"))
+    implementation(project(":core-ui"))
     implementation(project(":feature-ocr"))
     implementation(project(":feature-informes"))
     implementation(platform(libs.androidx.compose.bom))

@@ -27,6 +27,7 @@ rootProject.name = "KashApp"
 include(":app")
 include(":core-model")
 include(":core-database")
+include(":core-ui")
 include(":feature-activos")
 include(":feature-ocr")
 include(":feature-informes")

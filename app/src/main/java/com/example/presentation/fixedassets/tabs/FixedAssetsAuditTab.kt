@@ -335,7 +335,7 @@ private fun AuditMetricCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(value, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = color)
-            Text(title, fontSize = 9.sp, color = Color(0xFF94A3B8), maxLines = 1)
+            Text(title, fontSize = 11.sp, color = Color(0xFF94A3B8), maxLines = 1)
         }
     }
 }
@@ -384,11 +384,11 @@ private fun AuditLogRowCard(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Icon(badgeIcon, contentDescription = null, tint = badgeText, modifier = Modifier.size(12.dp))
-                        Text(log.actionType, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = badgeText)
+                        Text(log.actionType, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = badgeText)
                     }
                 }
 
-                Text(log.formattedDate, fontSize = 10.5.sp, color = textSecondary)
+                Text(log.formattedDate, fontSize = 11.sp, color = textSecondary)
             }
 
             Text(
@@ -418,8 +418,8 @@ private fun AuditLogRowCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text("Impacto:", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF38BDF8))
-                        Text(impact, fontSize = 10.5.sp, color = Color(0xFFE2E8F0))
+                        Text("Impacto:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF38BDF8))
+                        Text(impact, fontSize = 11.sp, color = Color(0xFFE2E8F0))
                     }
                 }
             }
@@ -431,13 +431,13 @@ private fun AuditLogRowCard(
             ) {
                 Text(
                     text = "Responsable: ${log.userRole}",
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     color = Color(0xFF64748B)
                 )
                 if (!log.assetName.isNullOrBlank()) {
                     Text(
                         text = "Activo: ${log.assetName}",
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         color = Color(0xFF94A3B8),
                         fontWeight = FontWeight.Medium
                     )

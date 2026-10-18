@@ -722,42 +722,19 @@ data class SharedResponsiveLayoutInfo(
 
 @Composable
 fun rememberSharedResponsiveLayoutInfo(): SharedResponsiveLayoutInfo {
-    val configuration = LocalConfiguration.current
-    val widthDp = configuration.screenWidthDp
-    val heightDp = configuration.screenHeightDp
-    return remember(widthDp, heightDp) {
-        val isUltraCompact = widthDp < 360
-        val isMediumOrExpanded = widthDp >= 600
-        val isExpanded = widthDp >= 840
-        val isLandscape = widthDp > heightDp
+    val adaptive = com.example.core.ui.adaptive.rememberKashAdaptiveInfo()
+    return remember(adaptive) {
         SharedResponsiveLayoutInfo(
-            screenWidthDp = widthDp,
-            screenHeightDp = heightDp,
-            isUltraCompactWidth = isUltraCompact,
-            isMediumOrExpandedWidth = isMediumOrExpanded,
-            isExpandedTabletWidth = isExpanded,
-            isLandscape = isLandscape,
-            horizontalPadding = when {
-                isExpanded -> 28.dp
-                isMediumOrExpanded -> 22.dp
-                isUltraCompact -> 12.dp
-                else -> 16.dp
-            },
-            verticalSpacing = when {
-                isUltraCompact -> 10.dp
-                isMediumOrExpanded -> 16.dp
-                else -> 14.dp
-            },
-            maxContentWidth = when {
-                isExpanded -> 960.dp
-                isMediumOrExpanded -> 760.dp
-                else -> 600.dp
-            },
-            gridColumnsCount = when {
-                isExpanded -> 2
-                isMediumOrExpanded -> 2
-                else -> 1
-            }
+            screenWidthDp = adaptive.screenWidthDp,
+            screenHeightDp = adaptive.screenHeightDp,
+            isUltraCompactWidth = adaptive.isUltraCompact,
+            isMediumOrExpandedWidth = adaptive.isMedium || adaptive.isExpanded,
+            isExpandedTabletWidth = adaptive.isExpanded,
+            isLandscape = adaptive.isLandscape,
+            horizontalPadding = adaptive.horizontalPadding,
+            verticalSpacing = adaptive.verticalSpacing,
+            maxContentWidth = adaptive.maxContentWidth,
+            gridColumnsCount = adaptive.gridColumnsCount
         )
     }
 }

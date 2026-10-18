@@ -36,6 +36,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 
+import androidx.compose.ui.text.style.TextOverflow
+import com.example.core.ui.components.KashCompactButton
+
 @Composable
 fun EditCeilingModal(
     currentCeiling: Double,
@@ -68,8 +71,18 @@ fun EditCeilingModal(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Ajustar Techo Presupuestal", color = textPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                    IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                    Text(
+                        text = "Ajustar Techo Presupuestal",
+                        color = textPrimary,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp)
+                    )
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(36.dp)) {
                         Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = textSecondary)
                     }
                 }
@@ -105,23 +118,20 @@ fun EditCeilingModal(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                Button(
+                KashCompactButton(
+                    text = "Guardar Techo Presupuestal",
                     onClick = {
                         val parsed = ceilingInput.toDoubleOrNull() ?: 0.0
                         if (parsed <= 0) {
                             errorMessage = "El monto debe ser superior a cero"
-                            return@Button
+                            return@KashCompactButton
                         }
                         onConfirm(parsed)
                     },
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = primaryBlue),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(46.dp)
-                ) {
-                    Text("Guardar Techo Presupuestal", fontSize = 13.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
+                    modifier = Modifier.fillMaxWidth(),
+                    minHeight = 44.dp,
+                    containerColor = primaryBlue
+                )
             }
         }
     }

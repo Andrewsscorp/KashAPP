@@ -20,11 +20,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -91,6 +93,7 @@ import com.example.presentation.expense.model.ExpenseFormState
 import com.example.presentation.expense.model.buildDisplayCategories
 import com.example.presentation.expense.model.formatMoneyDisplay
 import com.example.presentation.expense.model.getDefaultCreditCardAccounts
+import com.example.core.ui.adaptive.rememberKashAdaptiveInfo
 import com.example.util.CreditCardPaymentEngine
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -136,6 +139,8 @@ fun CreateExpenseScreen(
     val lastUsedCurrency = remember { prefs.getString("last_used_currency", "COP") ?: "COP" }
 
     BackHandler { onDismiss() }
+
+    val adaptive = rememberKashAdaptiveInfo()
 
     var formState by remember {
         mutableStateOf(
@@ -291,20 +296,36 @@ fun CreateExpenseScreen(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize().navigationBarsPadding().background(Color(0xFFF8FAFC))) {
-        Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).imePadding()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .navigationBarsPadding()
+            .background(Color(0xFFF8FAFC)),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .widthIn(max = adaptive.maxContentWidth)
+                .verticalScroll(rememberScrollState())
+                .imePadding()
+        ) {
             // Header Bar
             Box(modifier = Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Color(0xFF032B43), Color(0xFF021727)))).statusBarsPadding().padding(horizontal = 20.dp, vertical = 18.dp)) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = onDismiss, modifier = Modifier.size(40.dp).clip(CircleShape).background(Color(0x26FFFFFF)).testTag("back_button_expense")) {
+                        IconButton(onClick = onDismiss, modifier = Modifier.size(44.dp).clip(CircleShape).background(Color(0x26FFFFFF)).testTag("back_button_expense")) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = Color.White, modifier = Modifier.size(20.dp))
                         }
                         Surface(
                             shape = RoundedCornerShape(20.dp),
                             color = if (formState.isAmountValid && !formState.isSubmitting) Color(0xFFEF4444) else Color(0x33FFFFFF),
                             shadowElevation = if (formState.isAmountValid) 4.dp else 0.dp,
-                            modifier = Modifier.clip(RoundedCornerShape(20.dp)).clickable(enabled = formState.isAmountValid && !formState.isSubmitting) { onPerformSaveExpense() }.testTag("top_bar_save_expense_btn")
+                            modifier = Modifier
+                                .defaultMinSize(minHeight = 44.dp)
+                                .clip(RoundedCornerShape(20.dp))
+                                .clickable(enabled = formState.isAmountValid && !formState.isSubmitting) { onPerformSaveExpense() }
+                                .testTag("top_bar_save_expense_btn")
                         ) {
                             Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Icon(Icons.Default.Check, contentDescription = null, tint = if (formState.isAmountValid) Color.White else Color(0xFF94A3B8), modifier = Modifier.size(16.dp))

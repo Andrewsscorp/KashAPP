@@ -150,7 +150,7 @@ fun CardPaymentVoucherDialog(
                     ) {
                         Text(
                             text = "MONTO TOTAL ABONADO",
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF166534),
                             letterSpacing = 0.5.sp
@@ -187,7 +187,7 @@ fun CardPaymentVoucherDialog(
                         ) {
                             Text(
                                 text = "DESGLOSE DE APLICACIÓN",
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF475569),
                                 letterSpacing = 0.5.sp
@@ -195,7 +195,7 @@ fun CardPaymentVoucherDialog(
                             Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFFE0F2FE)) {
                                 Text(
                                     text = "Tasa: ${"%.2f".format(voucher.rateEa)}% E.A. (${"%.2f".format(voucher.rateEm)}% E.M.)",
-                                    fontSize = 9.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF0369A1),
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -309,8 +309,8 @@ fun CardPaymentVoucherDialog(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("${"%.1f".format(pPct * 100)}% Abono a Capital", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF166534))
-                            Text("${"%.1f".format(fPct * 100)}% Intereses y Cargos", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF9A3412))
+                            Text("${"%.1f".format(pPct * 100)}% Abono a Capital", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF166534))
+                            Text("${"%.1f".format(fPct * 100)}% Intereses y Cargos", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF9A3412))
                         }
                     }
                 }
@@ -383,7 +383,7 @@ fun CardPaymentVoucherDialog(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text("Impacto Proyectado:", fontSize = 11.sp, color = Color(0xFF64748B))
-                                Text(voucher.projectedImpact, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF059669), modifier = Modifier.weight(1f, fill = false), textAlign = TextAlign.End)
+                                Text(voucher.projectedImpact, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF059669), modifier = Modifier.weight(1f, fill = false), textAlign = TextAlign.End)
                             }
                         }
 
@@ -393,16 +393,16 @@ fun CardPaymentVoucherDialog(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("No. Transacción / Aut:", fontSize = 10.sp, color = Color(0xFF94A3B8))
-                            Text("${voucher.transactionId} • ${voucher.authCode}", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = Color(0xFF64748B))
+                            Text("No. Transacción / Aut:", fontSize = 11.sp, color = Color(0xFF94A3B8))
+                            Text("${voucher.transactionId} • ${voucher.authCode}", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = Color(0xFF64748B))
                         }
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Fecha y Hora:", fontSize = 10.sp, color = Color(0xFF94A3B8))
-                            Text("${voucher.dateFormatted} • ${voucher.timeFormatted}", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = Color(0xFF64748B))
+                            Text("Fecha y Hora:", fontSize = 11.sp, color = Color(0xFF94A3B8))
+                            Text("${voucher.dateFormatted} • ${voucher.timeFormatted}", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = Color(0xFF64748B))
                         }
                     }
                 }
@@ -532,7 +532,7 @@ fun CreditCardStrategySelectionBottomSheet(
                             Text("Disminuir Tiempo / Plazo", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = if (currentStrategy == "TIME_REDUCTION") Color(0xFF0284C7) else Color(0xFF0F172A))
                         }
                         Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFFDBEAFE)) {
-                            Text("Recomendado", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E40AF), modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp))
+                            Text("Recomendado", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E40AF), modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp))
                         }
                     }
                     Text(
@@ -572,7 +572,7 @@ fun CreditCardStrategySelectionBottomSheet(
                             Text("Disminuir Valor de Cuota", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = if (currentStrategy == "QUOTA_REDUCTION") Color(0xFF0284C7) else Color(0xFF0F172A))
                         }
                         Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFFFEF3C7)) {
-                            Text("Mayor Liquidez", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF92400E), modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp))
+                            Text("Mayor Liquidez", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF92400E), modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp))
                         }
                     }
                     Text(
@@ -612,7 +612,7 @@ fun CreditCardStrategySelectionBottomSheet(
                             Text("Método Avalancha (Mayor Tasa)", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = if (currentStrategy == "AVALANCHE") Color(0xFF0284C7) else Color(0xFF0F172A))
                         }
                         Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFFDCFCE7)) {
-                            Text("Máximo Ahorro", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF166534), modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp))
+                            Text("Máximo Ahorro", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF166534), modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp))
                         }
                     }
                     Text(
@@ -671,7 +671,7 @@ fun CreditCardStrategySelectionBottomSheet(
                     modifier = Modifier.padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Text("ANÁLISIS DE IMPACTO PROYECTADO", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B), letterSpacing = 0.5.sp)
+                    Text("ANÁLISIS DE IMPACTO PROYECTADO", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B), letterSpacing = 0.5.sp)
                     Text(text = impactProjection.explanation, fontSize = 11.sp, color = Color(0xFF334155), lineHeight = 15.sp)
 
                     HorizontalDivider(color = Color(0xFFE2E8F0))
@@ -682,20 +682,20 @@ fun CreditCardStrategySelectionBottomSheet(
                     ) {
                         if (currentStrategy == "QUOTA_REDUCTION") {
                             Column {
-                                Text("Nueva cuota mensual:", fontSize = 10.sp, color = Color(0xFF64748B))
+                                Text("Nueva cuota mensual:", fontSize = 11.sp, color = Color(0xFF64748B))
                                 Text(formatMoneyDisplay(impactProjection.newEstimatedMonthlyFee, selectedCurrencyCode), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0284C7))
                             }
                             Column(horizontalAlignment = Alignment.End) {
-                                Text("Ahorro mensual:", fontSize = 10.sp, color = Color(0xFF64748B))
+                                Text("Ahorro mensual:", fontSize = 11.sp, color = Color(0xFF64748B))
                                 Text("- ${formatMoneyDisplay(impactProjection.feeReductionAmount, selectedCurrencyCode)}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF16A34A))
                             }
                         } else {
                             Column {
-                                Text("Plazo recortado:", fontSize = 10.sp, color = Color(0xFF64748B))
+                                Text("Plazo recortado:", fontSize = 11.sp, color = Color(0xFF64748B))
                                 Text("-${impactProjection.monthsSaved} meses / cuotas", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0284C7))
                             }
                             Column(horizontalAlignment = Alignment.End) {
-                                Text("Ahorro en intereses:", fontSize = 10.sp, color = Color(0xFF64748B))
+                                Text("Ahorro en intereses:", fontSize = 11.sp, color = Color(0xFF64748B))
                                 Text("~ ${formatMoneyDisplay(impactProjection.estimatedInterestSaved, selectedCurrencyCode)}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF16A34A))
                             }
                         }

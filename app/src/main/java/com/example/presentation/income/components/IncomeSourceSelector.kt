@@ -123,7 +123,7 @@ fun IncomeSourceSelector(
                             Text(
                                 text = "Opcional",
                                 color = Color(0xFF64748B),
-                                fontSize = 9.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium,
                                 modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
                             )
@@ -197,7 +197,7 @@ fun IncomeSourceSelector(
                             Text(
                                 text = "Opcional",
                                 color = Color(0xFF64748B),
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )

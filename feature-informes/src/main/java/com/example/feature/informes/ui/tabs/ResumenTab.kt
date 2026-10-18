@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.core.ui.components.CurrencyText
 import com.example.feature.informes.domain.model.DistributionCategoryItem
 import com.example.feature.informes.domain.model.FinancialPeriodFilter
 import com.example.feature.informes.domain.model.FinancialSummaryData
@@ -119,14 +120,13 @@ fun ResumenTab(
 
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    Text(
-                        text = InformesFormatters.formatMoney(summary.netWorth, currency),
+                    CurrencyText(
+                        amountDouble = summary.netWorth,
+                        currencyCode = currency,
                         color = Color.White,
                         fontSize = 28.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = (-0.5).sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        letterSpacing = (-0.5).sp
                     )
 
                     Spacer(modifier = Modifier.height(6.dp))
@@ -179,7 +179,7 @@ fun ResumenTab(
                         Text(
                             text = "Activos ($%,.0f) − Pasivos ($%,.0f)".format(summary.totalAssets, summary.totalLiabilities),
                             color = Color(0xFF94A3B8),
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f, fill = false)
@@ -204,7 +204,7 @@ fun ResumenTab(
                                 Text(
                                     text = "Ver fórmula",
                                     color = Color(0xFF38BDF8),
-                                    fontSize = 10.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -360,7 +360,7 @@ fun ResumenTab(
                                 Text(
                                     text = key.take(3),
                                     color = if (isSel) color else Color(0xFF64748B),
-                                    fontSize = 10.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
                                 )
@@ -407,7 +407,7 @@ fun ResumenTab(
                                 Text(
                                     text = InformesFormatters.formatCompactMoney(ptVal),
                                     color = Color(0xFF94A3B8),
-                                    fontSize = 9.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Medium
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
@@ -423,12 +423,12 @@ fun ResumenTab(
                                                 else -> Color(0xFF38BDF8)
                                             }
                                         )
-                                )
+                                    )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = pt.periodLabel,
                                     color = Color(0xFF64748B),
-                                    fontSize = 10.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
                             }
@@ -539,8 +539,9 @@ private fun KpiMetricCard(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            Text(
-                text = InformesFormatters.formatMoney(amount, currency),
+            CurrencyText(
+                amountDouble = amount,
+                currencyCode = currency,
                 color = Color.White,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Bold
@@ -553,7 +554,10 @@ private fun KpiMetricCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.weight(1f, fill = false),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
                         text = InformesFormatters.formatVariation(variationPct),
                         color = if (variationPct >= 0) Color(0xFF34D399) else Color(0xFFF87171),
@@ -564,10 +568,9 @@ private fun KpiMetricCard(
                     Text(
                         text = detail,
                         color = Color(0xFF64748B),
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
                 if (onClick != null) {
@@ -653,7 +656,10 @@ private fun DistributionCard(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier.weight(1f, fill = false),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Box(
                                 modifier = Modifier
                                     .size(10.dp)
@@ -671,13 +677,18 @@ private fun DistributionCard(
                                 text = item.categoryName,
                                 color = Color(0xFFE2E8F0),
                                 fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
 
+                        Spacer(modifier = Modifier.width(8.dp))
+
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = InformesFormatters.formatMoney(item.amount, currency),
+                            CurrencyText(
+                                amountDouble = item.amount,
+                                currencyCode = currency,
                                 color = Color.White,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold

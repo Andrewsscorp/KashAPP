@@ -5,7 +5,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
+import com.example.core.ui.adaptive.LocalKashAdaptiveInfo
+import com.example.core.ui.adaptive.rememberKashAdaptiveInfo
 
 private val LightColorScheme = lightColorScheme(
     primary = KashBlue,
@@ -47,10 +50,15 @@ fun KashAppTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val adaptiveInfo = rememberKashAdaptiveInfo()
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    CompositionLocalProvider(
+        LocalKashAdaptiveInfo provides adaptiveInfo
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }

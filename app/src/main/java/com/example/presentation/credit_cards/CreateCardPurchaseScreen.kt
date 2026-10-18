@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,6 +28,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import com.example.core.ui.adaptive.rememberKashAdaptiveInfo
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -319,6 +321,8 @@ fun CreateCardPurchaseScreen(
         }
     }
 
+    val adaptive = rememberKashAdaptiveInfo()
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -330,48 +334,59 @@ fun CreateCardPurchaseScreen(
             // TOP HEADER CON GRADIENTE PREMIUM
             Surface(modifier = Modifier.fillMaxWidth(), color = KashBlue) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Brush.verticalGradient(listOf(Color(0xFF0369A1), KashBlue, Color(0xFF0EA5E9))))
-                        .statusBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            IconButton(
-                                onClick = onDismiss,
-                                modifier = Modifier.size(36.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.2f)).testTag("back_button_card_purchase")
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = adaptive.maxContentWidth)
+                            .background(Brush.verticalGradient(listOf(Color(0xFF0369A1), KashBlue, Color(0xFF0EA5E9))))
+                            .statusBarsPadding()
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                    ) {
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = Color.White, modifier = Modifier.size(20.dp))
-                            }
-
-                            Text("Compra con Tarjeta", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Color.White)
-
-                            Surface(
-                                shape = RoundedCornerShape(20.dp),
-                                color = if (formState.isFormValid) Color.White else Color.White.copy(alpha = 0.2f),
-                                shadowElevation = if (formState.isFormValid) 4.dp else 0.dp,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .clickable(enabled = formState.isFormValid) { onPerformSavePurchase() }
-                                    .testTag("top_bar_save_purchase_btn")
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                IconButton(
+                                    onClick = onDismiss,
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.White.copy(alpha = 0.2f))
+                                        .testTag("back_button_card_purchase")
                                 ) {
-                                    Icon(Icons.Default.Check, contentDescription = null, tint = if (formState.isFormValid) KashBlue else Color.White, modifier = Modifier.size(16.dp))
-                                    Text(
-                                        text = if (formState.isSubmitting) "Guardando..." else "Guardar",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (formState.isFormValid) KashBlue else Color.White
-                                    )
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = Color.White, modifier = Modifier.size(20.dp))
+                                }
+
+                                Text("Compra con Tarjeta", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Color.White)
+
+                                Surface(
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = if (formState.isFormValid) Color.White else Color.White.copy(alpha = 0.2f),
+                                    shadowElevation = if (formState.isFormValid) 4.dp else 0.dp,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(20.dp))
+                                        .defaultMinSize(minHeight = 44.dp)
+                                        .clickable(enabled = formState.isFormValid) { onPerformSavePurchase() }
+                                        .testTag("top_bar_save_purchase_btn")
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(Icons.Default.Check, contentDescription = null, tint = if (formState.isFormValid) KashBlue else Color.White, modifier = Modifier.size(16.dp))
+                                        Text(
+                                            text = if (formState.isSubmitting) "Guardando..." else "Guardar",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (formState.isFormValid) KashBlue else Color.White
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -380,13 +395,20 @@ fun CreateCardPurchaseScreen(
             }
 
             // MAIN SCROLLABLE FORM
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                    .weight(1f),
+                contentAlignment = Alignment.TopCenter
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .widthIn(max = adaptive.maxContentWidth)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
                 if (formState.errorMessage != null) {
                     Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFFEF2F2), border = BorderStroke(1.dp, Color(0xFFFECACA)), modifier = Modifier.fillMaxWidth()) {
                         Text(formState.errorMessage ?: "", fontSize = 12.sp, color = Color(0xFFDC2626), modifier = Modifier.padding(12.dp))
@@ -538,7 +560,7 @@ fun CreateCardPurchaseScreen(
                                     }
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text("Categoría", fontSize = 10.sp, color = Color(0xFF64748B))
+                                        Text("Categoría", fontSize = 11.sp, color = Color(0xFF64748B))
                                         Text(currentCategory.name, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
                                     }
                                 } else {
@@ -623,6 +645,7 @@ fun CreateCardPurchaseScreen(
                             .fillMaxWidth()
                             .widthIn(max = 440.dp)
                             .height(52.dp)
+                            .defaultMinSize(minHeight = 44.dp)
                             .testTag("save_card_purchase_bottom_btn")
                     ) {
                         if (formState.isSubmitting) {
@@ -642,6 +665,7 @@ fun CreateCardPurchaseScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
             }
+        }
         }
     }
 

@@ -193,7 +193,7 @@ fun GoalSavingPlanCard(
                                     )
                                     Text(
                                         text = "Auto",
-                                        fontSize = 10.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = KashBlue
                                     )
