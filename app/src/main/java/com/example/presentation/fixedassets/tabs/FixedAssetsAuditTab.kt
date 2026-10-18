@@ -49,6 +49,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -120,6 +122,9 @@ fun FixedAssetsAuditTab(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
@@ -132,23 +137,30 @@ fun FixedAssetsAuditTab(
                         ) {
                             Icon(Icons.Default.Security, contentDescription = null, tint = accentCyan, modifier = Modifier.size(22.dp))
                         }
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "Bitácora Oficial de Auditoría",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = textPrimary
+                                color = textPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             Text(
                                 text = "Trazabilidad inmutable bajo NIC 16 / NIIF",
                                 fontSize = 11.5.sp,
-                                color = textSecondary
+                                color = textSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
 
                     // Acciones de Exportación
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        modifier = Modifier.wrapContentWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
                         Surface(
                             shape = RoundedCornerShape(10.dp),
                             color = Color(0xFF1E3A8A),
@@ -163,7 +175,7 @@ fun FixedAssetsAuditTab(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Icon(Icons.Default.Description, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
-                                Text("PDF", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                Text("PDF", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color.White, softWrap = false, maxLines = 1)
                             }
                         }
 
@@ -181,7 +193,7 @@ fun FixedAssetsAuditTab(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Icon(Icons.Default.FileDownload, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
-                                Text("Excel", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                Text("Excel", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color.White, softWrap = false, maxLines = 1)
                             }
                         }
                     }
@@ -193,25 +205,25 @@ fun FixedAssetsAuditTab(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     AuditMetricCard(
-                        title = "Total Eventos",
+                        title = "Total",
                         value = "$totalCount",
                         color = accentCyan,
                         modifier = Modifier.weight(1f)
                     )
                     AuditMetricCard(
-                        title = "Altas de Activo",
+                        title = "Altas",
                         value = "$creacionCount",
                         color = Color(0xFF10B981),
                         modifier = Modifier.weight(1f)
                     )
                     AuditMetricCard(
-                        title = "Cierres Deprec.",
+                        title = "Cierres",
                         value = "$depCount",
                         color = Color(0xFFA78BFA),
                         modifier = Modifier.weight(1f)
                     )
                     AuditMetricCard(
-                        title = "Bajas / Retiros",
+                        title = "Bajas",
                         value = "$bajaCount",
                         color = Color(0xFFF87171),
                         modifier = Modifier.weight(1f)
@@ -331,11 +343,11 @@ private fun AuditMetricCard(
         modifier = modifier
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(value, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = color)
-            Text(title, fontSize = 11.sp, color = Color(0xFF94A3B8), maxLines = 1)
+            Text(value, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = color, maxLines = 1, softWrap = false)
+            Text(title, fontSize = 11.sp, color = Color(0xFF94A3B8), maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
         }
     }
 }

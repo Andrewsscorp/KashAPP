@@ -2132,12 +2132,23 @@ private fun PaymentDetailModal(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(if (item.isCreditCard) "Pago mínimo / Cuota sugerida:" else "Monto cuota a pagar:", color = Color(0xFF94A3B8), fontSize = 12.sp)
+                            Text(
+                                text = if (item.isCreditCard) "Pago mínimo / Cuota sugerida:" else "Monto cuota a pagar:",
+                                color = Color(0xFF94A3B8),
+                                fontSize = 12.sp,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(end = 8.dp),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                             Text(
                                 text = "$ ${moneyFormatter.format(item.amount)} ${item.currency}",
                                 color = Color.White,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                softWrap = false,
+                                maxLines = 1
                             )
                         }
 
@@ -2148,12 +2159,23 @@ private fun PaymentDetailModal(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Deuda total / Extracto completo:", color = Color(0xFF94A3B8), fontSize = 12.sp)
+                                Text(
+                                    text = "Deuda total / Extracto completo:",
+                                    color = Color(0xFF94A3B8),
+                                    fontSize = 12.sp,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(end = 8.dp),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                                 Text(
                                     text = "$ ${moneyFormatter.format(item.secondaryAmount)} ${item.currency}",
                                     color = Color(0xFFA78BFA),
                                     fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    softWrap = false,
+                                    maxLines = 1
                                 )
                             }
                         }

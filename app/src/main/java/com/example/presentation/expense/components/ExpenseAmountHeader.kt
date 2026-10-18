@@ -194,13 +194,19 @@ fun ExpenseAmountHeader(
                     .padding(horizontal = 14.dp, vertical = 10.dp),
                 color = Color(0xFFF8FAFC)
             ) {
+                val dynamicFontSize = when {
+                    rawAmountInput.length > 12 -> 20.sp
+                    rawAmountInput.length > 9 -> 24.sp
+                    rawAmountInput.length > 6 -> 28.sp
+                    else -> 32.sp
+                }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         text = "$",
-                        fontSize = 32.sp,
+                        fontSize = dynamicFontSize,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF0284C7)
                     )
@@ -216,7 +222,7 @@ fun ExpenseAmountHeader(
                         },
                         visualTransformation = CurrencyDotVisualTransformation(),
                         textStyle = TextStyle(
-                            fontSize = 32.sp,
+                            fontSize = dynamicFontSize,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF0F172A)
                         ),
@@ -233,7 +239,7 @@ fun ExpenseAmountHeader(
                             if (rawAmountInput.isEmpty()) {
                                 Text(
                                     text = "0",
-                                    fontSize = 32.sp,
+                                    fontSize = dynamicFontSize,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF94A3B8)
                                 )

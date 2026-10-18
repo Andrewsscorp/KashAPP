@@ -197,9 +197,10 @@ fun AuditModuleScreen(
                     ) {
                         Text(
                             text = "Bóveda de Auditoría",
-                            fontSize = 17.sp,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
+                            modifier = Modifier.weight(1f, fill = false),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -209,7 +210,7 @@ fun AuditModuleScreen(
                             border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.5f))
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(3.dp)
                             ) {
@@ -220,10 +221,12 @@ fun AuditModuleScreen(
                                     modifier = Modifier.size(9.dp)
                                 )
                                 Text(
-                                    text = "SOC-2 INMUTABLE",
-                                    fontSize = 11.sp,
+                                    text = "INMUTABLE",
+                                    fontSize = 10.5.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF34D399)
+                                    color = Color(0xFF34D399),
+                                    softWrap = false,
+                                    maxLines = 1
                                 )
                             }
                         }

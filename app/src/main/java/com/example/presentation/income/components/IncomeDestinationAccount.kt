@@ -224,7 +224,9 @@ fun IncomeDestinationAccount(
                                 text = "Impacto del ingreso en cuenta",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF166534)
+                                color = Color(0xFF166534),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
 
@@ -249,7 +251,9 @@ fun IncomeDestinationAccount(
                                         text = "+${String.format(java.util.Locale.US, "%.1f", pctGrowth)}%",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF166534)
+                                        color = Color(0xFF166534),
+                                        softWrap = false,
+                                        maxLines = 1
                                     )
                                 }
                             }
@@ -258,45 +262,90 @@ fun IncomeDestinationAccount(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = "Saldo actual",
-                                fontSize = 11.sp,
-                                color = Color(0xFF64748B)
-                            )
-                            Text(
-                                text = formatMoneyDisplay(currentBal, currencyCode),
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF334155)
-                            )
+                    val isLargeFigure = incAmt > 99_999_999 || kotlin.math.abs(projBal) > 99_999_999 || kotlin.math.abs(currentBal) > 99_999_999
+                    if (isLargeFigure) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Saldo actual:", fontSize = 11.5.sp, color = Color(0xFF64748B), maxLines = 1)
+                                Text(
+                                    text = formatMoneyDisplay(currentBal, currencyCode),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF334155),
+                                    softWrap = false,
+                                    maxLines = 1
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Saldo proyectado (+):", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF166534), maxLines = 1)
+                                Text(
+                                    text = formatMoneyDisplay(projBal, currencyCode),
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF15803D),
+                                    softWrap = false,
+                                    maxLines = 1
+                                )
+                            }
                         }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f).padding(end = 4.dp)) {
+                                Text(
+                                    text = "Saldo actual",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF64748B),
+                                    maxLines = 1
+                                )
+                                Text(
+                                    text = formatMoneyDisplay(currentBal, currencyCode),
+                                    fontSize = 13.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF334155),
+                                    softWrap = false,
+                                    maxLines = 1
+                                )
+                            }
 
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = Color(0xFF16A34A),
-                            modifier = Modifier.size(20.dp)
-                        )
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = null,
+                                tint = Color(0xFF16A34A),
+                                modifier = Modifier.size(20.dp)
+                            )
 
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = "Saldo proyectado (+)",
-                                fontSize = 11.sp,
-                                color = Color(0xFF166534),
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = formatMoneyDisplay(projBal, currencyCode),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFF15803D)
-                            )
+                            Column(modifier = Modifier.weight(1f).padding(start = 4.dp), horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = "Saldo proyectado (+)",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF166534),
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1
+                                )
+                                Text(
+                                    text = formatMoneyDisplay(projBal, currencyCode),
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF15803D),
+                                    softWrap = false,
+                                    maxLines = 1
+                                )
+                            }
                         }
                     }
 

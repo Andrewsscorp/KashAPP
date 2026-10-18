@@ -1028,13 +1028,13 @@ private fun BankAccountManagementCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Row(
-                        modifier = Modifier.padding(vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        Icon(imageVector = Icons.Default.Edit, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Modificar", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF38BDF8), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Icon(imageVector = Icons.Default.Edit, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(13.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("Modificar", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF38BDF8), maxLines = 1, softWrap = false)
                     }
                 }
 
@@ -1047,13 +1047,13 @@ private fun BankAccountManagementCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Row(
-                        modifier = Modifier.padding(vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        Icon(imageVector = Icons.Default.BarChart, contentDescription = null, tint = Color(0xFFA78BFA), modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Métricas", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFA78BFA), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Icon(imageVector = Icons.Default.BarChart, contentDescription = null, tint = Color(0xFFA78BFA), modifier = Modifier.size(13.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("Métricas", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFFA78BFA), maxLines = 1, softWrap = false)
                     }
                 }
 
@@ -1066,13 +1066,13 @@ private fun BankAccountManagementCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Row(
-                        modifier = Modifier.padding(vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        Icon(imageVector = Icons.Default.ReceiptLong, contentDescription = null, tint = Color(0xFF34D399), modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Movimientos", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF34D399), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Icon(imageVector = Icons.Default.ReceiptLong, contentDescription = null, tint = Color(0xFF34D399), modifier = Modifier.size(13.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("Movs", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF34D399), maxLines = 1, softWrap = false)
                     }
                 }
 

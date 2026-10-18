@@ -97,6 +97,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
@@ -597,23 +598,38 @@ fun AddCreditCardScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Column {
-                                        Text("Cupo Disponible", fontSize = 11.sp, color = Color.White.copy(alpha = 0.7f))
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(end = 6.dp)
+                                    ) {
+                                        Text("Cupo Disponible", fontSize = 11.sp, color = Color.White.copy(alpha = 0.7f), maxLines = 1)
                                         Text(
                                             text = formatMoneyDisplay(state.availableQuota, state.currencyCode),
-                                            fontSize = 16.sp,
+                                            fontSize = if (state.availableQuota > 99_999_999) 12.5.sp else 15.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF34D399)
+                                            color = Color(0xFF34D399),
+                                            softWrap = false,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
 
-                                    Column(horizontalAlignment = Alignment.End) {
-                                        Text("Cupo Total", fontSize = 11.sp, color = Color.White.copy(alpha = 0.7f))
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(start = 6.dp),
+                                        horizontalAlignment = Alignment.End
+                                    ) {
+                                        Text("Cupo Total", fontSize = 11.sp, color = Color.White.copy(alpha = 0.7f), maxLines = 1)
                                         Text(
                                             text = formatMoneyDisplay(state.totalQuota, state.currencyCode),
-                                            fontSize = 14.sp,
+                                            fontSize = if (state.totalQuota > 99_999_999) 12.sp else 14.sp,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = Color.White
+                                            color = Color.White,
+                                            softWrap = false,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
                                 }
@@ -680,7 +696,12 @@ fun AddCreditCardScreen(
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF64748B),
-                                letterSpacing = 0.8.sp
+                                letterSpacing = 0.8.sp,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(end = 6.dp),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
 
                             // Currency pill selector (164 currencies + create)
@@ -702,14 +723,20 @@ fun AddCreditCardScreen(
                                         text = state.currencyCode,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = KashBlue
+                                        color = KashBlue,
+                                        softWrap = false
                                     )
                                     Text("▾", fontSize = 11.sp, color = KashBlue, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
 
-                        // 1. Cupo Total Field con VisualTransformation de miles
+                        // 1. Cupo Total Field con VisualTransformation de miles y tamaño adaptativo
+                        val quotaFontSize = when {
+                            rawTotalQuotaInput.length > 14 -> 13.5.sp
+                            rawTotalQuotaInput.length > 10 -> 15.sp
+                            else -> 18.sp
+                        }
                         OutlinedTextField(
                             value = rawTotalQuotaInput,
                             onValueChange = { input ->
@@ -721,13 +748,13 @@ fun AddCreditCardScreen(
                             visualTransformation = CardCurrencyDotVisualTransformation(),
                             label = { Text("Cupo Total Aprobado *") },
                             placeholder = { Text("0", color = Color(0xFF94A3B8)) },
-                            leadingIcon = { Text("$", fontWeight = FontWeight.Bold, color = KashBlue, fontSize = 18.sp, modifier = Modifier.padding(start = 12.dp)) },
+                            leadingIcon = { Text("$", fontWeight = FontWeight.Bold, color = KashBlue, fontSize = quotaFontSize, modifier = Modifier.padding(start = 12.dp)) },
                             trailingIcon = { Text(state.currencyCode, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B), modifier = Modifier.padding(end = 12.dp)) },
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             shape = RoundedCornerShape(14.dp),
                             modifier = Modifier.fillMaxWidth(),
-                            textStyle = TextStyle(color = Color(0xFF0F172A), fontSize = 18.sp, fontWeight = FontWeight.Bold),
+                            textStyle = TextStyle(color = Color(0xFF0F172A), fontSize = quotaFontSize, fontWeight = FontWeight.Bold),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = Color(0xFF0F172A),
                                 unfocusedTextColor = Color(0xFF0F172A),

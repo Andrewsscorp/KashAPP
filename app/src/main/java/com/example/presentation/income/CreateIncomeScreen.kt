@@ -407,6 +407,12 @@ fun CreateIncomeScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
+                        val dynamicFontSize = when {
+                            formState.rawAmountInput.length > 12 -> 20.sp
+                            formState.rawAmountInput.length > 9 -> 24.sp
+                            formState.rawAmountInput.length > 6 -> 28.sp
+                            else -> 32.sp
+                        }
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -421,7 +427,7 @@ fun CreateIncomeScreen(
                             color = Color(0xFFF8FAFC)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                                Text(text = "$", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                                Text(text = "$", fontSize = dynamicFontSize, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
                                 Spacer(modifier = Modifier.width(8.dp))
                                 BasicTextField(
                                     value = formState.rawAmountInput,
@@ -432,14 +438,14 @@ fun CreateIncomeScreen(
                                         }
                                     },
                                     visualTransformation = CurrencyDotVisualTransformation(),
-                                    textStyle = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A)),
+                                    textStyle = TextStyle(fontSize = dynamicFontSize, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A)),
                                     cursorBrush = SolidColor(Color(0xFF10B981)),
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
                                     keyboardActions = KeyboardActions(onDone = { keyboardController?.hide() }),
                                     singleLine = true,
                                     decorationBox = { innerTextField ->
                                         if (formState.rawAmountInput.isEmpty()) {
-                                            Text(text = "0", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8))
+                                            Text(text = "0", fontSize = dynamicFontSize, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8))
                                         }
                                         innerTextField()
                                     },

@@ -222,7 +222,12 @@ fun ExpenseAccountSelector(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Box(
                                 modifier = Modifier
                                     .size(8.dp)
@@ -234,7 +239,9 @@ fun ExpenseAccountSelector(
                                 text = "Impacto en cuenta en tiempo real",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1E293B)
+                                color = Color(0xFF1E293B),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
 
@@ -257,7 +264,9 @@ fun ExpenseAccountSelector(
                                     pctOfTotal > 50.0 -> Color(0xFFEA580C)
                                     else -> Color(0xFF16A34A)
                                 },
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                softWrap = false,
+                                maxLines = 1
                             )
                         }
                     }
@@ -280,39 +289,99 @@ fun ExpenseAccountSelector(
                         )
                     }
 
-                    // Balance Breakdown Row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text("Saldo Actual", fontSize = 11.sp, color = Color(0xFF64748B))
-                            Text(
-                                text = formatMoneyDisplay(currentBal, activeAccount.currency),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0F172A)
-                            )
+                    // Balance Breakdown: Adaptativo (apilado si son cifras grandes o 3 columnas si son estándar)
+                    val isLargeFigure = expAmt > 99_999_999 || kotlin.math.abs(projBal) > 99_999_999 || kotlin.math.abs(currentBal) > 99_999_999
+                    if (isLargeFigure) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Saldo Actual:", fontSize = 11.5.sp, color = Color(0xFF64748B), maxLines = 1)
+                                Text(
+                                    text = formatMoneyDisplay(currentBal, activeAccount.currency),
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0F172A),
+                                    softWrap = false,
+                                    maxLines = 1
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Gasto a Debitar:", fontSize = 11.5.sp, color = Color(0xFF64748B), maxLines = 1)
+                                Text(
+                                    text = "- ${formatMoneyDisplay(expAmt, selectedCurrencyCode)}",
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFDC2626),
+                                    softWrap = false,
+                                    maxLines = 1
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Saldo Resultante:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B), maxLines = 1)
+                                Text(
+                                    text = formatMoneyDisplay(projBal, activeAccount.currency),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = if (isExceeded) Color(0xFFDC2626) else Color(0xFF16A34A),
+                                    softWrap = false,
+                                    maxLines = 1
+                                )
+                            }
                         }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f).padding(end = 4.dp)) {
+                                Text("Saldo Actual", fontSize = 11.sp, color = Color(0xFF64748B), maxLines = 1)
+                                Text(
+                                    text = formatMoneyDisplay(currentBal, activeAccount.currency),
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0F172A),
+                                    softWrap = false,
+                                    maxLines = 1
+                                )
+                            }
 
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Gasto a Debitar", fontSize = 11.sp, color = Color(0xFF64748B))
-                            Text(
-                                text = "- ${formatMoneyDisplay(expAmt, selectedCurrencyCode)}",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFDC2626)
-                            )
-                        }
+                            Column(modifier = Modifier.weight(1f).padding(horizontal = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("Gasto a Debitar", fontSize = 11.sp, color = Color(0xFF64748B), maxLines = 1)
+                                Text(
+                                    text = "- ${formatMoneyDisplay(expAmt, selectedCurrencyCode)}",
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFDC2626),
+                                    softWrap = false,
+                                    maxLines = 1
+                                )
+                            }
 
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("Saldo Resultante", fontSize = 11.sp, color = Color(0xFF64748B))
-                            Text(
-                                text = formatMoneyDisplay(projBal, activeAccount.currency),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isExceeded) Color(0xFFDC2626) else Color(0xFF16A34A)
-                            )
+                            Column(modifier = Modifier.weight(1f).padding(start = 4.dp), horizontalAlignment = Alignment.End) {
+                                Text("Saldo Resultante", fontSize = 11.sp, color = Color(0xFF64748B), maxLines = 1)
+                                Text(
+                                    text = formatMoneyDisplay(projBal, activeAccount.currency),
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isExceeded) Color(0xFFDC2626) else Color(0xFF16A34A),
+                                    softWrap = false,
+                                    maxLines = 1
+                                )
+                            }
                         }
                     }
 

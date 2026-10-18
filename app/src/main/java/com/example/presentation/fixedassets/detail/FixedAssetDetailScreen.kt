@@ -80,6 +80,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.local.entity.AssetMovementEntity
@@ -111,7 +112,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.CircularProgressIndicator
 import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
@@ -422,7 +422,7 @@ fun FixedAssetDetailScreen(
                             horizontalArrangement = Arrangement.spacedBy(5.dp)
                         ) {
                             Icon(Icons.Default.Build, contentDescription = null, tint = Color(0xFFFBBF24), modifier = Modifier.size(14.dp))
-                            Text("Mantenimiento", fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                            Text("Mantenimiento", fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, color = Color.White, softWrap = false, maxLines = 1)
                         }
                     }
                 }
@@ -2201,7 +2201,9 @@ private fun MovementRowItem(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
                 ) {
                     Box(
                         modifier = Modifier
@@ -2218,46 +2220,52 @@ private fun MovementRowItem(
                         )
                     }
 
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = mov.title,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = mov.date,
                             fontSize = 11.sp,
-                            color = Color(0xFF8EA5C4)
+                            color = Color(0xFF8EA5C4),
+                            softWrap = false,
+                            maxLines = 1
                         )
                     }
                 }
 
-                Column(horizontalAlignment = Alignment.End) {
-                    if (mov.amount > 0) {
-                        Text(
-                            text = moneyFmt.format(mov.amount),
-                            fontSize = 13.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = badgeColor
-                        )
-                    } else {
-                        Text(
-                            text = "Sin costo",
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF64748B)
-                        )
-                    }
-                    val impact = mov.financialImpact
-                    if (!impact.isNullOrBlank()) {
-                        Text(
-                            text = impact,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF94A3B8)
-                        )
-                    }
+                Text(
+                    text = if (mov.amount > 0) moneyFmt.format(mov.amount) else "Sin costo",
+                    fontSize = 13.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (mov.amount > 0) badgeColor else Color(0xFF64748B),
+                    softWrap = false,
+                    maxLines = 1
+                )
+            }
+
+            val impact = mov.financialImpact
+            if (!impact.isNullOrBlank()) {
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = Color(0xFF0F2644),
+                    border = BorderStroke(1.dp, Color(0xFF1E3A8A).copy(alpha = 0.5f))
+                ) {
+                    Text(
+                        text = impact,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF38BDF8),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.5.dp),
+                        softWrap = false,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
 
