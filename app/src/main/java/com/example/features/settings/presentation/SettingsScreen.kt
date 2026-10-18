@@ -207,6 +207,7 @@ fun SettingsScreen(
                             biometricsEnabled = uiState.preferences.biometricsEnabled,
                             onToggleBiometrics = { viewModel.toggleBiometrics(it) },
                             onShowMessage = { viewModel.showStatusMessage(it) },
+                            onChangePin = { current, new -> viewModel.changePin(current, new) },
                             onBack = { viewModel.navigateBackToMain() }
                         )
                     }

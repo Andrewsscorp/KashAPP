@@ -40,7 +40,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,13 +65,17 @@ fun SettingsSecurityScreen(
     onToggleBiometrics: (Boolean) -> Unit,
     onShowMessage: (String) -> Unit,
     onBack: () -> Unit,
+    onChangePin: (suspend (currentPin: String, newPin: String) -> Result<Unit>)? = null,
     modifier: Modifier = Modifier
 ) {
     var showChangePinDialog by remember { mutableStateOf(false) }
+    var currentPinInput by remember { mutableStateOf("") }
     var newPinInput by remember { mutableStateOf("") }
     var confirmPinInput by remember { mutableStateOf("") }
     var pinError by remember { mutableStateOf<String?>(null) }
+    var isSavingPin by remember { mutableStateOf(false) }
     var isPinSet by remember { mutableStateOf(true) }
+    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = modifier
@@ -202,16 +208,45 @@ fun SettingsSecurityScreen(
 
     if (showChangePinDialog) {
         AlertDialog(
-            onDismissRequest = { showChangePinDialog = false },
+            onDismissRequest = {
+                if (!isSavingPin) {
+                    showChangePinDialog = false
+                    currentPinInput = ""
+                    newPinInput = ""
+                    confirmPinInput = ""
+                    pinError = null
+                }
+            },
             title = { Text("Actualizar PIN de Seguridad", fontWeight = FontWeight.Bold, color = Color(0xFF0F172A)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Ingresa tu nuevo PIN numérico de 4 dígitos:", fontSize = 13.sp, color = Color(0xFF64748B))
+                    Text("Ingresa tu PIN actual y el nuevo PIN de 4 a 8 dígitos:", fontSize = 13.sp, color = Color(0xFF64748B))
+
+                    OutlinedTextField(
+                        value = currentPinInput,
+                        onValueChange = { if (it.length <= 8 && it.all { c -> c.isDigit() }) currentPinInput = it },
+                        label = { Text("PIN Actual") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        textStyle = TextStyle(color = Color(0xFF0F172A), fontSize = 16.sp, fontWeight = FontWeight.Bold),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color(0xFF0F172A),
+                            unfocusedTextColor = Color(0xFF0F172A),
+                            focusedBorderColor = KashBlue,
+                            unfocusedBorderColor = Color(0xFFCBD5E1),
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color(0xFFF8FAFC),
+                            cursorColor = KashBlue
+                        )
+                    )
 
                     OutlinedTextField(
                         value = newPinInput,
-                        onValueChange = { if (it.length <= 4 && it.all { c -> c.isDigit() }) newPinInput = it },
-                        label = { Text("Nuevo PIN (4 dígitos)") },
+                        onValueChange = { if (it.length <= 8 && it.all { c -> c.isDigit() }) newPinInput = it },
+                        label = { Text("Nuevo PIN (4-8 dígitos)") },
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                         singleLine = true,
@@ -231,8 +266,8 @@ fun SettingsSecurityScreen(
 
                     OutlinedTextField(
                         value = confirmPinInput,
-                        onValueChange = { if (it.length <= 4 && it.all { c -> c.isDigit() }) confirmPinInput = it },
-                        label = { Text("Confirmar PIN") },
+                        onValueChange = { if (it.length <= 8 && it.all { c -> c.isDigit() }) confirmPinInput = it },
+                        label = { Text("Confirmar Nuevo PIN") },
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                         singleLine = true,
@@ -257,23 +292,59 @@ fun SettingsSecurityScreen(
             },
             confirmButton = {
                 Button(
+                    enabled = !isSavingPin,
                     onClick = {
-                        if (newPinInput.length != 4) {
-                            pinError = "El PIN debe tener exactamente 4 dígitos."
+                        if (currentPinInput.isBlank()) {
+                            pinError = "Debes ingresar tu PIN actual."
+                        } else if (newPinInput.length !in 4..8) {
+                            pinError = "El nuevo PIN debe tener entre 4 y 8 dígitos."
                         } else if (newPinInput != confirmPinInput) {
-                            pinError = "Los PINs no coinciden."
+                            pinError = "Los nuevos PINs no coinciden."
+                        } else if (newPinInput == currentPinInput) {
+                            pinError = "El nuevo PIN debe ser diferente al actual."
                         } else {
-                            showChangePinDialog = false
-                            onShowMessage("¡PIN actualizado con éxito!")
+                            pinError = null
+                            coroutineScope.launch {
+                                if (onChangePin != null) {
+                                    isSavingPin = true
+                                    val res = onChangePin(currentPinInput, newPinInput)
+                                    isSavingPin = false
+                                    res.fold(
+                                        onSuccess = {
+                                            showChangePinDialog = false
+                                            currentPinInput = ""
+                                            newPinInput = ""
+                                            confirmPinInput = ""
+                                            pinError = null
+                                            onShowMessage("¡PIN actualizado con éxito!")
+                                        },
+                                        onFailure = { ex ->
+                                            pinError = ex.message ?: "Error al actualizar PIN."
+                                        }
+                                    )
+                                } else {
+                                    showChangePinDialog = false
+                                    onShowMessage("¡PIN actualizado con éxito!")
+                                }
+                            }
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = KashBlue)
                 ) {
-                    Text("Guardar PIN", fontWeight = FontWeight.Bold)
+                    Text(if (isSavingPin) "Guardando..." else "Guardar PIN", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showChangePinDialog = false }) {
+                TextButton(
+                    enabled = !isSavingPin,
+                    onClick = {
+                        showChangePinDialog = false
+                        currentPinInput = ""
+                        newPinInput = ""
+                        confirmPinInput = ""
+                        pinError = null
+                    }
+                ) {
                     Text("Cancelar", color = Color(0xFF64748B))
                 }
             },

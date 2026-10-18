@@ -21,6 +21,10 @@ interface AuthRepository {
 
     suspend fun setupPin(pin: String): Boolean
 
+    suspend fun changePin(currentPin: String, newPin: String): Result<Unit> = Result.success(Unit)
+
+    suspend fun isPinConfigured(): Boolean = true
+
     suspend fun authenticateWithBiometric(result: BiometricPrompt.AuthenticationResult): UserAuthResult
 
     suspend fun authenticateWithGoogle(

@@ -126,6 +126,11 @@ class AuthRepositorySessionTest {
             flow.value = config
         }
 
+        override suspend fun clearLockoutExpiration() {
+            config = config?.copy(lockoutUntilTimestamp = 0L)
+            flow.value = config
+        }
+
         override suspend fun updateBiometricEnabled(enabled: Boolean) {
             config = config?.copy(isBiometricEnabled = enabled)
             flow.value = config

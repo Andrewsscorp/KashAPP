@@ -281,6 +281,11 @@ class SettingsViewModel(
         }
     }
 
+    suspend fun changePin(currentPin: String, newPin: String): Result<Unit> {
+        val auth = authRepository ?: return Result.failure(IllegalStateException("Servicio de autenticación no disponible"))
+        return auth.changePin(currentPin, newPin)
+    }
+
     fun showDeleteAccountDialog(show: Boolean) {
         _uiState.update { it.copy(showDeleteAccountConfirmationDialog = show) }
     }

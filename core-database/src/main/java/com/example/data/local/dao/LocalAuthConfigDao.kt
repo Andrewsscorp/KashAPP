@@ -25,6 +25,9 @@ interface LocalAuthConfigDao {
     @Query("UPDATE local_auth_config SET failed_attempts = 0, lockout_until_timestamp = 0, last_login_timestamp = :loginTime WHERE id = 1")
     suspend fun resetLockoutAndRecordLogin(loginTime: Long)
 
+    @Query("UPDATE local_auth_config SET lockout_until_timestamp = 0 WHERE id = 1")
+    suspend fun clearLockoutExpiration()
+
     @Query("UPDATE local_auth_config SET is_biometric_enabled = :enabled WHERE id = 1")
     suspend fun updateBiometricEnabled(enabled: Boolean)
 }

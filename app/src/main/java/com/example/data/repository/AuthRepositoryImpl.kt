@@ -40,9 +40,21 @@ class AuthRepositoryImpl(
 ) : AuthRepository {
 
     companion object {
+        const val BASE_MAX_ATTEMPTS = 3
         const val MAX_FAILED_ATTEMPTS = 3
-        const val LOCKOUT_DURATION_MS = 30_000L // 30 seconds anti-brute force lockout
+        const val LOCKOUT_DURATION_MS = 30_000L // 30 seconds initial anti-brute force lockout
         const val DEFAULT_LOCAL_USER_ID = "kash_user_01"
+
+        fun calculateLockoutDurationMs(attempts: Int): Long {
+            return when {
+                attempts < 3 -> 0L
+                attempts == 3 -> 30_000L       // 30 segundos
+                attempts == 4 -> 60_000L       // 1 minuto
+                attempts == 5 -> 300_000L      // 5 minutos
+                attempts in 6..7 -> 900_000L   // 15 minutos
+                else -> 1_800_000L             // 30 minutos
+            }
+        }
     }
 
     override fun getSecurityConfig(): Flow<SecurityConfig> {
@@ -87,29 +99,22 @@ class AuthRepositoryImpl(
         }
     }
 
+    override suspend fun isPinConfigured(): Boolean {
+        val config = localAuthConfigDao.getConfig()
+        return config != null && config.pinHash.isNotBlank()
+    }
+
     override suspend fun authenticateWithPin(pin: String): UserAuthResult {
         val now = System.currentTimeMillis()
         val currentConfig = localAuthConfigDao.getConfig()
 
-        // Default or unconfigured PIN fallback: automatically set up if first time
+        // Unconfigured PIN: strictly reject and require setting up a PIN
         if (currentConfig == null || currentConfig.pinHash.isBlank()) {
-            val hashResult = Pbkdf2PinHasher.createNewPinHash(pin)
-            val initialConfig = LocalAuthConfig(
-                id = 1,
-                pinHash = hashResult.hashFormatted,
-                pinSalt = hashResult.saltBase64,
-                isBiometricEnabled = true,
-                failedAttempts = 0,
-                lockoutUntilTimestamp = 0L,
-                lastLoginTimestamp = now
-            )
-            localAuthConfigDao.insertOrUpdate(initialConfig)
-            ensureLocalSession(DEFAULT_LOCAL_USER_ID, "Usuario KashApp", null, "local_pin")
-            return UserAuthResult.Success(
-                userId = DEFAULT_LOCAL_USER_ID,
-                displayName = "Usuario KashApp",
-                email = null,
-                method = AuthMethod.PIN
+            return UserAuthResult.Failure(
+                errorMessage = "PIN no configurado en el dispositivo. Debe configurar un PIN primero.",
+                remainingAttempts = 0,
+                isLockedOut = false,
+                lockoutSecondsRemaining = 0L
             )
         }
 
@@ -134,6 +139,11 @@ class AuthRepositoryImpl(
             val displayName = targetSession?.displayName ?: currentFbUser?.displayName ?: "Usuario KashApp"
             val email = targetSession?.email ?: currentFbUser?.email
             ensureLocalSession(userId, displayName, email, "local_pin")
+            logSecurityEvent(
+                eventType = "AUTH_PIN_SUCCESS",
+                method = AuthMethod.PIN,
+                details = "Autenticación exitosa por PIN"
+            )
             UserAuthResult.Success(
                 userId = userId,
                 displayName = displayName,
@@ -142,18 +152,30 @@ class AuthRepositoryImpl(
             )
         } else {
             val newAttempts = currentConfig.failedAttempts + 1
-            if (newAttempts >= MAX_FAILED_ATTEMPTS) {
-                val lockoutUntil = now + LOCKOUT_DURATION_MS
+            val lockoutDurationMs = calculateLockoutDurationMs(newAttempts)
+            if (lockoutDurationMs > 0L) {
+                val lockoutUntil = now + lockoutDurationMs
                 localAuthConfigDao.updateAttempts(newAttempts, lockoutUntil)
+                val lockoutSec = lockoutDurationMs / 1000L
+                logSecurityEvent(
+                    eventType = "AUTH_LOCKOUT_TRIGGERED",
+                    method = AuthMethod.PIN,
+                    details = "Bloqueo por $lockoutSec s tras $newAttempts intentos fallidos"
+                )
                 UserAuthResult.Failure(
-                    errorMessage = "PIN incorrecto. 3 intentos fallidos consecutivos. Bloqueo de 30s activado.",
+                    errorMessage = "PIN incorrecto. $newAttempts intentos fallidos. Bloqueo de ${lockoutSec}s activado.",
                     remainingAttempts = 0,
                     isLockedOut = true,
-                    lockoutSecondsRemaining = LOCKOUT_DURATION_MS / 1000L
+                    lockoutSecondsRemaining = lockoutSec
                 )
             } else {
                 localAuthConfigDao.updateAttempts(newAttempts, 0L)
-                val remaining = MAX_FAILED_ATTEMPTS - newAttempts
+                val remaining = (BASE_MAX_ATTEMPTS - newAttempts).coerceAtLeast(0)
+                logSecurityEvent(
+                    eventType = "AUTH_PIN_FAILURE",
+                    method = AuthMethod.PIN,
+                    details = "Intento fallido de PIN: $newAttempts"
+                )
                 UserAuthResult.Failure(
                     errorMessage = "PIN incorrecto. Te quedan $remaining intento(s).",
                     remainingAttempts = remaining,
@@ -165,7 +187,11 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun setupPin(pin: String): Boolean {
-        val hashResult = Pbkdf2PinHasher.createNewPinHash(pin)
+        val cleanPin = pin.trim()
+        if (cleanPin.length !in 4..8 || !cleanPin.all { it.isDigit() }) {
+            return false
+        }
+        val hashResult = Pbkdf2PinHasher.createNewPinHash(cleanPin)
         val config = LocalAuthConfig(
             id = 1,
             pinHash = hashResult.hashFormatted,
@@ -176,7 +202,83 @@ class AuthRepositoryImpl(
             lastLoginTimestamp = System.currentTimeMillis()
         )
         localAuthConfigDao.insertOrUpdate(config)
+        logSecurityEvent(
+            eventType = "PIN_CONFIGURED",
+            method = AuthMethod.PIN,
+            details = "PIN configurado con hash y salt PBKDF2"
+        )
         return true
+    }
+
+    override suspend fun changePin(currentPin: String, newPin: String): Result<Unit> {
+        val currentConfig = localAuthConfigDao.getConfig()
+        if (currentConfig == null || currentConfig.pinHash.isBlank()) {
+            return Result.failure(IllegalStateException("No hay un PIN configurado actualmente en este dispositivo."))
+        }
+
+        val now = System.currentTimeMillis()
+        if (currentConfig.lockoutUntilTimestamp > now) {
+            val remainingSec = ((currentConfig.lockoutUntilTimestamp - now) / 1000L).coerceAtLeast(1L)
+            return Result.failure(IllegalStateException("Dispositivo bloqueado temporalmente. Espera $remainingSec s."))
+        }
+
+        // 1. Verify current PIN
+        val isCurrentValid = Pbkdf2PinHasher.verifyPin(currentPin, currentConfig.pinHash, currentConfig.pinSalt)
+        if (!isCurrentValid) {
+            val newAttempts = currentConfig.failedAttempts + 1
+            val lockoutMs = calculateLockoutDurationMs(newAttempts)
+            val lockoutUntil = if (lockoutMs > 0L) now + lockoutMs else 0L
+            localAuthConfigDao.updateAttempts(newAttempts, lockoutUntil)
+            logSecurityEvent(
+                eventType = "AUTH_PIN_CHANGE_FAILED",
+                method = AuthMethod.PIN,
+                details = "Intento fallido de cambio de PIN. Intento $newAttempts"
+            )
+            val remaining = (BASE_MAX_ATTEMPTS - newAttempts).coerceAtLeast(0)
+            val msg = if (lockoutMs > 0L) {
+                "PIN actual incorrecto. Dispositivo bloqueado por ${lockoutMs / 1000L}s."
+            } else {
+                "PIN actual incorrecto. Te quedan $remaining intento(s)."
+            }
+            return Result.failure(IllegalArgumentException(msg))
+        }
+
+        // 2. Validate new PIN format and strength
+        val cleanNew = newPin.trim()
+        if (cleanNew.length !in 4..8 || !cleanNew.all { it.isDigit() }) {
+            return Result.failure(IllegalArgumentException("El nuevo PIN debe tener entre 4 y 8 dígitos numéricos."))
+        }
+
+        val trivialPins = setOf(
+            "0000", "1111", "2222", "3333", "4444", "5555", "6666", "7777", "8888", "9999",
+            "1234", "4321", "000000", "111111", "123456", "654321"
+        )
+        if (cleanNew in trivialPins || cleanNew.all { it == cleanNew[0] }) {
+            return Result.failure(IllegalArgumentException("El nuevo PIN es demasiado predecible. Elige uno más seguro."))
+        }
+
+        if (cleanNew == currentPin) {
+            return Result.failure(IllegalArgumentException("El nuevo PIN debe ser diferente al PIN actual."))
+        }
+
+        // 3. Hash with new cryptographic salt
+        val hashResult = Pbkdf2PinHasher.createNewPinHash(cleanNew)
+        val updatedConfig = currentConfig.copy(
+            pinHash = hashResult.hashFormatted,
+            pinSalt = hashResult.saltBase64,
+            failedAttempts = 0,
+            lockoutUntilTimestamp = 0L,
+            lastLoginTimestamp = now
+        )
+        localAuthConfigDao.insertOrUpdate(updatedConfig)
+
+        logSecurityEvent(
+            eventType = "AUTH_PIN_CHANGED",
+            method = AuthMethod.PIN,
+            details = "PIN de seguridad actualizado exitosamente con PBKDF2 y nuevo salt"
+        )
+
+        return Result.success(Unit)
     }
 
     override suspend fun authenticateWithBiometric(result: BiometricPrompt.AuthenticationResult): UserAuthResult {
@@ -370,7 +472,7 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun resetLockout() {
-        localAuthConfigDao.resetLockoutAndRecordLogin(System.currentTimeMillis())
+        localAuthConfigDao.clearLockoutExpiration()
     }
 
     override suspend fun logout() {

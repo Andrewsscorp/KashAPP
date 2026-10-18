@@ -189,16 +189,28 @@ class LoginViewModel(
             return
         }
 
+        if (!_uiState.value.hasPinConfigured) {
+            _uiState.update {
+                it.copy(
+                    showPinSetupDialog = true,
+                    showPinDialog = false,
+                    errorMessage = null
+                )
+            }
+            return
+        }
+
         _uiState.update {
             it.copy(
                 showPinDialog = true,
+                showPinSetupDialog = false,
                 errorMessage = null
             )
         }
     }
 
     fun dismissPinDialog() {
-        _uiState.update { it.copy(showPinDialog = false, errorMessage = null) }
+        _uiState.update { it.copy(showPinDialog = false, showPinSetupDialog = false, errorMessage = null) }
     }
 
     fun onPinSubmitted(pin: String) {

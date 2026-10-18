@@ -102,6 +102,10 @@ class LoginFastUnlockUnitTest {
             config = config?.copy(failedAttempts = 0, lockoutUntilTimestamp = 0L, lastLoginTimestamp = loginTime)
             _flow.value = config
         }
+        override suspend fun clearLockoutExpiration() {
+            config = config?.copy(lockoutUntilTimestamp = 0L)
+            _flow.value = config
+        }
         override suspend fun updateBiometricEnabled(enabled: Boolean) {
             config = config?.copy(isBiometricEnabled = enabled)
             _flow.value = config

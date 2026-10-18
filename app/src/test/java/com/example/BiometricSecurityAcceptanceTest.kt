@@ -129,6 +129,10 @@ class BiometricSecurityAcceptanceTest {
             config = config?.copy(failedAttempts = 0, lockoutUntilTimestamp = 0L, lastLoginTimestamp = loginTimestamp)
             flow.value = config
         }
+        override suspend fun clearLockoutExpiration() {
+            config = config?.copy(lockoutUntilTimestamp = 0L)
+            flow.value = config
+        }
         override suspend fun updateBiometricEnabled(enabled: Boolean) {
             config = config?.copy(isBiometricEnabled = enabled)
             flow.value = config
