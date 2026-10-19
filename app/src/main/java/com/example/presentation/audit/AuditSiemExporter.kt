@@ -42,7 +42,8 @@ object AuditSiemExporter {
             // Header metadata
             val metadata = JSONObject().apply {
                 put("generator", "KashApp Enterprise Forensic Engine")
-                put("version", "9.3.2")
+                put("version", com.example.BuildConfig.VERSION_NAME)
+                put("app_version", com.example.BuildConfig.VERSION_NAME)
                 put("generated_at", nowStr)
                 put("operator_user", userName)
                 put("filter_applied", filterDesc)
@@ -80,7 +81,11 @@ object AuditSiemExporter {
                 out.write(root.toString(2).toByteArray(Charsets.UTF_8))
             }
 
-            val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+            val uri = try {
+                FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+            } catch (_: Throwable) {
+                android.net.Uri.fromFile(file)
+            }
 
             ExportResult(
                 success = true,

@@ -28,7 +28,9 @@ class AppContainer(private val context: Context) {
     }
 
     val securityDatabase: SecurityDatabase by lazy {
-        RoomLocalDb.getDatabase(context, passphraseManager, keystoreCryptoManager)
+        RoomLocalDb.getDatabase(context, passphraseManager, keystoreCryptoManager).also { db ->
+            passphraseManager.setAuditSecurityLogDao(db.auditSecurityLogDao())
+        }
     }
 
     val firebaseDataSource: FirebaseDataSource by lazy {

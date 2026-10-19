@@ -449,6 +449,18 @@ class AuditViewModel(
             _exportPdfResult.value = result
             if (result.success) {
                 _exportSuccessMessage.value = "PDF oficial generado exitosamente (${currentFiltered.size} registros)"
+                try {
+                    auditSecurityLogDao.insertLog(
+                        AuditSecurityLog(
+                            timestamp = System.currentTimeMillis(),
+                            eventType = "DATA_EXPORT_PDF_CSV",
+                            authMethod = "AUDIT_VAULT",
+                            details = "Exportación forense de auditoría en formato PDF (${currentFiltered.size} registros)"
+                        )
+                    )
+                } catch (logEx: Exception) {
+                    android.util.Log.w("AuditViewModel", "No fue posible registrar evento de auditoría para PDF: ${logEx.message}")
+                }
             }
         }
     }
@@ -465,6 +477,18 @@ class AuditViewModel(
             _exportSiemResult.value = result
             if (result.success) {
                 _exportSuccessMessage.value = "Archivo SIEM JSON generado exitosamente (${currentFiltered.size} eventos)"
+                try {
+                    auditSecurityLogDao.insertLog(
+                        AuditSecurityLog(
+                            timestamp = System.currentTimeMillis(),
+                            eventType = "DATA_EXPORT_PDF_CSV",
+                            authMethod = "AUDIT_VAULT",
+                            details = "Exportación forense de auditoría en formato SIEM JSON (${currentFiltered.size} eventos)"
+                        )
+                    )
+                } catch (logEx: Exception) {
+                    android.util.Log.w("AuditViewModel", "No fue posible registrar evento de auditoría para SIEM: ${logEx.message}")
+                }
             }
         }
     }

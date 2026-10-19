@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.domain.models.AuthMethod
 import com.example.features.settings.domain.model.SettingsSubRoute
 import com.example.features.settings.domain.model.UserPreferencesDomain
 import com.example.features.settings.domain.repository.SettingsRepository
@@ -384,6 +385,15 @@ class SettingsViewModel(
                         statusMessage = "¡Copia de seguridad en la nube (E2EE) creada exitosamente!"
                     )
                 }
+                try {
+                    authRepository?.logSecurityEvent(
+                        eventType = "CLOUD_BACKUP_EXECUTED",
+                        method = AuthMethod.OTHER,
+                        details = "Copia de seguridad en la nube (E2EE) creada exitosamente para el usuario $userId (${accounts.size} cuentas, ${txs.size} transacciones)."
+                    )
+                } catch (logEx: Exception) {
+                    Log.w("SettingsViewModel", "No fue posible registrar log de auditoría para backup: ${logEx.message}")
+                }
             }.onFailure { ex ->
                 _uiState.update { it.copy(statusMessage = "Error al respaldar en la nube: ${ex.message ?: "Fallo de conexión"}") }
             }
@@ -492,6 +502,15 @@ class SettingsViewModel(
                             appliedFiltersDesc = "Período: $period"
                         )
                         _uiState.update { it.copy(isExporting = false, statusMessage = result.message) }
+                        if (result.success) {
+                            try {
+                                authRepository?.logSecurityEvent(
+                                    eventType = "DATA_EXPORT_PDF_CSV",
+                                    method = AuthMethod.OTHER,
+                                    details = "Exportación de datos financieros formato $format para período $period completada."
+                                )
+                            } catch (_: Exception) {}
+                        }
                     }
                     "PDF" -> {
                         val items = accounts.map { acc ->
@@ -528,6 +547,15 @@ class SettingsViewModel(
                             appliedFiltersDesc = "Período: $period"
                         )
                         _uiState.update { it.copy(isExporting = false, statusMessage = result.message) }
+                        if (result.success) {
+                            try {
+                                authRepository?.logSecurityEvent(
+                                    eventType = "DATA_EXPORT_PDF_CSV",
+                                    method = AuthMethod.OTHER,
+                                    details = "Exportación de datos financieros formato PDF para período $period completada."
+                                )
+                            } catch (_: Exception) {}
+                        }
                     }
                     "JSON" -> {
                         val json = org.json.JSONObject().apply {
@@ -575,6 +603,13 @@ class SettingsViewModel(
                         }
                         com.example.util.FinancialReportExporter.shareExportedFile(context, uri, "application/json", "Exportación JSON KashApp")
                         _uiState.update { it.copy(isExporting = false, statusMessage = "Archivo JSON generado y compartido exitosamente.") }
+                        try {
+                            authRepository?.logSecurityEvent(
+                                eventType = "DATA_EXPORT_PDF_CSV",
+                                method = AuthMethod.OTHER,
+                                details = "Exportación de datos financieros formato JSON para período $period completada."
+                            )
+                        } catch (_: Exception) {}
                     }
                     else -> {
                         _uiState.update { it.copy(isExporting = false, statusMessage = "Formato no soportado.") }

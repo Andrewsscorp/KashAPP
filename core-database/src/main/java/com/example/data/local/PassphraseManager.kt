@@ -44,8 +44,12 @@ data class PassphraseStrength(
  */
 class PassphraseManager(
     private val context: Context,
-    private val cryptoManager: KeystoreCryptoManager = KeystoreCryptoManager()
+    private val cryptoManager: KeystoreCryptoManager = KeystoreCryptoManager(),
+    private var auditSecurityLogDao: com.example.data.local.dao.AuditSecurityLogDao? = null
 ) {
+    fun setAuditSecurityLogDao(dao: com.example.data.local.dao.AuditSecurityLogDao?) {
+        this.auditSecurityLogDao = dao
+    }
     companion object {
         private const val TAG = "PassphraseManager"
         private const val PREFS_NAME = "kashapp_security_vault_prefs"
@@ -149,6 +153,21 @@ class PassphraseManager(
                 .apply()
 
             Log.i(TAG, "Clave derivada (310.000 iter) cifrada exitosamente con Keystore. Frase cruda eliminada de almacenamiento.")
+            auditSecurityLogDao?.let { dao ->
+                try {
+                    kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) {
+                        dao.insertLog(
+                            com.example.data.local.entity.AuditSecurityLog(
+                                eventType = "VAULT_PASSPHRASE_CHANGED",
+                                authMethod = "LOCAL_PASSPHRASE",
+                                details = "Frase de paso personalizada configurada y clave derivada con PBKDF2 (310.000 iteraciones)."
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "No fue posible registrar log de auditoría: ${e.message}")
+                }
+            }
             true
         } catch (e: Exception) {
             Log.e(TAG, "Error configurando clave personalizada: ${e.message}", e)
@@ -185,6 +204,21 @@ class PassphraseManager(
                 .apply()
 
             Log.i(TAG, "Migración exitosa de KDF V1 a V2 con PRAGMA rekey.")
+            auditSecurityLogDao?.let { dao ->
+                try {
+                    kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) {
+                        dao.insertLog(
+                            com.example.data.local.entity.AuditSecurityLog(
+                                eventType = "VAULT_PASSPHRASE_CHANGED",
+                                authMethod = "KDF_MIGRATION_V2",
+                                details = "Migración de KDF V1 a V2 completada exitosamente con PRAGMA rekey (310.000 iteraciones)."
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "No fue posible registrar log de auditoría: ${e.message}")
+                }
+            }
             true
         } catch (e: Exception) {
             Log.e(TAG, "Error al migrar KDF V1 a V2: ${e.message}", e)
@@ -205,6 +239,22 @@ class PassphraseManager(
             .remove(KEY_KDF_VERSION)
             .putBoolean(KEY_HAS_CUSTOM_PASSPHRASE, false)
             .apply()
+
+        auditSecurityLogDao?.let { dao ->
+            try {
+                kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) {
+                    dao.insertLog(
+                        com.example.data.local.entity.AuditSecurityLog(
+                            eventType = "VAULT_PASSPHRASE_CHANGED",
+                            authMethod = "HARDWARE_KEYSTORE",
+                            details = "Frase de paso personalizada eliminada. Bóveda restaurada a clave maestra de hardware Keystore."
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "No fue posible registrar log de auditoría: ${e.message}")
+            }
+        }
     }
 
     /**

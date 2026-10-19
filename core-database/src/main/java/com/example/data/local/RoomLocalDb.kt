@@ -113,6 +113,19 @@ object RoomLocalDb {
 
         val db = buildDatabaseWithRecovery(context.applicationContext, newKeyBytes)
         INSTANCE = db
+        try {
+            kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) {
+                db.auditSecurityLogDao().insertLog(
+                    com.example.data.local.entity.AuditSecurityLog(
+                        eventType = "VAULT_PASSPHRASE_CHANGED",
+                        authMethod = "SQLCIPHER_REKEY",
+                        details = "Frase de paso personalizada configurada y bóveda recifrada con SQLCipher PBKDF2 (310.000 iteraciones)."
+                    )
+                )
+            }
+        } catch (e: Throwable) {
+            Log.w(TAG, "No fue posible registrar log de auditoría en rekeyDatabase: ${e.message}")
+        }
         return db
     }
 
@@ -147,6 +160,19 @@ object RoomLocalDb {
 
         val db = buildDatabaseWithRecovery(context.applicationContext, masterBytes)
         INSTANCE = db
+        try {
+            kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) {
+                db.auditSecurityLogDao().insertLog(
+                    com.example.data.local.entity.AuditSecurityLog(
+                        eventType = "VAULT_PASSPHRASE_CHANGED",
+                        authMethod = "HARDWARE_KEYSTORE",
+                        details = "Frase de paso personalizada eliminada. Bóveda restaurada a clave maestra de hardware Keystore."
+                    )
+                )
+            }
+        } catch (e: Throwable) {
+            Log.w(TAG, "No fue posible registrar log de auditoría en resetToHardwareMaster: ${e.message}")
+        }
         return db
     }
 

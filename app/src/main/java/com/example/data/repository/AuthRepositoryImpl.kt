@@ -59,7 +59,8 @@ class AuthRepositoryImpl(
     private val assetCategoryDao: AssetCategoryDao? = null,
     private val securityDatabase: SecurityDatabase? = null,
     private val context: Context? = null,
-    private val keystoreCryptoManager: com.example.data.local.KeystoreCryptoManager = com.example.data.local.KeystoreCryptoManager()
+    private val keystoreCryptoManager: com.example.data.local.KeystoreCryptoManager = com.example.data.local.KeystoreCryptoManager(),
+    private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO
 ) : AuthRepository {
 
     companion object {
@@ -463,7 +464,7 @@ class AuthRepositoryImpl(
         eventType: String,
         method: AuthMethod,
         details: String
-    ) {
+    ) = kotlinx.coroutines.withContext(ioDispatcher) {
         val entry = AuditSecurityLog(
             timestamp = System.currentTimeMillis(),
             eventType = eventType,

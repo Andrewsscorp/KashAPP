@@ -2735,6 +2735,20 @@ class FinancialRepositoryImpl(
             )
 
             val success = firebaseDataSource.syncOfflineFinancialBackup(userId, envelope)
+            if (success) {
+                try {
+                    auditLogDao.insertLog(
+                        AuditSecurityLog(
+                            timestamp = System.currentTimeMillis(),
+                            eventType = "CLOUD_BACKUP_EXECUTED",
+                            authMethod = "OAUTH_FIREBASE",
+                            details = "Portafolio respaldado en Firestore con cifrado E2EE (${allAccounts.size} cuentas, ${allTransactions.size} txs, checksum $checksumSha256)"
+                        )
+                    )
+                } catch (auditEx: Exception) {
+                    Log.w("FinancialRepository", "No fue posible registrar log de auditoría para CLOUD_BACKUP_EXECUTED: ${auditEx.message}")
+                }
+            }
             Log.i("FinancialRepository", "✓ Portafolio respaldado en Firestore con cifrado E2EE (${allAccounts.size} cuentas, ${allTransactions.size} txs): $success")
             Result.success(success)
         } catch (e: Exception) {
