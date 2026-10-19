@@ -11,10 +11,10 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface MerchantDao {
 
-    @Query("SELECT * FROM merchants WHERE (userId IS NULL OR userId = :userId) AND isActive = 1 ORDER BY canonicalName ASC")
+    @Query("SELECT * FROM merchants WHERE (userId IS NULL OR (userId = :userId AND :userId != '')) AND isActive = 1 ORDER BY canonicalName ASC")
     fun getActiveMerchantsFlow(userId: String): Flow<List<MerchantEntity>>
 
-    @Query("SELECT * FROM merchants WHERE (userId IS NULL OR userId = :userId) ORDER BY canonicalName ASC")
+    @Query("SELECT * FROM merchants WHERE userId IS NULL OR (userId = :userId AND :userId != '') ORDER BY canonicalName ASC")
     fun getAllMerchantsFlow(userId: String): Flow<List<MerchantEntity>>
 
     @Query("SELECT * FROM merchants WHERE id = :id LIMIT 1")
@@ -37,4 +37,7 @@ interface MerchantDao {
 
     @Query("SELECT COUNT(*) FROM merchants")
     suspend fun getCount(): Int
+
+    @Query("DELETE FROM merchants WHERE userId = :userId AND :userId != ''")
+    suspend fun deleteMerchantsByUserId(userId: String): Int
 }

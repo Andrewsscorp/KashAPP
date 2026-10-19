@@ -11,21 +11,21 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ThirdPartyDao {
 
-    @Query("SELECT * FROM third_parties WHERE (userId = :userId OR userId = 'user_default') AND isActive = 1 ORDER BY isFavorite DESC, name ASC")
+    @Query("SELECT * FROM third_parties WHERE userId = :userId AND :userId != '' AND isActive = 1 ORDER BY isFavorite DESC, name ASC")
     fun getActiveThirdPartiesFlow(userId: String = "user_default"): Flow<List<ThirdPartyEntity>>
 
-    @Query("SELECT * FROM third_parties WHERE (userId = :userId OR userId = 'user_default') ORDER BY isFavorite DESC, name ASC")
+    @Query("SELECT * FROM third_parties WHERE userId = :userId AND :userId != '' ORDER BY isFavorite DESC, name ASC")
     fun getAllThirdPartiesFlow(userId: String = "user_default"): Flow<List<ThirdPartyEntity>>
 
-    @Query("SELECT * FROM third_parties WHERE (userId = :userId OR userId = 'user_default') AND isFavorite = 1 AND isActive = 1 ORDER BY name ASC")
+    @Query("SELECT * FROM third_parties WHERE userId = :userId AND :userId != '' AND isFavorite = 1 AND isActive = 1 ORDER BY name ASC")
     fun getFavoriteThirdPartiesFlow(userId: String = "user_default"): Flow<List<ThirdPartyEntity>>
 
-    @Query("SELECT * FROM third_parties WHERE (userId = :userId OR userId = 'user_default') AND category = :category AND isActive = 1 ORDER BY name ASC")
+    @Query("SELECT * FROM third_parties WHERE userId = :userId AND :userId != '' AND category = :category AND isActive = 1 ORDER BY name ASC")
     fun getThirdPartiesByCategoryFlow(userId: String = "user_default", category: String): Flow<List<ThirdPartyEntity>>
 
     @Query("""
         SELECT * FROM third_parties 
-        WHERE (userId = :userId OR userId = 'user_default') AND isActive = 1 
+        WHERE userId = :userId AND :userId != '' AND isActive = 1 
           AND (name LIKE '%' || :query || '%' 
                OR commercialName LIKE '%' || :query || '%' 
                OR idNumber LIKE '%' || :query || '%'
@@ -34,7 +34,7 @@ interface ThirdPartyDao {
     """)
     fun searchThirdPartiesFlow(userId: String = "user_default", query: String): Flow<List<ThirdPartyEntity>>
 
-    @Query("SELECT DISTINCT category FROM third_parties WHERE (userId = :userId OR userId = 'user_default') AND category IS NOT NULL AND category != ''")
+    @Query("SELECT DISTINCT category FROM third_parties WHERE userId = :userId AND :userId != '' AND category IS NOT NULL AND category != ''")
     fun getDistinctCategoriesFlow(userId: String = "user_default"): Flow<List<String>>
 
     @Query("SELECT * FROM third_parties WHERE id = :id LIMIT 1")
@@ -42,12 +42,12 @@ interface ThirdPartyDao {
 
     @Query("""
         SELECT * FROM third_parties 
-        WHERE (userId = :userId OR userId = 'user_default') AND normalizedName = :normalizedName AND idNumber = :idNumber 
+        WHERE userId = :userId AND :userId != '' AND normalizedName = :normalizedName AND idNumber = :idNumber 
         LIMIT 1
     """)
     suspend fun findDuplicate(userId: String, normalizedName: String, idNumber: String): ThirdPartyEntity?
 
-    @Query("SELECT * FROM third_parties WHERE (userId = :userId OR userId = 'user_default') AND idNumber = :idNumber")
+    @Query("SELECT * FROM third_parties WHERE userId = :userId AND :userId != '' AND idNumber = :idNumber")
     suspend fun findByIdNumber(userId: String, idNumber: String): List<ThirdPartyEntity>
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
@@ -71,6 +71,12 @@ interface ThirdPartyDao {
     @Query("DELETE FROM third_parties WHERE id LIKE 'tp_seed_%' OR name LIKE '%Supermercados Éxito%' OR name LIKE '%Carulla%' OR name LIKE '%Terpel%' OR name LIKE '%Automotores Toyota%' OR name LIKE '%Los Coches%' OR name LIKE '%Servientrega%'")
     suspend fun purgeLegacySeedThirdParties()
 
-    @Query("SELECT COUNT(*) FROM third_parties WHERE userId = :userId AND isActive = 1")
+    @Query("SELECT COUNT(*) FROM third_parties WHERE userId = :userId AND :userId != '' AND isActive = 1")
     suspend fun countActiveThirdParties(userId: String = "user_default"): Int
+
+    @Query("DELETE FROM third_parties WHERE userId = :userId AND :userId != ''")
+    suspend fun deleteThirdPartiesByUserId(userId: String): Int
+
+    @Query("UPDATE third_parties SET userId = :targetUserId WHERE userId = 'user_default' AND :targetUserId != ''")
+    suspend fun migrateThirdPartiesUserDefault(targetUserId: String): Int
 }

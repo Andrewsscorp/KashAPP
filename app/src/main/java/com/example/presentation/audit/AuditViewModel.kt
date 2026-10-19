@@ -64,9 +64,9 @@ class AuditViewModel(
     // Stream A: Security & Fixed Assets (Calculated off the main thread)
     private val streamSecurityAndAssets: Flow<List<AuditUiEntry>> = combine(
         auditSecurityLogDao.getAllLogs(),
-        assetAuditLogDao.getAllAssetLogs(),
-        fixedAssetDao?.getAllAssetsFlow() ?: flowOf(emptyList()),
-        fixedAssetDao?.getAllMovementsFlow() ?: flowOf(emptyList())
+        assetAuditLogDao.observeAuditLogs(userId),
+        fixedAssetDao?.observeAssets(userId) ?: flowOf(emptyList()),
+        fixedAssetDao?.observeAllMovements(userId) ?: flowOf(emptyList())
     ) { secLogs, assetAuditLogs, fixedAssets, assetMovements ->
         val list = ArrayList<AuditUiEntry>(secLogs.size + assetAuditLogs.size + fixedAssets.size + assetMovements.size)
 
@@ -134,8 +134,8 @@ class AuditViewModel(
 
     // Stream B: Financial Transactions & Accounts
     private val streamFinancialAndAccounts: Flow<List<AuditUiEntry>> = combine(
-        financialDao.getAllTransactionsFlow(),
-        financialDao.getAllAccountsFlow()
+        financialDao.getTransactionsFlow(userId),
+        financialDao.getAccountsFlow(userId)
     ) { txList, accountsList ->
         val list = ArrayList<AuditUiEntry>(txList.size + accountsList.size)
 

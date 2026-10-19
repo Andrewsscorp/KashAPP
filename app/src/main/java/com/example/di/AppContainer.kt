@@ -55,6 +55,16 @@ class AppContainer(private val context: Context) {
             googleDriveManager = googleDriveManager,
             userSessionDao = securityDatabase.userSessionDao(),
             financialDao = securityDatabase.financialDao(),
+            fixedAssetDao = securityDatabase.fixedAssetDao(),
+            sharedExpenseDao = securityDatabase.sharedExpenseDao(),
+            thirdPartyDao = securityDatabase.thirdPartyDao(),
+            thirdPartyCategoryDao = securityDatabase.thirdPartyCategoryDao(),
+            merchantDao = securityDatabase.merchantDao(),
+            outboxDao = securityDatabase.outboxDao(),
+            assetAuditLogDao = securityDatabase.assetAuditLogDao(),
+            assetCategoryDao = securityDatabase.assetCategoryDao(),
+            securityDatabase = securityDatabase,
+            context = context,
             keystoreCryptoManager = keystoreCryptoManager
         )
     }

@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface AssetCategoryDao {
 
-    @Query("SELECT * FROM asset_categories WHERE userId = :userId OR isSystem = 1 ORDER BY isSystem DESC, createdAt ASC")
+    @Query("SELECT * FROM asset_categories WHERE (userId = :userId AND :userId != '') OR isSystem = 1 ORDER BY isSystem DESC, createdAt ASC")
     fun observeCategories(userId: String): Flow<List<AssetCategoryEntity>>
 
     @Query("SELECT * FROM asset_categories WHERE id = :categoryId LIMIT 1")
@@ -33,6 +33,9 @@ interface AssetCategoryDao {
     @Query("DELETE FROM asset_categories WHERE id = :categoryId AND isSystem = 0")
     suspend fun deleteCategoryById(categoryId: String)
 
-    @Query("SELECT COUNT(*) FROM asset_categories WHERE userId = :userId OR isSystem = 1")
+    @Query("SELECT COUNT(*) FROM asset_categories WHERE (userId = :userId AND :userId != '') OR isSystem = 1")
     suspend fun getCategoriesCount(userId: String): Int
+
+    @Query("DELETE FROM asset_categories WHERE userId = :userId AND isSystem = 0 AND :userId != ''")
+    suspend fun deleteCategoriesByUserId(userId: String): Int
 }

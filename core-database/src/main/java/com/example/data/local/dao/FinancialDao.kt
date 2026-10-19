@@ -26,22 +26,22 @@ interface FinancialDao {
     @Insert
     suspend fun insertTransaction(transaction: TransactionEntity): Long
 
-    @Query("SELECT * FROM transactions WHERE (userId = :userId OR userId = 'user_default' OR :userId = '') ORDER BY createdAt DESC")
+    @Query("SELECT * FROM transactions WHERE userId = :userId AND :userId != '' ORDER BY createdAt DESC")
     fun getTransactionsFlow(userId: String): Flow<List<TransactionEntity>>
 
     @Query("SELECT * FROM transactions ORDER BY createdAt DESC")
     fun getAllTransactionsFlow(): Flow<List<TransactionEntity>>
 
-    @Query("SELECT * FROM transactions WHERE (userId = :userId OR userId = 'user_default' OR :userId = '') ORDER BY createdAt DESC")
+    @Query("SELECT * FROM transactions WHERE userId = :userId AND :userId != '' ORDER BY createdAt DESC")
     suspend fun getTransactions(userId: String): List<TransactionEntity>
 
     @Query("SELECT * FROM transactions WHERE idempotencyKey = :idempotencyKey LIMIT 1")
     suspend fun getTransactionByIdempotencyKey(idempotencyKey: String): TransactionEntity?
 
-    @Query("SELECT * FROM accounts WHERE (userId = :userId OR userId = 'user_default' OR :userId = '') ORDER BY isFavorite DESC, balance DESC")
+    @Query("SELECT * FROM accounts WHERE userId = :userId AND :userId != '' ORDER BY isFavorite DESC, balance DESC")
     fun getAccountsFlow(userId: String): Flow<List<AccountEntity>>
 
-    @Query("SELECT * FROM accounts WHERE (userId = :userId OR userId = 'user_default' OR :userId = '') ORDER BY isFavorite DESC, balance DESC")
+    @Query("SELECT * FROM accounts WHERE userId = :userId AND :userId != '' ORDER BY isFavorite DESC, balance DESC")
     suspend fun getAccounts(userId: String): List<AccountEntity>
 
     @Query("SELECT * FROM accounts ORDER BY isFavorite DESC, balance DESC")
@@ -74,23 +74,29 @@ interface FinancialDao {
     @Query("DELETE FROM transactions WHERE accountId = :accountId")
     suspend fun deleteTransactionsByAccountId(accountId: String)
 
-    @Query("DELETE FROM accounts WHERE userId = :userId")
+    @Query("DELETE FROM accounts WHERE userId = :userId AND :userId != ''")
     suspend fun deleteAccountsByUserId(userId: String)
 
-    @Query("DELETE FROM transactions WHERE userId = :userId")
+    @Query("DELETE FROM transactions WHERE userId = :userId AND :userId != ''")
     suspend fun deleteTransactionsByUserId(userId: String)
 
-    @Query("DELETE FROM financial_goals WHERE userId = :userId")
+    @Query("DELETE FROM financial_goals WHERE userId = :userId AND :userId != ''")
     suspend fun deleteGoalsByUserId(userId: String)
 
-    @Query("DELETE FROM budgets WHERE userId = :userId")
+    @Query("DELETE FROM budget_items WHERE budgetId IN (SELECT id FROM budgets WHERE userId = :userId AND :userId != '')")
+    suspend fun deleteBudgetItemsByUserId(userId: String): Int
+
+    @Query("DELETE FROM budgets WHERE userId = :userId AND :userId != ''")
     suspend fun deleteBudgetsByUserId(userId: String)
 
-    @Query("DELETE FROM investments WHERE userId = :userId")
+    @Query("DELETE FROM investments WHERE userId = :userId AND :userId != ''")
     suspend fun deleteInvestmentsByUserId(userId: String)
 
-    @Query("DELETE FROM scheduled_payments WHERE user_id = :userId")
+    @Query("DELETE FROM scheduled_payments WHERE user_id = :userId AND :userId != ''")
     suspend fun deleteScheduledPaymentsByUserId(userId: String)
+
+    @Query("DELETE FROM income_sources WHERE userId = :userId AND :userId != ''")
+    suspend fun deleteIncomeSourcesByUserId(userId: String): Int
 
     @Query("SELECT * FROM transactions WHERE accountId = :accountId ORDER BY date DESC, createdAt DESC")
     fun getTransactionsByAccountFlow(accountId: String): Flow<List<TransactionEntity>>
@@ -270,10 +276,10 @@ interface FinancialDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertIncomeSources(sources: List<IncomeSourceEntity>)
 
-    @Query("SELECT * FROM income_sources WHERE userId = :userId AND isActive = 1 ORDER BY name ASC")
+    @Query("SELECT * FROM income_sources WHERE userId = :userId AND :userId != '' AND isActive = 1 ORDER BY name ASC")
     fun getIncomeSourcesFlow(userId: String): Flow<List<IncomeSourceEntity>>
 
-    @Query("SELECT * FROM income_sources WHERE userId = :userId AND isActive = 1 ORDER BY name ASC")
+    @Query("SELECT * FROM income_sources WHERE userId = :userId AND :userId != '' AND isActive = 1 ORDER BY name ASC")
     suspend fun getIncomeSources(userId: String): List<IncomeSourceEntity>
 
     /**
@@ -513,10 +519,10 @@ interface FinancialDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertGoal(goal: com.example.data.local.entity.FinancialGoalEntity)
 
-    @Query("SELECT * FROM financial_goals WHERE userId = :userId OR userId = 'user_default' ORDER BY createdAt DESC")
+    @Query("SELECT * FROM financial_goals WHERE userId = :userId AND :userId != '' ORDER BY createdAt DESC")
     fun getAllGoalsFlow(userId: String): kotlinx.coroutines.flow.Flow<List<com.example.data.local.entity.FinancialGoalEntity>>
 
-    @Query("SELECT * FROM financial_goals WHERE (userId = :userId OR userId = 'user_default') AND isActive = 1 ORDER BY createdAt DESC")
+    @Query("SELECT * FROM financial_goals WHERE userId = :userId AND :userId != '' AND isActive = 1 ORDER BY createdAt DESC")
     fun getGoalsFlow(userId: String): kotlinx.coroutines.flow.Flow<List<com.example.data.local.entity.FinancialGoalEntity>>
 
     @Query("SELECT * FROM financial_goals WHERE id = :id LIMIT 1")
@@ -566,7 +572,7 @@ interface FinancialDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBudgetItems(items: List<com.example.data.local.entity.BudgetItemEntity>)
 
-    @Query("SELECT * FROM budgets WHERE (userId = :userId OR userId = 'user_default') AND isActive = 1 ORDER BY createdAt DESC")
+    @Query("SELECT * FROM budgets WHERE userId = :userId AND :userId != '' AND isActive = 1 ORDER BY createdAt DESC")
     fun getBudgetsFlow(userId: String): Flow<List<com.example.data.local.entity.BudgetEntity>>
 
     @Query("SELECT * FROM budgets WHERE id = :budgetId LIMIT 1")
@@ -577,11 +583,11 @@ interface FinancialDao {
     fun getBudgetWithItemsFlow(budgetId: String): Flow<com.example.data.local.entity.BudgetWithItems?>
 
     @Transaction
-    @Query("SELECT * FROM budgets WHERE (userId = :userId OR userId = 'user_default') AND isActive = 1 ORDER BY createdAt DESC")
+    @Query("SELECT * FROM budgets WHERE userId = :userId AND :userId != '' AND isActive = 1 ORDER BY createdAt DESC")
     fun getAllBudgetsWithItemsFlow(userId: String): Flow<List<com.example.data.local.entity.BudgetWithItems>>
 
     @Transaction
-    @Query("SELECT * FROM budgets WHERE (userId = :userId OR userId = 'user_default') AND isActive = 1 ORDER BY createdAt DESC")
+    @Query("SELECT * FROM budgets WHERE userId = :userId AND :userId != '' AND isActive = 1 ORDER BY createdAt DESC")
     suspend fun getAllBudgetsWithItems(userId: String): List<com.example.data.local.entity.BudgetWithItems>
 
     @Query("DELETE FROM budgets WHERE id = :budgetId")
@@ -590,7 +596,7 @@ interface FinancialDao {
     @Query("DELETE FROM budget_items WHERE budgetId = :budgetId")
     suspend fun deleteBudgetItemsByBudgetId(budgetId: String)
 
-    @Query("SELECT COALESCE(SUM(amount), 0.0) FROM transactions WHERE (userId = :userId OR userId = 'user_default') AND type = 'EXPENSE' AND (categoryId = :categoryId OR (categoryName IS NOT NULL AND categoryName != '' AND LOWER(categoryName) = LOWER(:categoryName))) AND substr(date, 1, 10) >= :startDate AND substr(date, 1, 10) <= :endDate")
+    @Query("SELECT COALESCE(SUM(amount), 0.0) FROM transactions WHERE userId = :userId AND :userId != '' AND type = 'EXPENSE' AND (categoryId = :categoryId OR (categoryName IS NOT NULL AND categoryName != '' AND LOWER(categoryName) = LOWER(:categoryName))) AND substr(date, 1, 10) >= :startDate AND substr(date, 1, 10) <= :endDate")
     suspend fun calculateSpentForCategoryInPeriod(
         userId: String,
         categoryId: String,
@@ -599,7 +605,7 @@ interface FinancialDao {
         endDate: String
     ): Double
 
-    @Query("UPDATE budget_items SET spentAmount = spentAmount + :amount WHERE (categoryId = :categoryId OR (categoryName IS NOT NULL AND categoryName != '' AND LOWER(categoryName) = LOWER(:categoryName))) AND budgetId IN (SELECT id FROM budgets WHERE (userId = :userId OR userId = 'user_default') AND isActive = 1 AND substr(:expenseDate, 1, 10) >= startDate AND substr(:expenseDate, 1, 10) <= endDate)")
+    @Query("UPDATE budget_items SET spentAmount = spentAmount + :amount WHERE (categoryId = :categoryId OR (categoryName IS NOT NULL AND categoryName != '' AND LOWER(categoryName) = LOWER(:categoryName))) AND budgetId IN (SELECT id FROM budgets WHERE userId = :userId AND :userId != '' AND isActive = 1 AND substr(:expenseDate, 1, 10) >= startDate AND substr(:expenseDate, 1, 10) <= endDate)")
     suspend fun updateBudgetItemsSpentForExpense(
         userId: String,
         categoryId: String,
@@ -709,10 +715,10 @@ interface FinancialDao {
     // ==========================================
     // SCHEDULED PAYMENTS DAO OPERATIONS
     // ==========================================
-    @Query("SELECT * FROM scheduled_payments WHERE (user_id = :userId OR user_id = 'user_default' OR :userId = '') ORDER BY is_paid ASC, due_date ASC")
+    @Query("SELECT * FROM scheduled_payments WHERE user_id = :userId AND :userId != '' ORDER BY is_paid ASC, due_date ASC")
     fun getScheduledPaymentsFlow(userId: String): Flow<List<com.example.data.local.entity.ScheduledPaymentEntity>>
 
-    @Query("SELECT * FROM scheduled_payments WHERE (user_id = :userId OR user_id = 'user_default' OR :userId = '') AND is_paid = 0 ORDER BY due_date ASC")
+    @Query("SELECT * FROM scheduled_payments WHERE user_id = :userId AND :userId != '' AND is_paid = 0 ORDER BY due_date ASC")
     suspend fun getPendingScheduledPayments(userId: String): List<com.example.data.local.entity.ScheduledPaymentEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -726,6 +732,27 @@ interface FinancialDao {
 
     @Query("UPDATE scheduled_payments SET is_paid = :isPaid, paid_date = :paidDate WHERE id = :id")
     suspend fun setScheduledPaymentPaid(id: String, isPaid: Boolean, paidDate: String?)
+
+    // ==========================================
+    // MULTI-TENANT LEGACY MIGRATION
+    // ==========================================
+    @Query("UPDATE accounts SET userId = :targetUserId WHERE (userId = 'user_default' OR userId = '') AND :targetUserId != ''")
+    suspend fun migrateAccountsUserDefault(targetUserId: String): Int
+
+    @Query("UPDATE transactions SET userId = :targetUserId WHERE (userId = 'user_default' OR userId = '') AND :targetUserId != ''")
+    suspend fun migrateTransactionsUserDefault(targetUserId: String): Int
+
+    @Query("UPDATE financial_goals SET userId = :targetUserId WHERE (userId = 'user_default' OR userId = '') AND :targetUserId != ''")
+    suspend fun migrateGoalsUserDefault(targetUserId: String): Int
+
+    @Query("UPDATE budgets SET userId = :targetUserId WHERE (userId = 'user_default' OR userId = '') AND :targetUserId != ''")
+    suspend fun migrateBudgetsUserDefault(targetUserId: String): Int
+
+    @Query("UPDATE scheduled_payments SET user_id = :targetUserId WHERE (user_id = 'user_default' OR user_id = '') AND :targetUserId != ''")
+    suspend fun migrateScheduledPaymentsUserDefault(targetUserId: String): Int
+
+    @Query("UPDATE income_sources SET userId = :targetUserId WHERE (userId = 'user_default' OR userId = '') AND :targetUserId != ''")
+    suspend fun migrateIncomeSourcesUserDefault(targetUserId: String): Int
 }
 
 

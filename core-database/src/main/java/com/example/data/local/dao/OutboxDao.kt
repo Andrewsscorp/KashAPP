@@ -36,4 +36,7 @@ interface OutboxDao {
 
     @Query("DELETE FROM outbox_operations WHERE status = 'DELIVERED'")
     suspend fun purgeDelivered()
+
+    @Query("DELETE FROM outbox_operations WHERE userId = :userId AND :userId != ''")
+    suspend fun deleteOperationsByUserId(userId: String): Int
 }

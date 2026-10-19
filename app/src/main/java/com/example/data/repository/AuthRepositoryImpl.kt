@@ -1,11 +1,24 @@
 package com.example.data.repository
 
+import android.content.Context
+import android.util.Log
 import androidx.biometric.BiometricPrompt
+import androidx.room.withTransaction
 import com.example.data.datasource.FirebaseDataSource
 import com.example.data.datasource.GoogleDriveManager
 import com.example.data.local.Pbkdf2PinHasher
+import com.example.data.local.SecurityDatabase
+import com.example.data.local.dao.AssetAuditLogDao
+import com.example.data.local.dao.AssetCategoryDao
 import com.example.data.local.dao.AuditSecurityLogDao
+import com.example.data.local.dao.FinancialDao
+import com.example.data.local.dao.FixedAssetDao
 import com.example.data.local.dao.LocalAuthConfigDao
+import com.example.data.local.dao.MerchantDao
+import com.example.data.local.dao.OutboxDao
+import com.example.data.local.dao.SharedExpenseDao
+import com.example.data.local.dao.ThirdPartyCategoryDao
+import com.example.data.local.dao.ThirdPartyDao
 import com.example.data.local.dao.UserSessionDao
 import com.example.data.local.entity.AuditSecurityLog
 import com.example.data.local.entity.LocalAuthConfig
@@ -21,7 +34,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import android.util.Log
+import java.io.File
 
 /**
  * Concrete implementation of AuthRepository.
@@ -35,7 +48,17 @@ class AuthRepositoryImpl(
     private val firebaseDataSource: FirebaseDataSource,
     private val googleDriveManager: GoogleDriveManager,
     private val userSessionDao: UserSessionDao? = null,
-    private val financialDao: com.example.data.local.dao.FinancialDao? = null,
+    private val financialDao: FinancialDao? = null,
+    private val fixedAssetDao: FixedAssetDao? = null,
+    private val sharedExpenseDao: SharedExpenseDao? = null,
+    private val thirdPartyDao: ThirdPartyDao? = null,
+    private val thirdPartyCategoryDao: ThirdPartyCategoryDao? = null,
+    private val merchantDao: MerchantDao? = null,
+    private val outboxDao: OutboxDao? = null,
+    private val assetAuditLogDao: AssetAuditLogDao? = null,
+    private val assetCategoryDao: AssetCategoryDao? = null,
+    private val securityDatabase: SecurityDatabase? = null,
+    private val context: Context? = null,
     private val keystoreCryptoManager: com.example.data.local.KeystoreCryptoManager = com.example.data.local.KeystoreCryptoManager()
 ) : AuthRepository {
 
@@ -692,21 +715,85 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun deleteAccountPermanently(userId: String): Result<Unit> {
+        if (userId.isBlank()) {
+            return Result.failure(IllegalArgumentException("Cannot delete account: userId cannot be blank"))
+        }
         return try {
             // 1. Delete Firestore cloud backups and Firebase Authentication account
-            firebaseDataSource.deleteCloudAccountAndData(userId)
+            try {
+                firebaseDataSource.deleteCloudAccountAndData(userId)
+            } catch (e: Exception) {
+                Log.w("AuthRepositoryImpl", "Cloud account deletion notice: ${e.message}")
+            }
 
-            // 2. Delete all local financial records belonging to this user
-            financialDao?.deleteAccountsByUserId(userId)
-            financialDao?.deleteTransactionsByUserId(userId)
-            financialDao?.deleteGoalsByUserId(userId)
-            financialDao?.deleteBudgetsByUserId(userId)
-            financialDao?.deleteInvestmentsByUserId(userId)
-            financialDao?.deleteScheduledPaymentsByUserId(userId)
+            // 2. Delete all local financial records in strict topological order to respect SQLite guard triggers
+            val performDeletions = suspend {
+                // Step A: Dependent transactions and financial goals referencing accounts
+                financialDao?.deleteTransactionsByUserId(userId)
+                financialDao?.deleteGoalsByUserId(userId)
+                financialDao?.deleteInvestmentsByUserId(userId)
+                financialDao?.deleteScheduledPaymentsByUserId(userId)
+                financialDao?.deleteBudgetItemsByUserId(userId)
+                financialDao?.deleteBudgetsByUserId(userId)
+                financialDao?.deleteIncomeSourcesByUserId(userId)
 
-            // 3. Purge user session and deactivate all local sessions
-            userSessionDao?.deleteSession(userId)
-            userSessionDao?.deactivateAllSessions()
+                // Step B: Fixed Asset movements & audit logs (prevents fixed_assets_delete_history_guard abort)
+                assetAuditLogDao?.deleteAuditLogsForUserAssets(userId)
+                assetAuditLogDao?.deleteAuditLogsByUserId(userId)
+                fixedAssetDao?.deleteMovementsByUserId(userId)
+                fixedAssetDao?.deleteAssetsByUserId(userId)
+                assetCategoryDao?.deleteCategoriesByUserId(userId)
+
+                // Step C: Shared expenses, settlement payments, participants, and groups
+                sharedExpenseDao?.deleteSettlementPaymentsByUserId(userId)
+                sharedExpenseDao?.deleteSharedExpenseLineItemsByUserId(userId)
+                sharedExpenseDao?.deleteSharedExpenseSplitsByUserId(userId)
+                sharedExpenseDao?.deleteSharedExpensePayersByUserId(userId)
+                sharedExpenseDao?.deleteSharedExpensesByUserId(userId)
+                sharedExpenseDao?.deleteGroupMembersByUserId(userId)
+                sharedExpenseDao?.deleteGroupsByUserId(userId)
+                sharedExpenseDao?.deleteParticipantsByUserId(userId)
+                sharedExpenseDao?.deleteSequenceConfigsByUserId(userId)
+
+                // Step D: Third parties and custom categories
+                thirdPartyDao?.deleteThirdPartiesByUserId(userId)
+                thirdPartyCategoryDao?.deleteCategoriesByUserId(userId)
+
+                // Step E: Merchants and Outbox operations
+                merchantDao?.deleteMerchantsByUserId(userId)
+                outboxDao?.deleteOperationsByUserId(userId)
+
+                // Step F: Accounts (now completely safe to delete since no transactions/goals/investments/payments reference them)
+                financialDao?.deleteAccountsByUserId(userId)
+
+                // Step G: User sessions
+                userSessionDao?.deleteSession(userId)
+                userSessionDao?.deactivateAllSessions()
+            }
+
+            if (securityDatabase != null) {
+                securityDatabase.withTransaction {
+                    performDeletions()
+                }
+            } else {
+                performDeletions()
+            }
+
+            // 3. Purge local encrypted user files, vouchers, attachments, and exports
+            context?.let { ctx ->
+                try {
+                    val hiddenDocsDir = File(ctx.filesDir, "hidden_docs")
+                    if (hiddenDocsDir.exists()) {
+                        hiddenDocsDir.listFiles()?.forEach { it.delete() }
+                    }
+                    val exportsDir = File(ctx.cacheDir, "shared_exports")
+                    if (exportsDir.exists()) {
+                        exportsDir.deleteRecursively()
+                    }
+                } catch (e: Exception) {
+                    Log.w("AuthRepositoryImpl", "Notice during local user file purge: ${e.message}")
+                }
+            }
 
             logSecurityEvent(
                 eventType = "ACCOUNT_DELETED",
@@ -743,5 +830,26 @@ class AuthRepositoryImpl(
         )
         userSessionDao?.deactivateAllSessions()
         userSessionDao?.insertOrUpdateSession(entity)
+
+        // Automatically bind legacy 'user_default' records to the authenticated tenant
+        if (userId.isNotBlank() && userId != "user_default") {
+            try {
+                financialDao?.migrateAccountsUserDefault(userId)
+                financialDao?.migrateTransactionsUserDefault(userId)
+                financialDao?.migrateGoalsUserDefault(userId)
+                financialDao?.migrateBudgetsUserDefault(userId)
+                financialDao?.migrateScheduledPaymentsUserDefault(userId)
+                financialDao?.migrateIncomeSourcesUserDefault(userId)
+                fixedAssetDao?.migrateAssetsUserDefault(userId)
+                fixedAssetDao?.migrateMovementsUserDefault(userId)
+                sharedExpenseDao?.migrateExpensesUserDefault(userId)
+                sharedExpenseDao?.migrateParticipantsUserDefault(userId)
+                sharedExpenseDao?.migrateGroupsUserDefault(userId)
+                thirdPartyDao?.migrateThirdPartiesUserDefault(userId)
+                thirdPartyCategoryDao?.migrateCategoriesUserDefault(userId)
+            } catch (e: Exception) {
+                Log.w("AuthRepositoryImpl", "Notice during multi-tenant legacy migration: ${e.message}")
+            }
+        }
     }
 }

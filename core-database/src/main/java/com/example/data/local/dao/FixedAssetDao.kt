@@ -13,13 +13,13 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface FixedAssetDao {
 
-    @Query("SELECT * FROM fixed_assets WHERE (userId = :userId OR userId = 'user_default' OR :userId = '') ORDER BY createdAt DESC")
+    @Query("SELECT * FROM fixed_assets WHERE userId = :userId AND :userId != '' ORDER BY createdAt DESC")
     fun observeAssets(userId: String): Flow<List<FixedAssetEntity>>
 
-    @Query("SELECT * FROM fixed_assets ORDER BY createdAt DESC")
-    fun getAllAssetsFlow(): Flow<List<FixedAssetEntity>>
+    @Query("SELECT * FROM fixed_assets WHERE userId = :userId AND :userId != '' ORDER BY createdAt DESC")
+    fun getAllAssetsFlow(userId: String = "user_default"): Flow<List<FixedAssetEntity>>
 
-    @Query("UPDATE fixed_assets SET noAffectInventory = :noAffectInventory WHERE (userId = :userId OR userId = 'user_default' OR :userId = '')")
+    @Query("UPDATE fixed_assets SET noAffectInventory = :noAffectInventory WHERE userId = :userId AND :userId != ''")
     suspend fun updateNoAffectInventoryAll(userId: String, noAffectInventory: Boolean): Int
 
     @Query("UPDATE fixed_assets SET noAffectInventory = :noAffectInventory")
@@ -28,7 +28,7 @@ interface FixedAssetDao {
     @Query("UPDATE fixed_assets SET noAffectInventory = :noAffectInventory WHERE id = :assetId")
     suspend fun updateAssetNoAffectInventory(assetId: String, noAffectInventory: Boolean): Int
 
-    @Query("UPDATE fixed_assets SET noAffectDashboard = :noAffectDashboard WHERE (userId = :userId OR userId = 'user_default' OR :userId = '')")
+    @Query("UPDATE fixed_assets SET noAffectDashboard = :noAffectDashboard WHERE userId = :userId AND :userId != ''")
     suspend fun updateNoAffectDashboardAll(userId: String, noAffectDashboard: Boolean): Int
 
     @Query("UPDATE fixed_assets SET noAffectDashboard = :noAffectDashboard")
@@ -58,12 +58,18 @@ interface FixedAssetDao {
     @Query("DELETE FROM fixed_assets WHERE id = :assetId")
     suspend fun deleteAssetById(assetId: String)
 
+    @Query("DELETE FROM fixed_assets WHERE userId = :userId AND :userId != ''")
+    suspend fun deleteAssetsByUserId(userId: String): Int
+
+    @Query("UPDATE fixed_assets SET userId = :targetUserId WHERE userId = 'user_default' AND :targetUserId != ''")
+    suspend fun migrateAssetsUserDefault(targetUserId: String): Int
+
     // Movements
-    @Query("SELECT * FROM asset_movements WHERE (userId = :userId OR userId = 'user_default' OR :userId = '') ORDER BY date DESC, createdAt DESC")
+    @Query("SELECT * FROM asset_movements WHERE userId = :userId AND :userId != '' ORDER BY date DESC, createdAt DESC")
     fun observeAllMovements(userId: String): Flow<List<AssetMovementEntity>>
 
-    @Query("SELECT * FROM asset_movements ORDER BY date DESC, createdAt DESC")
-    fun getAllMovementsFlow(): Flow<List<AssetMovementEntity>>
+    @Query("SELECT * FROM asset_movements WHERE userId = :userId AND :userId != '' ORDER BY date DESC, createdAt DESC")
+    fun getAllMovementsFlow(userId: String = "user_default"): Flow<List<AssetMovementEntity>>
 
     @Query("SELECT * FROM asset_movements WHERE assetId = :assetId ORDER BY date DESC, createdAt DESC")
     fun observeMovementsForAsset(assetId: String): Flow<List<AssetMovementEntity>>
@@ -79,4 +85,10 @@ interface FixedAssetDao {
 
     @Query("DELETE FROM asset_movements WHERE assetId = :assetId")
     suspend fun deleteMovementsByAssetId(assetId: String)
+
+    @Query("DELETE FROM asset_movements WHERE userId = :userId AND :userId != ''")
+    suspend fun deleteMovementsByUserId(userId: String): Int
+
+    @Query("UPDATE asset_movements SET userId = :targetUserId WHERE userId = 'user_default' AND :targetUserId != ''")
+    suspend fun migrateMovementsUserDefault(targetUserId: String): Int
 }
