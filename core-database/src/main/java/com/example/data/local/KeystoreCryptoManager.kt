@@ -12,13 +12,20 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 /**
+ * Exception thrown when the hardware-backed database passphrase seed cannot be read or initialized.
+ * Replaces ephemeral random key generation to prevent vault corruption or unpredictable keys.
+ */
+class VaultKeyReadException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
+
+/**
  * Manages Android Keystore hardware-backed AES keys, CryptoObjects for BiometricPrompt,
  * and AES-256 GCM hardware encryption/decryption for sensitive user data and passphrases.
  */
 class KeystoreCryptoManager(private val allowSoftwareFallbackForTests: Boolean = false) {
 
     companion object {
-        private const val KEY_ALIAS = "kashapp_security_master_key"
+        const val KEY_ALIAS = "kashapp_security_master_key"
+        const val BIOMETRIC_KEY_ALIAS = "kashapp_biometric_auth_key"
         private const val KEYSTORE_NAME = "AndroidKeyStore"
         private const val TRANSFORMATION = "${KeyProperties.KEY_ALGORITHM_AES}/${KeyProperties.BLOCK_MODE_GCM}/${KeyProperties.ENCRYPTION_PADDING_NONE}"
         private const val GCM_IV_LENGTH = 12
@@ -33,6 +40,9 @@ class KeystoreCryptoManager(private val allowSoftwareFallbackForTests: Boolean =
 
     @Volatile
     private var softwareFallbackKey: SecretKey? = null
+
+    @Volatile
+    private var biometricFallbackKey: SecretKey? = null
 
     private fun getOrCreateSecretKey(): SecretKey {
         val ks = keyStore
@@ -77,9 +87,76 @@ class KeystoreCryptoManager(private val allowSoftwareFallbackForTests: Boolean =
         }
     }
 
+    private fun getOrCreateBiometricSecretKey(): SecretKey {
+        val ks = keyStore
+        if (ks != null) {
+            try {
+                if (!ks.containsAlias(BIOMETRIC_KEY_ALIAS)) {
+                    val keyGenerator = KeyGenerator.getInstance(
+                        KeyProperties.KEY_ALGORITHM_AES,
+                        KEYSTORE_NAME
+                    )
+                    var generated = false
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                        try {
+                            val strongBoxBuilder = KeyGenParameterSpec.Builder(
+                                BIOMETRIC_KEY_ALIAS,
+                                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+                            )
+                                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                                .setKeySize(256)
+                                .setUserAuthenticationRequired(true)
+                                .setRandomizedEncryptionRequired(true)
+                                .setIsStrongBoxBacked(true)
+
+                            keyGenerator.init(strongBoxBuilder.build())
+                            keyGenerator.generateKey()
+                            generated = true
+                        } catch (_: Throwable) {
+                            // Fallback to standard hardware TEE
+                        }
+                    }
+
+                    if (!generated) {
+                        val teeBuilder = KeyGenParameterSpec.Builder(
+                            BIOMETRIC_KEY_ALIAS,
+                            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+                        )
+                            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                            .setKeySize(256)
+                            .setUserAuthenticationRequired(true)
+                            .setRandomizedEncryptionRequired(true)
+
+                        keyGenerator.init(teeBuilder.build())
+                        keyGenerator.generateKey()
+                    }
+                }
+                val entry = ks.getEntry(BIOMETRIC_KEY_ALIAS, null) as? KeyStore.SecretKeyEntry
+                if (entry != null) {
+                    return entry.secretKey
+                }
+            } catch (e: Throwable) {
+                if (!allowSoftwareFallbackForTests) {
+                    throw IllegalStateException("Android Keystore no está disponible para clave biométrica.", e)
+                }
+            }
+        }
+        if (!allowSoftwareFallbackForTests) {
+            throw IllegalStateException("Android Keystore no está disponible para clave biométrica.")
+        }
+        return biometricFallbackKey ?: synchronized(this) {
+            biometricFallbackKey ?: SecretKeySpec(
+                ByteArray(32).also { SecureRandom().nextBytes(it) },
+                "AES"
+            ).also { biometricFallbackKey = it }
+        }
+    }
+
     fun createBiometricCryptoObject(): BiometricPrompt.CryptoObject? {
         return try {
-            val secretKey = getOrCreateSecretKey()
+            val secretKey = getOrCreateBiometricSecretKey()
             val cipher = Cipher.getInstance(TRANSFORMATION)
             cipher.init(Cipher.ENCRYPT_MODE, secretKey)
             BiometricPrompt.CryptoObject(cipher)
@@ -138,8 +215,8 @@ class KeystoreCryptoManager(private val allowSoftwareFallbackForTests: Boolean =
             prefs.edit().putString("unique_device_encrypted_seed", encrypted).apply()
             return randomPassphrase
         } catch (e: Exception) {
-            // Último recurso en caso de error crítico de almacenamiento, generar una clave volátil
-            return ByteArray(32).also { SecureRandom().nextBytes(it) }
+            // Fail-closed: Never generate ephemeral volatile keys that corrupt vault persistence
+            throw VaultKeyReadException("Fallo crítico al acceder o inicializar la clave maestra de la bóveda local.", e)
         }
     }
 

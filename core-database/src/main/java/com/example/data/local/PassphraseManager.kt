@@ -163,7 +163,7 @@ class PassphraseManager(
         )
     }
 
-    private fun deriveKeyFromPassphrase(passphrase: String): ByteArray {
+    fun deriveKeyFromPassphrase(passphrase: String): ByteArray {
         val salt = getOrCreateSalt()
         return try {
             val spec = PBEKeySpec(passphrase.toCharArray(), salt, PBKDF2_ITERATIONS, KEY_LENGTH_BITS)

@@ -82,7 +82,8 @@ object RoomLocalDb {
     }
 
     /**
-     * Re-initializes and opens the database with a newly set user-defined passphrase.
+     * Re-initializes and opens the database with a newly set user-defined passphrase,
+     * executing an authenticated PRAGMA rekey on the active database before updating configuration.
      */
     @Synchronized
     fun openWithUserPassphrase(
@@ -90,30 +91,61 @@ object RoomLocalDb {
         passphraseManager: PassphraseManager,
         newUserPassphrase: String
     ): SecurityDatabase {
-        passphraseManager.setUserPassphrase(newUserPassphrase)
-        val passphraseBytes = passphraseManager.getDatabasePassphrase()
+        val newKeyBytes = passphraseManager.deriveKeyFromPassphrase(newUserPassphrase)
+        val newKeyHex = newKeyBytes.joinToString("") { "%02x".format(it) }
 
+        // If an encrypted vault file already exists, execute PRAGMA rekey on the open database
+        val encryptedDbFile = context.getDatabasePath(ENCRYPTED_DB_NAME)
+        if (encryptedDbFile.exists()) {
+            val currentDb = INSTANCE ?: getDatabase(context, passphraseManager)
+            try {
+                val writable = currentDb.openHelper.writableDatabase
+                writable.execSQL("PRAGMA rekey = \"x'$newKeyHex'\";")
+                Log.i(TAG, "SQLCipher PRAGMA rekey executed successfully to user passphrase.")
+            } catch (e: Throwable) {
+                Log.e(TAG, "Error executing PRAGMA rekey to user passphrase", e)
+                throw IllegalStateException("No fue posible recifrar la base de datos con la nueva frase de paso.", e)
+            }
+        }
+
+        passphraseManager.setUserPassphrase(newUserPassphrase)
         closeDatabase()
 
-        val db = buildDatabaseWithRecovery(context.applicationContext, passphraseBytes)
+        val db = buildDatabaseWithRecovery(context.applicationContext, newKeyBytes)
         INSTANCE = db
         return db
     }
 
     /**
-     * Resets passphrase to hardware master seed and reopens database.
+     * Resets passphrase to hardware master seed and reopens database,
+     * executing an authenticated PRAGMA rekey before clearing user passphrase.
      */
     @Synchronized
     fun resetToHardwareMaster(
         context: Context,
-        passphraseManager: PassphraseManager
+        passphraseManager: PassphraseManager,
+        cryptoManager: KeystoreCryptoManager = KeystoreCryptoManager()
     ): SecurityDatabase {
-        passphraseManager.resetToHardwareMasterPassphrase()
-        val passphraseBytes = passphraseManager.getDatabasePassphrase()
+        val masterBytes = cryptoManager.getHardwareMasterPassphrase(context)
+        val masterHex = masterBytes.joinToString("") { "%02x".format(it) }
 
+        val encryptedDbFile = context.getDatabasePath(ENCRYPTED_DB_NAME)
+        if (encryptedDbFile.exists()) {
+            val currentDb = INSTANCE ?: getDatabase(context, passphraseManager, cryptoManager)
+            try {
+                val writable = currentDb.openHelper.writableDatabase
+                writable.execSQL("PRAGMA rekey = \"x'$masterHex'\";")
+                Log.i(TAG, "SQLCipher PRAGMA rekey executed successfully back to hardware master key.")
+            } catch (e: Throwable) {
+                Log.e(TAG, "Error executing PRAGMA rekey to hardware master key", e)
+                throw IllegalStateException("No fue posible recifrar la base de datos a la clave maestra de hardware.", e)
+            }
+        }
+
+        passphraseManager.resetToHardwareMasterPassphrase()
         closeDatabase()
 
-        val db = buildDatabaseWithRecovery(context.applicationContext, passphraseBytes)
+        val db = buildDatabaseWithRecovery(context.applicationContext, masterBytes)
         INSTANCE = db
         return db
     }
@@ -167,7 +199,7 @@ object RoomLocalDb {
         if (encryptedFileExists) {
             val err = lastEncryptedDbError
             Log.e(TAG, "Encrypted database vault failed to open. Preserving vault files without wiping.", err)
-            vaultUnlockErrorMessage = "Error al desbloquear la base de datos cifrada. La clave de seguridad no coincide o la migración falló. Tus datos están a salvo. Ingresa tu clave maestra o restablece la bóveda para continuar."
+            vaultUnlockErrorMessage = "Error al desbloquear la base de datos cifrada. La clave de seguridad no coincide. Tus datos están a salvo. Inicia sesión con tus credenciales maestras autorizadas para acceder."
         }
 
         isUsingFallbackPlainDb = false

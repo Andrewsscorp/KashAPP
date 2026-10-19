@@ -108,18 +108,10 @@ class MainActivity : FragmentActivity() {
                 confirmButton = {
                     androidx.compose.material3.Button(
                         onClick = {
-                            com.example.data.local.RoomLocalDb.resetVaultAndRecreate(this@MainActivity)
                             com.example.data.local.RoomLocalDb.clearVaultUnlockError()
                         }
                     ) {
-                        androidx.compose.material3.Text("Restablecer y desbloquear")
-                    }
-                },
-                dismissButton = {
-                    androidx.compose.material3.TextButton(
-                        onClick = { com.example.data.local.RoomLocalDb.clearVaultUnlockError() }
-                    ) {
-                        androidx.compose.material3.Text("Entendido")
+                        androidx.compose.material3.Text("Aceptar")
                     }
                 }
             )
