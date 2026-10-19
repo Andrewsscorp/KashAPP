@@ -482,6 +482,7 @@ fun DashboardScreen(
             factory = SettingsViewModel.Factory(
                 repository = appContainer.settingsRepository,
                 authRepository = appContainer.authRepository,
+                financialRepository = appContainer.financialRepository,
                 userId = viewModel.userId
             )
         )

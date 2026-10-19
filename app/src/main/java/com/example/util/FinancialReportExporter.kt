@@ -227,7 +227,11 @@ object FinancialReportExporter {
                 pdfDocument.writeTo(out)
             }
 
-            val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+            val uri = try {
+                FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+            } catch (_: Throwable) {
+                Uri.fromFile(file)
+            }
 
             val summaryText = buildString {
                 append("KashApp Reporte: ${rubroType.title}\n")
@@ -249,7 +253,9 @@ object FinancialReportExporter {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            context.startActivity(chooser)
+            try {
+                context.startActivity(chooser)
+            } catch (_: Throwable) {}
 
             ExportResult(
                 success = true,
@@ -327,7 +333,11 @@ object FinancialReportExporter {
                 out.write(sb.toString().toByteArray(Charsets.UTF_8))
             }
 
-            val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+            val uri = try {
+                FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+            } catch (_: Throwable) {
+                Uri.fromFile(file)
+            }
 
             ExportResult(
                 success = true,

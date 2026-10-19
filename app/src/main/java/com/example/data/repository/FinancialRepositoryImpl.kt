@@ -78,12 +78,20 @@ class FinancialRepositoryImpl(
         return financialDao.getAccountsFlow(userId)
     }
 
+    override suspend fun getAccountsSnapshot(userId: String): List<AccountEntity> = withContext(ioDispatcher) {
+        financialDao.getAccounts(userId)
+    }
+
     override fun getCategories(): Flow<List<CategoryEntity>> {
         return financialDao.getCategoriesFlow()
     }
 
     override fun getTransactions(userId: String): Flow<List<TransactionEntity>> {
         return financialDao.getTransactionsFlow(userId)
+    }
+
+    override suspend fun getTransactionsSnapshot(userId: String): List<TransactionEntity> = withContext(ioDispatcher) {
+        financialDao.getTransactions(userId)
     }
 
     override suspend fun getAccountById(accountId: String): AccountEntity? {
@@ -2245,19 +2253,38 @@ class FinancialRepositoryImpl(
         }
     }
 
+    override suspend fun restoreFullPortfolioFromCloud(userId: String): Result<Boolean> = withContext(ioDispatcher) {
+        restoreFinancialBackupInternal(userId = userId, force = true)
+    }
+
     override suspend fun restoreFinancialBackupFromCloudIfNeeded(userId: String): Result<Boolean> = withContext(ioDispatcher) {
+        restoreFinancialBackupInternal(userId = userId, force = false)
+    }
+
+    override suspend fun getCloudBackupMetadata(userId: String): Map<String, Any>? = withContext(ioDispatcher) {
         try {
-            val localAccounts = financialDao.getAccountsFlow(userId).firstOrNull().orEmpty()
-            val dummyIds = setOf("acc_ahorros", "acc_corriente", "acc_billetera", "acc_efectivo")
-            val hasCustomOrFundedAccounts = localAccounts.any { !dummyIds.contains(it.id) || it.balance > 0.0 }
-            if (hasCustomOrFundedAccounts) {
-                Log.i("FinancialRepository", "Omitiendo restauración desde la nube: el usuario $userId ya posee ${localAccounts.size} cuenta(s) en la base de datos local.")
-                return@withContext Result.success(false)
+            firebaseDataSource.getFinancialBackup(userId)
+        } catch (e: Exception) {
+            Log.w("FinancialRepository", "Error consultando metadatos de respaldo en la nube: ${e.message}")
+            null
+        }
+    }
+
+    private suspend fun restoreFinancialBackupInternal(userId: String, force: Boolean): Result<Boolean> {
+        return try {
+            if (!force) {
+                val localAccounts = financialDao.getAccountsFlow(userId).firstOrNull().orEmpty()
+                val dummyIds = setOf("acc_ahorros", "acc_corriente", "acc_billetera", "acc_efectivo")
+                val hasCustomOrFundedAccounts = localAccounts.any { !dummyIds.contains(it.id) || it.balance > 0.0 }
+                if (hasCustomOrFundedAccounts) {
+                    Log.i("FinancialRepository", "Omitiendo restauración desde la nube: el usuario $userId ya posee ${localAccounts.size} cuenta(s) en la base de datos local.")
+                    return Result.success(false)
+                }
             }
 
             val backupData = firebaseDataSource.getFinancialBackup(userId)
             if (backupData == null) {
-                return@withContext Result.success(false)
+                return Result.success(false)
             }
 
             Log.i("FinancialRepository", "Iniciando restauración de datos financieros desde Firestore para usuario $userId")
@@ -2292,13 +2319,13 @@ class FinancialRepositoryImpl(
                 val encryptedPayload = backupData["encryptedPayload"] as? String
                 if (encryptedPayload.isNullOrBlank()) {
                     Log.w("FinancialRepository", "Respaldo cifrado tiene payload vacío.")
-                    return@withContext Result.success(false)
+                    return Result.success(false)
                 }
 
                 val decryptedContent = cryptoManager.decryptData(encryptedPayload)
                 if (decryptedContent.isNullOrBlank()) {
                     Log.e("FinancialRepository", "Fallo al descifrar el payload del respaldo en la nube.")
-                    return@withContext Result.failure(IllegalStateException("No fue posible descifrar el respaldo de Firestore."))
+                    return Result.failure(IllegalStateException("No fue posible descifrar el respaldo de Firestore."))
                 }
 
                 val jsonString = if (decryptedContent.trim().startsWith("{")) {
@@ -2577,8 +2604,8 @@ class FinancialRepositoryImpl(
 
     override suspend fun backupFullPortfolioToCloud(userId: String): Result<Boolean> = withContext(ioDispatcher) {
         try {
-            val allAccounts = financialDao.getAccountsFlow(userId).firstOrNull().orEmpty()
-            val allTransactions = financialDao.getTransactionsFlow(userId).firstOrNull().orEmpty()
+            val allAccounts = financialDao.getAccounts(userId)
+            val allTransactions = financialDao.getTransactions(userId)
 
             val dummyIds = setOf("acc_ahorros", "acc_corriente", "acc_billetera", "acc_efectivo")
             val isAllEmptyDummy = (allAccounts.isEmpty() || allAccounts.all { it.balance == 0.0 && dummyIds.contains(it.id) }) && allTransactions.isEmpty()
@@ -2587,7 +2614,7 @@ class FinancialRepositoryImpl(
                 return@withContext Result.success(true)
             }
 
-            val categories = financialDao.getCategoriesFlow().firstOrNull().orEmpty()
+            val categories = financialDao.getCategories()
 
             // Construir payload JSON completo sin truncar transacciones
             val rootJson = org.json.JSONObject().apply {

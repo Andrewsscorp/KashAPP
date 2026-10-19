@@ -228,6 +228,9 @@ interface FinancialDao {
     @Query("SELECT * FROM categories WHERE TRIM(name) != '' ORDER BY name ASC")
     fun getCategoriesFlow(): Flow<List<CategoryEntity>>
 
+    @Query("SELECT * FROM categories WHERE TRIM(name) != '' ORDER BY name ASC")
+    suspend fun getCategories(): List<CategoryEntity>
+
     @Query("SELECT * FROM categories WHERE isActive = 1 AND TRIM(name) != '' ORDER BY name ASC")
     fun getActiveCategoriesFlow(): Flow<List<CategoryEntity>>
 

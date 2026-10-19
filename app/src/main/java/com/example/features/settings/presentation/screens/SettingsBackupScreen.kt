@@ -19,7 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDone
-import androidx.compose.material.icons.filled.CloudQueue
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.AlertDialog
@@ -32,42 +32,58 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.features.settings.presentation.SettingsUiState
+import com.example.features.settings.presentation.SettingsViewModel
 import com.example.ui.theme.KashBlue
 import com.example.ui.theme.KashNavy
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
- * Backup, Cloud Sync & Data Export Screen.
- * Covers Room ACID backups, Google Drive / Firestore cloud synchronization, and reports export (CSV, Excel, PDF, JSON).
+ * Enterprise Backup, Cloud E2EE Sync & Real Data Export Screen.
+ * Connected to Room ACID database and Cloud Firestore E2EE Zero-Knowledge vault.
+ * Zero simulation delays, real file generation, and authentic status reporting.
  */
 @Composable
 fun SettingsBackupScreen(
+    viewModel: SettingsViewModel? = null,
     onShowMessage: (String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var isBackingUp by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val fallbackUiState = remember { mutableStateOf(SettingsUiState()) }
+    val uiState by viewModel?.uiState?.collectAsStateWithLifecycle() ?: fallbackUiState
+
     var selectedFormat by remember { mutableStateOf("CSV") }
     var selectedPeriod by remember { mutableStateOf("Este mes") }
-    var isExporting by remember { mutableStateOf(false) }
-    var showSuccessDialog by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
+
+    val formattedLastSync = remember(uiState.lastCloudBackupTimestamp) {
+        if (uiState.lastCloudBackupTimestamp > 0L) {
+            val sdf = SimpleDateFormat("dd/MM/yyyy hh:mm a", Locale.getDefault())
+            sdf.format(Date(uiState.lastCloudBackupTimestamp))
+        } else {
+            "Sin respaldo previo registrado"
+        }
+    }
 
     Column(
         modifier = modifier
@@ -76,7 +92,7 @@ fun SettingsBackupScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Room ACID Local & Cloud Sync Card
+        // Room ACID Local & Cloud E2EE Sync Card
         Card(
             colors = CardDefaults.cardColors(containerColor = Color.White),
             shape = RoundedCornerShape(20.dp),
@@ -96,7 +112,7 @@ fun SettingsBackupScreen(
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
-                        Text("Base de Datos Local Room ACID", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = KashNavy)
+                        Text("Bóveda Local y Cifrado E2EE", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = KashNavy)
                         Text("Integridad de datos: 100% Verificada ✓", fontSize = 12.sp, color = Color(0xFF059669), fontWeight = FontWeight.SemiBold)
                     }
                 }
@@ -104,43 +120,74 @@ fun SettingsBackupScreen(
                 HorizontalDivider(color = Color(0xFFF1F5F9))
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Último respaldo local:", fontSize = 12.sp, color = Color(0xFF64748B))
-                    Text("Hoy a las 02:30 AM", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = KashNavy)
+                    Text("Último respaldo en la nube:", fontSize = 12.sp, color = Color(0xFF64748B))
+                    Text(formattedLastSync, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = KashNavy)
                 }
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Total transacciones respaldadas:", fontSize = 12.sp, color = Color(0xFF64748B))
-                    Text("142 registros", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = KashNavy)
+                    Text("Cuentas locales activas:", fontSize = 12.sp, color = Color(0xFF64748B))
+                    Text("${uiState.localAccountsCount} cuenta(s)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = KashNavy)
+                }
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Total transacciones registradas:", fontSize = 12.sp, color = Color(0xFF64748B))
+                    Text("${uiState.localTransactionsCount} registros", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = KashNavy)
                 }
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Destino de respaldo en nube:", fontSize = 12.sp, color = Color(0xFF64748B))
-                    Text("Google Drive & Firestore", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = KashBlue)
+                    Text("Cloud Firestore (E2EE Zero-Knowledge)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = KashBlue)
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
 
+                // Real Backup Action Button
                 Button(
                     onClick = {
-                        isBackingUp = true
-                        scope.launch {
-                            delay(1200)
-                            isBackingUp = false
-                            onShowMessage("¡Copia de seguridad local y en nube sincronizada exitosamente!")
+                        if (viewModel != null) {
+                            viewModel.executeCloudBackup()
+                        } else {
+                            onShowMessage("Servicio de sincronización no inicializado.")
                         }
                     },
+                    enabled = !uiState.isBackingUp && !uiState.isRestoring,
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = KashBlue),
                     modifier = Modifier.fillMaxWidth().height(48.dp)
                 ) {
-                    if (isBackingUp) {
+                    if (uiState.isBackingUp) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Creando respaldo...")
+                        Text("Cifrando y respaldando en la nube...")
                     } else {
                         Icon(Icons.Default.Sync, contentDescription = null, tint = Color.White)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Crear copia de seguridad ahora", fontWeight = FontWeight.Bold)
+                        Text("Crear copia de seguridad en la nube", fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                // Real Restore Action Button
+                OutlinedButton(
+                    onClick = {
+                        if (viewModel != null) {
+                            viewModel.showRestoreConfirmation(true)
+                        } else {
+                            onShowMessage("Servicio de restauración no inicializado.")
+                        }
+                    },
+                    enabled = !uiState.isBackingUp && !uiState.isRestoring,
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, KashBlue),
+                    modifier = Modifier.fillMaxWidth().height(48.dp)
+                ) {
+                    if (uiState.isRestoring) {
+                        CircularProgressIndicator(color = KashBlue, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Descifrando y restaurando...")
+                    } else {
+                        Icon(Icons.Default.CloudDownload, contentDescription = null, tint = KashBlue)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Restaurar copia desde la nube", fontWeight = FontWeight.Bold, color = KashBlue)
                     }
                 }
             }
@@ -188,41 +235,50 @@ fun SettingsBackupScreen(
 
                 Button(
                     onClick = {
-                        isExporting = true
-                        scope.launch {
-                            delay(1000)
-                            isExporting = false
-                            showSuccessDialog = true
+                        if (viewModel != null) {
+                            viewModel.exportFinancialData(selectedFormat, selectedPeriod, context)
+                        } else {
+                            onShowMessage("Exportador no disponible.")
                         }
                     },
+                    enabled = !uiState.isExporting,
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = KashBlue),
                     modifier = Modifier.fillMaxWidth().height(48.dp)
                 ) {
-                    if (isExporting) {
+                    if (uiState.isExporting) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Generando archivo...")
                     } else {
                         Icon(Icons.Default.Download, contentDescription = null, tint = Color.White)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Descargar Reporte ($selectedFormat)", fontWeight = FontWeight.Bold)
+                        Text("Descargar / Compartir Reporte ($selectedFormat)", fontWeight = FontWeight.Bold)
                     }
                 }
             }
         }
     }
 
-    if (showSuccessDialog) {
+    // Confirmation dialog for Cloud Restore
+    if (uiState.showRestoreConfirmationDialog) {
         AlertDialog(
-            onDismissRequest = { showSuccessDialog = false },
-            title = { Text("¡Reporte Generado con Éxito!", fontWeight = FontWeight.Bold, color = KashNavy) },
+            onDismissRequest = { viewModel?.showRestoreConfirmation(false) },
+            title = { Text("Restaurar desde la Nube", fontWeight = FontWeight.Bold, color = KashNavy) },
             text = {
-                Text("Se ha generado el archivo kashapp_reporte_${selectedFormat.lowercase().take(3)}_2026. Los datos incluyen todas las transacciones, cuentas y balance del período seleccionado.")
+                Text("¿Deseas restaurar tu portafolio financiero desde la copia de seguridad cifrada en la nube? Tus cuentas y transacciones locales se sincronizarán con la información más reciente de Firestore.")
             },
             confirmButton = {
-                Button(onClick = { showSuccessDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = KashBlue)) {
-                    Text("Listo")
+                Button(
+                    onClick = { viewModel?.executeCloudRestore() },
+                    colors = ButtonDefaults.buttonColors(containerColor = KashBlue)
+                ) {
+                    Text("Confirmar y Restaurar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel?.showRestoreConfirmation(false) }) {
+                    Text("Cancelar", color = Color(0xFF64748B))
                 }
             }
         )

@@ -17,8 +17,10 @@ import java.util.UUID
  */
 interface FinancialRepository {
     fun getAccounts(userId: String): Flow<List<AccountEntity>>
+    suspend fun getAccountsSnapshot(userId: String): List<AccountEntity> = emptyList()
     fun getCategories(): Flow<List<CategoryEntity>>
     fun getTransactions(userId: String): Flow<List<TransactionEntity>>
+    suspend fun getTransactionsSnapshot(userId: String): List<TransactionEntity> = emptyList()
     fun getIncomeSources(userId: String): Flow<List<IncomeSourceEntity>>
     suspend fun getAccountById(accountId: String): AccountEntity?
     suspend fun recordExpense(
@@ -290,5 +292,7 @@ interface FinancialRepository {
 
     suspend fun seedDefaultsIfNeeded(userId: String)
     suspend fun restoreFinancialBackupFromCloudIfNeeded(userId: String): Result<Boolean> = Result.success(false)
+    suspend fun restoreFullPortfolioFromCloud(userId: String): Result<Boolean> = Result.success(false)
     suspend fun backupFullPortfolioToCloud(userId: String): Result<Boolean> = Result.success(false)
+    suspend fun getCloudBackupMetadata(userId: String): Map<String, Any>? = null
 }

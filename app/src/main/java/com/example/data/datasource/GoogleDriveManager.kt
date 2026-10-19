@@ -104,12 +104,8 @@ class GoogleDriveManager(private val context: Context) {
                             errorMessage = "HTTP ${response.code}: $responseBody"
                             Log.w("GoogleDriveManager", "Google Drive API returned non-200: $errorMessage")
                         }
-                        // Always save secure local copy in app private storage as fallback
-                        try {
-                            val backupDir = java.io.File(context.filesDir, "drive_backup").apply { mkdirs() }
-                            java.io.File(backupDir, BACKUP_FILE_NAME).writeText(encryptedPayload)
-                            Log.i("GoogleDriveManager", "Copia de seguridad local protegida en ${backupDir.absolutePath}")
-                        } catch (_: Exception) {}
+                        // Elimination of deceptive fallback under DA-02 (HALL-05 / REM-P1-02)
+                        purgeLocalDriveBackupDir()
                     }
                 }
             } catch (networkEx: Exception) {
@@ -170,4 +166,19 @@ class GoogleDriveManager(private val context: Context) {
     }
 
     fun getSyncStatus(): DriveSyncStatus = currentStatus
+
+    /**
+     * Purges any legacy unencrypted backup files from local private storage to satisfy DA-02 and REM-P1-02.
+     */
+    fun purgeLocalDriveBackupDir() {
+        try {
+            val backupDir = java.io.File(context.filesDir, "drive_backup")
+            if (backupDir.exists()) {
+                backupDir.deleteRecursively()
+                Log.i("GoogleDriveManager", "Directorio legado drive_backup purgado exitosamente.")
+            }
+        } catch (ex: Exception) {
+            Log.w("GoogleDriveManager", "Aviso al purgar directorio drive_backup: ${ex.message}")
+        }
+    }
 }

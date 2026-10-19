@@ -319,12 +319,14 @@ fun SettingsScreen(
                     }
                     SettingsSubRoute.EXPORTAR_DATOS -> {
                         SettingsBackupScreen(
+                            viewModel = viewModel,
                             onShowMessage = { viewModel.showStatusMessage(it) },
                             onBack = { viewModel.navigateBackToMain() }
                         )
                     }
                     SettingsSubRoute.COPIA_SEGURIDAD -> {
                         SettingsBackupScreen(
+                            viewModel = viewModel,
                             onShowMessage = { viewModel.showStatusMessage(it) },
                             onBack = { viewModel.navigateBackToMain() }
                         )
