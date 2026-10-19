@@ -65,7 +65,7 @@ class SharedExpenseFirebaseAiEngine {
         val guardVerdict = FirebaseApiProtectionGuard.authorizeAndSanitizeRequest(
             rawPrompt = userPrompt,
             participantRealNames = participantNames,
-            requireAuthenticatedUser = false
+            requireAuthenticatedUser = true
         )
 
         if (guardVerdict is FirebaseApiProtectionGuard.GuardVerdict.Allowed) {

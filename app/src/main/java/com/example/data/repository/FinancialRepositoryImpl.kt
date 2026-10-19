@@ -1291,8 +1291,8 @@ class FinancialRepositoryImpl(
             if (trimmedName.isBlank()) {
                 return@withContext Result.failure(IllegalArgumentException("El nombre de la moneda no puede estar vacío."))
             }
-            if (manualExchangeRate <= 0.0) {
-                return@withContext Result.failure(IllegalArgumentException("La tasa de cambio manual (TRM) debe ser superior a cero."))
+            if (!manualExchangeRate.isFinite() || manualExchangeRate <= 0.0 || manualExchangeRate >= 1_000_000_000.0) {
+                return@withContext Result.failure(IllegalArgumentException("La tasa de cambio manual (TRM) debe ser un número finito positivo menor a 1.000.000.000."))
             }
 
             val existing = financialDao.getCurrencyByCode(upperCode, userId)
@@ -2196,22 +2196,38 @@ class FinancialRepositoryImpl(
         return outboxDao?.getPendingOperations() ?: emptyList()
     }
 
-    override suspend fun processOutboxQueue(): Result<Int> {
-        return try {
-            val pending = outboxDao?.getPendingOperations() ?: emptyList()
+    override suspend fun processOutboxQueue(): Result<Int> = withContext(ioDispatcher) {
+        try {
+            val dao = outboxDao ?: return@withContext Result.success(0)
+            val pending = dao.getPendingOperations()
+            if (pending.isEmpty()) return@withContext Result.success(0)
+
             var processed = 0
             for (op in pending) {
-                outboxDao?.updateStatus(
-                    id = op.id,
-                    status = "DELIVERED",
-                    retryCount = op.retryCount,
-                    nextRetryAt = op.nextRetryAt,
-                    error = null
-                )
-                processed++
+                val syncResult = firebaseDataSource.syncOutboxOperation(op)
+                if (syncResult.isSuccess) {
+                    dao.updateStatus(
+                        id = op.id,
+                        status = "DELIVERED",
+                        retryCount = op.retryCount,
+                        nextRetryAt = op.nextRetryAt,
+                        error = null
+                    )
+                    processed++
+                } else {
+                    val nextRetry = System.currentTimeMillis() + (1000L * (1 shl (op.retryCount.coerceAtMost(6))))
+                    dao.updateStatus(
+                        id = op.id,
+                        status = if (op.retryCount >= 5) "FAILED" else "PENDING",
+                        retryCount = op.retryCount + 1,
+                        nextRetryAt = nextRetry,
+                        error = syncResult.exceptionOrNull()?.message ?: "Fallo de red al sincronizar con Firebase"
+                    )
+                }
             }
             Result.success(processed)
         } catch (e: Exception) {
+            Log.e("FinancialRepository", "Error processing outbox queue: ${e.message}", e)
             Result.failure(e)
         }
     }

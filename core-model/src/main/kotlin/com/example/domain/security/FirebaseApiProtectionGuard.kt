@@ -84,14 +84,23 @@ object FirebaseApiProtectionGuard {
                 val getAppCheckMethod = appCheckKtClass.getMethod("getAppCheck", firebaseClass)
                 val firebaseAppCheck = getAppCheckMethod.invoke(null, firebaseInstance)
 
-                if (isDebugBuild) {
+                val providerFactoryInterface = Class.forName("com.google.firebase.appcheck.AppCheckProviderFactory")
+                val factoryInstance = if (isDebugBuild) {
                     val debugFactoryClass = Class.forName("com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory")
-                    val factoryInstance = debugFactoryClass.getMethod("getInstance").invoke(null)
-                    val providerFactoryInterface = Class.forName("com.google.firebase.appcheck.AppCheckProviderFactory")
-                    firebaseAppCheck.javaClass
-                        .getMethod("installAppCheckProviderFactory", providerFactoryInterface)
-                        .invoke(firebaseAppCheck, factoryInstance)
+                    debugFactoryClass.getMethod("getInstance").invoke(null)
+                } else {
+                    try {
+                        val playIntegrityClass = Class.forName("com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory")
+                        playIntegrityClass.getMethod("getInstance").invoke(null)
+                    } catch (_: Throwable) {
+                        // Fallback a ReCaptcha Enterprise si Play Integrity no está presente en el dispositivo
+                        val recaptchaClass = Class.forName("com.google.firebase.appcheck.recaptcha.ReCaptchaEnterpriseProviderFactory")
+                        recaptchaClass.getMethod("getInstance").invoke(null)
+                    }
                 }
+                firebaseAppCheck.javaClass
+                    .getMethod("installAppCheckProviderFactory", providerFactoryInterface)
+                    .invoke(firebaseAppCheck, factoryInstance)
                 appCheckInitialized = true
             } catch (_: Throwable) {
                 // Degradación limpia: si el dispositivo no cuenta con Google Play Services o está en entorno JVM test

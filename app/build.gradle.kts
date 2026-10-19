@@ -115,6 +115,7 @@ dependencies {
   implementation(libs.androidx.sqlite)
   implementation(libs.sqlcipher.android)
   implementation(libs.firebase.appcheck.recaptcha)
+  implementation(libs.firebase.appcheck.playintegrity)
   implementation(libs.firebase.appcheck.debug)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)

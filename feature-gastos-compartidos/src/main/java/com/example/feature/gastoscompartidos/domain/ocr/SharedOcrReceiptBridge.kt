@@ -188,7 +188,7 @@ object SharedOcrReceiptBridge {
         val verdict = FirebaseApiProtectionGuard.authorizeAndSanitizeRequest(
             rawPrompt = scanResult.rawText,
             participantRealNames = emptyList(),
-            requireAuthenticatedUser = false
+            requireAuthenticatedUser = true
         )
 
         if (verdict is FirebaseApiProtectionGuard.GuardVerdict.Allowed) {

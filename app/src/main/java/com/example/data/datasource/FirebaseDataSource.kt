@@ -378,4 +378,40 @@ open class FirebaseDataSource(private val context: Context) {
             Result.failure(e)
         }
     }
+
+    /**
+     * Sincroniza una operación de la cola Outbox con Firestore.
+     * Si no hay sesión de usuario activa en Firebase o falla la red, retorna Result.failure.
+     */
+    open suspend fun syncOutboxOperation(operation: com.example.data.local.entity.OutboxOperationEntity): Result<Unit> {
+        return try {
+            initFirebaseIfNeeded()
+            val currentFbUid = getCurrentUserId()
+                ?: return Result.failure(IllegalStateException("No hay sesión autenticada en Firebase para sincronizar la operación outbox."))
+
+            val targetId = if (operation.userId.isNotBlank() && operation.userId != "user_default") operation.userId else currentFbUid
+            val docRef = firestore.collection("users")
+                .document(targetId)
+                .collection("outbox_sync")
+                .document("${operation.entityType}_${operation.entityId}")
+
+            if (operation.operation.equals("DELETE", ignoreCase = true)) {
+                docRef.delete().await()
+            } else {
+                val data = hashMapOf<String, Any>(
+                    "entityType" to operation.entityType,
+                    "entityId" to operation.entityId,
+                    "operation" to operation.operation,
+                    "payloadJson" to operation.payloadJson,
+                    "idempotencyKey" to operation.idempotencyKey,
+                    "updatedAtMillis" to System.currentTimeMillis()
+                )
+                docRef.set(data, SetOptions.merge()).await()
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.w("FirebaseDataSource", "Outbox sync failed for ${operation.id}: ${e.message}")
+            Result.failure(e)
+        }
+    }
 }

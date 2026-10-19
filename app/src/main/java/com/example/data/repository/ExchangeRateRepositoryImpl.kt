@@ -184,7 +184,11 @@ class ExchangeRateRepositoryImpl(
 
             if (apiResult.isSuccess) {
                 val response = apiResult.getOrThrow()
-                val entities = response.rates.map { (target, rate) ->
+                // Validar que cada tasa sea positiva, finita y dentro de rangos matemáticamente válidos (< 1.000.000.000)
+                val validRates = response.rates.filter { (_, rate) ->
+                    rate.isFinite() && rate > 0.0 && rate < 1_000_000_000.0
+                }
+                val entities = validRates.map { (target, rate) ->
                     ExchangeRateCacheEntity(
                         id = "${baseUpper}_${target}",
                         baseCurrency = baseUpper,
@@ -200,13 +204,14 @@ class ExchangeRateRepositoryImpl(
                 exchangeRateDao.insertCachedRates(entities)
 
                 // Also store inverse relationships if base is USD or EUR for fast conversion
-                val inverseEntities = response.rates.mapNotNull { (target, rate) ->
-                    if (rate > 0) {
+                val inverseEntities = validRates.mapNotNull { (target, rate) ->
+                    val invRate = 1.0 / rate
+                    if (invRate.isFinite() && invRate > 0.0 && invRate < 1_000_000_000.0) {
                         ExchangeRateCacheEntity(
                             id = "${target}_${baseUpper}",
                             baseCurrency = target,
                             targetCurrency = baseUpper,
-                            rate = 1.0 / rate,
+                            rate = invRate,
                             rateDate = response.date,
                             provider = "Frankfurter",
                             lastUpdatedMillis = System.currentTimeMillis(),
@@ -217,7 +222,7 @@ class ExchangeRateRepositoryImpl(
                 exchangeRateDao.insertCachedRates(inverseEntities)
 
                 // Persist to Firebase Firestore snapshot asynchronously
-                firebaseDataSource.saveExchangeRatesSnapshot(baseUpper, response.rates, response.date)
+                firebaseDataSource.saveExchangeRatesSnapshot(baseUpper, validRates, response.date)
 
                 Result.success(Unit)
             } else {

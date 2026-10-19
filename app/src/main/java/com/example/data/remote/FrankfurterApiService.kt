@@ -115,7 +115,10 @@ class FrankfurterApiService {
                 val keys = ratesObj.keys()
                 while (keys.hasNext()) {
                     val key = keys.next()
-                    ratesMap[key] = ratesObj.getDouble(key)
+                    val r = ratesObj.optDouble(key, Double.NaN)
+                    if (r.isFinite() && r > 0.0 && r < 1_000_000_000.0) {
+                        ratesMap[key] = r
+                    }
                 }
 
                 Result.success(
@@ -152,14 +155,20 @@ class FrankfurterApiService {
                     if (!targets.isNullOrEmpty()) {
                         for (target in targets) {
                             if (ratesObj.has(target)) {
-                                ratesMap[target] = ratesObj.getDouble(target)
+                                val r = ratesObj.optDouble(target, Double.NaN)
+                                if (r.isFinite() && r > 0.0 && r < 1_000_000_000.0) {
+                                    ratesMap[target] = r
+                                }
                             }
                         }
                     } else {
                         val keys = ratesObj.keys()
                         while (keys.hasNext()) {
                             val key = keys.next()
-                            ratesMap[key] = ratesObj.getDouble(key)
+                            val r = ratesObj.optDouble(key, Double.NaN)
+                            if (r.isFinite() && r > 0.0 && r < 1_000_000_000.0) {
+                                ratesMap[key] = r
+                            }
                         }
                     }
 
