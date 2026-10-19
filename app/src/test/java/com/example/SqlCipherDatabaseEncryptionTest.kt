@@ -15,6 +15,7 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -65,7 +66,8 @@ class SqlCipherDatabaseEncryptionTest {
         val success = passphraseManager.setUserPassphrase(userPassphrase)
         assertTrue(success)
         assertTrue(passphraseManager.isUserPassphraseConfigured())
-        assertEquals(userPassphrase, passphraseManager.getCustomUserPassphrase())
+        // In V2 (REM-P2-01), the raw passphrase is never retained reversibly in storage
+        assertNull(passphraseManager.getCustomUserPassphrase())
 
         // Passphrase should derive a 256-bit (32-byte) key for SQLCipher
         val derivedKey = passphraseManager.getDatabasePassphrase()
