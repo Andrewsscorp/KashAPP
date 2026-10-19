@@ -69,7 +69,7 @@ object FixedAssetPdfExporter {
                 "KashApp_Inventario_ActivosFijos_${System.currentTimeMillis()}.pdf"
             }
 
-            val file = File(context.cacheDir, fileName)
+            val file = File(com.example.util.SharedExportSecurityUtil.getExportsDir(context), fileName)
             FileOutputStream(file).use { out ->
                 pdfDocument.writeTo(out)
             }

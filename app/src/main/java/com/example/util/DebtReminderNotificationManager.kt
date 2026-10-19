@@ -80,6 +80,7 @@ object DebtReminderNotificationManager {
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
 

@@ -27,13 +27,21 @@ import com.example.presentation.dashboard.DashboardViewModel
 import com.example.presentation.dashboard.DashboardViewModelFactory
 import com.example.presentation.login.LoginScreen
 import com.example.presentation.login.LoginViewModel
+import android.view.WindowManager
 import com.example.presentation.login.LoginViewModelFactory
 import com.example.ui.theme.KashAppTheme
+import com.example.util.SharedExportSecurityUtil
 
 class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // HALL-07 / GATE-07 (REM-P1-04): Prevent screen captures and task preview leakage
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_SECURE,
+            WindowManager.LayoutParams.FLAG_SECURE
+        )
+        SharedExportSecurityUtil.purgeStaleExports(applicationContext)
         enableEdgeToEdge()
 
         try {
@@ -221,5 +229,11 @@ class MainActivity : FragmentActivity() {
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // HALL-07 / GATE-07 (REM-P1-04): Purge remaining unencrypted shared exports on activity exit
+        SharedExportSecurityUtil.purgeAllExports(applicationContext)
     }
 }

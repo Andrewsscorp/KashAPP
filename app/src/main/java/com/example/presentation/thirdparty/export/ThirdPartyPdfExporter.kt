@@ -263,8 +263,8 @@ object ThirdPartyPdfExporter {
 
             pdfDocument.finishPage(page)
 
-            // Save PDF file
-            val exportDir = File(context.cacheDir, "reports_third_party").apply { mkdirs() }
+            // Save PDF file in restricted shared_exports directory
+            val exportDir = com.example.util.SharedExportSecurityUtil.getExportsDir(context)
             val sanitizedName = thirdParty.name.replace(Regex("[^a-zA-Z0-9]"), "_").take(20)
             val outputFile = File(exportDir, "Tercero_${sanitizedName}_${System.currentTimeMillis()}.pdf")
 
@@ -274,7 +274,7 @@ object ThirdPartyPdfExporter {
 
             val contentUri = FileProvider.getUriForFile(
                 context,
-                "${context.packageName}.fileprovider",
+                "${context.packageName}.provider",
                 outputFile
             )
 

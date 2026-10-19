@@ -75,7 +75,7 @@ object AuditSiemExporter {
             root.put("events", eventsArray)
 
             val fileName = "KashApp_SIEM_Auditoria_${System.currentTimeMillis()}.json"
-            val file = File(context.cacheDir, fileName)
+            val file = File(com.example.util.SharedExportSecurityUtil.getExportsDir(context), fileName)
             FileOutputStream(file).use { out ->
                 out.write(root.toString(2).toByteArray(Charsets.UTF_8))
             }

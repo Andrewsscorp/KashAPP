@@ -75,6 +75,7 @@ object UpcomingPaymentsNotificationHelper {
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(if (isUrgent) NotificationCompat.PRIORITY_MAX else NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
 

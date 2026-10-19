@@ -566,7 +566,7 @@ class SettingsViewModel(
                             put("transactions", txArr)
                         }
                         val fileName = "KashApp_Export_${System.currentTimeMillis()}.json"
-                        val file = java.io.File(context.cacheDir, fileName)
+                        val file = java.io.File(com.example.util.SharedExportSecurityUtil.getExportsDir(context), fileName)
                         file.writeText(json.toString(2))
                         val uri = try {
                             androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.provider", file)

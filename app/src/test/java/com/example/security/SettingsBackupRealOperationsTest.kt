@@ -315,9 +315,10 @@ class SettingsBackupRealOperationsTest {
         viewModel.exportFinancialData("JSON", "Este mes", context)
         testScheduler.advanceUntilIdle()
 
-        val jsonFiles = context.cacheDir.listFiles { _, name -> name.startsWith("KashApp_Export_") && name.endsWith(".json") }
+        val exportsDir = File(context.cacheDir, "shared_exports")
+        val jsonFiles = exportsDir.listFiles { _, name -> name.startsWith("KashApp_Export_") && name.endsWith(".json") }
         assertNotNull(jsonFiles)
-        assertTrue("Must generate real JSON export file in cacheDir", jsonFiles!!.isNotEmpty())
+        assertTrue("Must generate real JSON export file in shared_exports", jsonFiles!!.isNotEmpty())
         val jsonContent = jsonFiles.first().readText()
         val jsonRoot = JSONObject(jsonContent)
         assertEquals("KashApp", jsonRoot.getString("appName"))
@@ -328,9 +329,9 @@ class SettingsBackupRealOperationsTest {
         viewModel.exportFinancialData("CSV", "Este mes", context)
         testScheduler.advanceUntilIdle()
 
-        val csvFiles = context.cacheDir.listFiles { _, name -> name.startsWith("KashApp_Excel_") && name.endsWith(".csv") }
+        val csvFiles = exportsDir.listFiles { _, name -> name.startsWith("KashApp_Excel_") && name.endsWith(".csv") }
         assertNotNull(csvFiles)
-        assertTrue("Must generate real CSV export file in cacheDir", csvFiles!!.isNotEmpty())
+        assertTrue("Must generate real CSV export file in shared_exports", csvFiles!!.isNotEmpty())
         val csvContent = csvFiles.first().readText()
         assertTrue(csvContent.contains("Bancolombia Nómina"))
     }

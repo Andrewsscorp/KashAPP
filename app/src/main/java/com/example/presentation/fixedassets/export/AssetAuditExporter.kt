@@ -128,7 +128,7 @@ object AssetAuditExporter {
         document.finishPage(page)
 
         val fileName = "Auditoria_Activos_Fijos_${System.currentTimeMillis()}.pdf"
-        val file = File(context.cacheDir, fileName)
+        val file = File(com.example.util.SharedExportSecurityUtil.getExportsDir(context), fileName)
         FileOutputStream(file).use { out ->
             document.writeTo(out)
         }
@@ -141,7 +141,7 @@ object AssetAuditExporter {
         auditLogs: List<AssetAuditLogEntity>
     ): File {
         val fileName = "Auditoria_Activos_Fijos_${System.currentTimeMillis()}.csv"
-        val file = File(context.cacheDir, fileName)
+        val file = File(com.example.util.SharedExportSecurityUtil.getExportsDir(context), fileName)
 
         file.bufferedWriter(Charsets.UTF_8).use { writer ->
             // UTF-8 BOM for Microsoft Excel compatibility

@@ -220,9 +220,9 @@ object FinancialReportExporter {
 
             pdfDocument.finishPage(page)
 
-            // Save PDF File
+            // Save PDF File in restricted shared_exports directory
             val fileName = "KashApp_Reporte_${rubroType.name}_${System.currentTimeMillis()}.pdf"
-            val file = File(context.cacheDir, fileName)
+            val file = File(SharedExportSecurityUtil.getExportsDir(context), fileName)
             FileOutputStream(file).use { out ->
                 pdfDocument.writeTo(out)
             }
@@ -328,7 +328,7 @@ object FinancialReportExporter {
             }
 
             val fileName = "KashApp_Excel_${rubroType.name}_${System.currentTimeMillis()}.csv"
-            val file = File(context.cacheDir, fileName)
+            val file = File(SharedExportSecurityUtil.getExportsDir(context), fileName)
             FileOutputStream(file).use { out ->
                 out.write(sb.toString().toByteArray(Charsets.UTF_8))
             }
@@ -465,7 +465,7 @@ object FinancialReportExporter {
             pdfDocument.finishPage(page)
 
             val fileName = "KashApp_Cuenta_${account.name.replace(" ", "_")}_${System.currentTimeMillis()}.pdf"
-            val file = File(context.cacheDir, fileName)
+            val file = File(SharedExportSecurityUtil.getExportsDir(context), fileName)
             FileOutputStream(file).use { out -> pdfDocument.writeTo(out) }
 
             val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
@@ -510,7 +510,7 @@ object FinancialReportExporter {
             }
 
             val fileName = "KashApp_Excel_Cuenta_${account.name.replace(" ", "_")}_${System.currentTimeMillis()}.csv"
-            val file = File(context.cacheDir, fileName)
+            val file = File(SharedExportSecurityUtil.getExportsDir(context), fileName)
             FileOutputStream(file).use { out ->
                 out.write(sb.toString().toByteArray(Charsets.UTF_8))
             }

@@ -75,7 +75,7 @@ object FixedAssetExcelExporter {
             sb.append("${"%.2f".format(sumMarketVal).replace(".", ",")};;;;;;\n")
 
             val fileName = "KashApp_ActivosFijos_Excel_${System.currentTimeMillis()}.csv"
-            val file = File(context.cacheDir, fileName)
+            val file = File(com.example.util.SharedExportSecurityUtil.getExportsDir(context), fileName)
             FileOutputStream(file).use { out ->
                 out.write(sb.toString().toByteArray(Charsets.UTF_8))
             }

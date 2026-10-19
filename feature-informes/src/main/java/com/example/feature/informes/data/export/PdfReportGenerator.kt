@@ -215,9 +215,16 @@ class PdfReportGenerator(private val context: Context) {
 
         pdfDocument.finishPage(page)
 
-        // Write to Cache file
-        val outputDir = File(context.cacheDir, "reports")
-        if (!outputDir.exists()) outputDir.mkdirs()
+        // Write to Cache file under restricted shared_exports
+        val outputDir = File(context.cacheDir, "shared_exports").apply {
+            if (!exists()) mkdirs()
+            val now = System.currentTimeMillis()
+            listFiles()?.forEach { file ->
+                if (file.isFile && (now - file.lastModified() > 5 * 60 * 1000L)) {
+                    file.delete()
+                }
+            }
+        }
         val outputFile = File(outputDir, "informe_financiero_${System.currentTimeMillis()}.pdf")
 
         FileOutputStream(outputFile).use { out ->

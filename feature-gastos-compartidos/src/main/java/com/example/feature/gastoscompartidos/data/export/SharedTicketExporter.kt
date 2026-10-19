@@ -268,7 +268,15 @@ class SharedTicketExporter(
         userId: String = "user_default"
     ): ExportedTicketArtifacts {
         val safeCode = ticket.primaryTicketConsecutive.replace(Regex("[^a-zA-Z0-9_-]"), "_")
-        val exportDir = File(context.cacheDir, "shared_tickets").apply { if (!exists()) mkdirs() }
+        val exportDir = File(context.cacheDir, "shared_exports").apply {
+            if (!exists()) mkdirs()
+            val now = System.currentTimeMillis()
+            listFiles()?.forEach { file ->
+                if (file.isFile && (now - file.lastModified() > 5 * 60 * 1000L)) {
+                    file.delete()
+                }
+            }
+        }
 
         // 1. Guardar PNG HD
         val bitmap = renderTicketToThermalBitmap(ticket)
@@ -314,7 +322,7 @@ class SharedTicketExporter(
     ): Intent {
         val uri = FileProvider.getUriForFile(
             context,
-            "${context.packageName}.fileprovider",
+            "${context.packageName}.provider",
             artifactFile
         )
         return Intent(Intent.ACTION_SEND).apply {
