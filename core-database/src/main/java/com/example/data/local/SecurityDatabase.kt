@@ -76,7 +76,7 @@ import com.example.data.local.entity.UserSessionEntity
         com.example.data.local.entity.ThirdPartyCategoryEntity::class
     ],
     version = 37,
-    exportSchema = false
+    exportSchema = true
 )
 abstract class SecurityDatabase : RoomDatabase() {
     abstract fun localAuthConfigDao(): LocalAuthConfigDao

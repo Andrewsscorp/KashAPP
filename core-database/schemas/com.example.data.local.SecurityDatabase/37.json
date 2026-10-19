@@ -1,0 +1,5417 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 37,
+    "identityHash": "f36b8233da9727f32474a60a2eba2796",
+    "entities": [
+      {
+        "tableName": "local_auth_config",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `pin_hash` TEXT NOT NULL, `pin_salt` TEXT NOT NULL, `is_biometric_enabled` INTEGER NOT NULL, `failed_attempts` INTEGER NOT NULL, `lockout_until_timestamp` INTEGER NOT NULL, `last_login_timestamp` INTEGER NOT NULL, `hash_algorithm` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pinHash",
+            "columnName": "pin_hash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pinSalt",
+            "columnName": "pin_salt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isBiometricEnabled",
+            "columnName": "is_biometric_enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "failedAttempts",
+            "columnName": "failed_attempts",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lockoutUntilTimestamp",
+            "columnName": "lockout_until_timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastLoginTimestamp",
+            "columnName": "last_login_timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hashAlgorithm",
+            "columnName": "hash_algorithm",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "audit_security_logs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `timestamp` INTEGER NOT NULL, `event_type` TEXT NOT NULL, `auth_method` TEXT NOT NULL, `details` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "eventType",
+            "columnName": "event_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "authMethod",
+            "columnName": "auth_method",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "details",
+            "columnName": "details",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "accounts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `name` TEXT NOT NULL, `balance` REAL NOT NULL, `currency` TEXT NOT NULL, `type` TEXT NOT NULL, `bankName` TEXT NOT NULL, `isFavorite` INTEGER NOT NULL, `accountNumberEncrypted` TEXT, `accountNumberMasked` TEXT, `openingDate` TEXT, `kashappDate` TEXT NOT NULL, `generatesInterest` INTEGER NOT NULL, `interestRateEa` REAL, `calcFrequency` TEXT, `payoutFrequency` TEXT, `compoundInterest` INTEGER NOT NULL, `purposes` TEXT NOT NULL, `customColorHex` TEXT NOT NULL, `iconName` TEXT NOT NULL, `minimumBalance` REAL NOT NULL, `monthlyFee` REAL NOT NULL, `availableBalance` REAL NOT NULL, `holdBalance` REAL NOT NULL, `country` TEXT NOT NULL, `cityName` TEXT, `favoriteRouting` TEXT NOT NULL, `accountOwner` TEXT, `alias` TEXT, `hasOverdraft` INTEGER NOT NULL, `overdraftLimit` REAL NOT NULL, `overdraftRateEa` REAL NOT NULL, `feeChargeDay` INTEGER NOT NULL, `syncProvider` TEXT, `syncInstitutionId` TEXT, `syncAccessTokenEncrypted` TEXT, `lastSyncTimestamp` INTEGER, `supportingDocumentUri` TEXT, `supportingDocumentType` TEXT, `favoriteForIncomes` INTEGER NOT NULL, `favoriteForExpenses` INTEGER NOT NULL, `employerName` TEXT, `isTaxExempt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "balance",
+            "columnName": "balance",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currency",
+            "columnName": "currency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bankName",
+            "columnName": "bankName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isFavorite",
+            "columnName": "isFavorite",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountNumberEncrypted",
+            "columnName": "accountNumberEncrypted",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "accountNumberMasked",
+            "columnName": "accountNumberMasked",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "openingDate",
+            "columnName": "openingDate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "kashappDate",
+            "columnName": "kashappDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "generatesInterest",
+            "columnName": "generatesInterest",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "interestRateEa",
+            "columnName": "interestRateEa",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "calcFrequency",
+            "columnName": "calcFrequency",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "payoutFrequency",
+            "columnName": "payoutFrequency",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "compoundInterest",
+            "columnName": "compoundInterest",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "purposes",
+            "columnName": "purposes",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "customColorHex",
+            "columnName": "customColorHex",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "iconName",
+            "columnName": "iconName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "minimumBalance",
+            "columnName": "minimumBalance",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "monthlyFee",
+            "columnName": "monthlyFee",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "availableBalance",
+            "columnName": "availableBalance",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "holdBalance",
+            "columnName": "holdBalance",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "country",
+            "columnName": "country",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cityName",
+            "columnName": "cityName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "favoriteRouting",
+            "columnName": "favoriteRouting",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountOwner",
+            "columnName": "accountOwner",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "alias",
+            "columnName": "alias",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "hasOverdraft",
+            "columnName": "hasOverdraft",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "overdraftLimit",
+            "columnName": "overdraftLimit",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "overdraftRateEa",
+            "columnName": "overdraftRateEa",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "feeChargeDay",
+            "columnName": "feeChargeDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncProvider",
+            "columnName": "syncProvider",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "syncInstitutionId",
+            "columnName": "syncInstitutionId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "syncAccessTokenEncrypted",
+            "columnName": "syncAccessTokenEncrypted",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastSyncTimestamp",
+            "columnName": "lastSyncTimestamp",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "supportingDocumentUri",
+            "columnName": "supportingDocumentUri",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "supportingDocumentType",
+            "columnName": "supportingDocumentType",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "favoriteForIncomes",
+            "columnName": "favoriteForIncomes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "favoriteForExpenses",
+            "columnName": "favoriteForExpenses",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "employerName",
+            "columnName": "employerName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isTaxExempt",
+            "columnName": "isTaxExempt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_accounts_userId",
+            "unique": false,
+            "columnNames": [
+              "userId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_accounts_userId` ON `${TABLE_NAME}` (`userId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "account_credit_cards",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `account_id` TEXT NOT NULL, `franchise` TEXT NOT NULL, `category` TEXT NOT NULL, `quota_total` REAL NOT NULL, `quota_available` REAL NOT NULL, `quota_used` REAL NOT NULL, `quota_retained` REAL NOT NULL, `cut_off_day` INTEGER NOT NULL, `payment_due_day` INTEGER NOT NULL, `interest_rate_ea` REAL NOT NULL, `purchases_rate_ea` REAL NOT NULL, `advances_rate_ea` REAL NOT NULL, `has_grace_period` INTEGER NOT NULL, `late_interest_rate_monthly` REAL NOT NULL, `current_interest_amount` REAL NOT NULL, `interest_cutoff_date` TEXT NOT NULL, `payment_strategy` TEXT NOT NULL, `minimum_payment_amount` REAL NOT NULL, `auto_pay_enabled` INTEGER NOT NULL, `auto_pay_source_account_id` TEXT, `auto_pay_source_account_name` TEXT, `custom_pay_day` INTEGER NOT NULL, `scheduled_pay_enabled` INTEGER NOT NULL, `scheduled_pay_date` TEXT NOT NULL, `extra_payments_enabled` INTEGER NOT NULL, `extra_payment_reduces` TEXT NOT NULL, `total_installments` INTEGER NOT NULL, `paid_installments` INTEGER NOT NULL, `pending_installments` INTEGER NOT NULL, `installment_value` REAL NOT NULL, `amortization_system` TEXT NOT NULL, `next_installment_date` TEXT NOT NULL, `include_in_net_worth` INTEGER NOT NULL, `finances_asset` INTEGER NOT NULL, `related_asset_name` TEXT, `related_asset_value` REAL NOT NULL, `notes` TEXT, `is_favorite` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`account_id`) REFERENCES `accounts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountId",
+            "columnName": "account_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "franchise",
+            "columnName": "franchise",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quotaTotal",
+            "columnName": "quota_total",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quotaAvailable",
+            "columnName": "quota_available",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quotaUsed",
+            "columnName": "quota_used",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quotaRetained",
+            "columnName": "quota_retained",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cutOffDay",
+            "columnName": "cut_off_day",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "paymentDueDay",
+            "columnName": "payment_due_day",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "interestRateEa",
+            "columnName": "interest_rate_ea",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "purchasesRateEa",
+            "columnName": "purchases_rate_ea",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "advancesRateEa",
+            "columnName": "advances_rate_ea",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hasGracePeriod",
+            "columnName": "has_grace_period",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lateInterestRateMonthly",
+            "columnName": "late_interest_rate_monthly",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentInterestAmount",
+            "columnName": "current_interest_amount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "interestCutoffDate",
+            "columnName": "interest_cutoff_date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "paymentStrategy",
+            "columnName": "payment_strategy",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "minimumPaymentAmount",
+            "columnName": "minimum_payment_amount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "autoPayEnabled",
+            "columnName": "auto_pay_enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "autoPaySourceAccountId",
+            "columnName": "auto_pay_source_account_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "autoPaySourceAccountName",
+            "columnName": "auto_pay_source_account_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "customPayDay",
+            "columnName": "custom_pay_day",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scheduledPayEnabled",
+            "columnName": "scheduled_pay_enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scheduledPayDate",
+            "columnName": "scheduled_pay_date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "extraPaymentsEnabled",
+            "columnName": "extra_payments_enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "extraPaymentReduces",
+            "columnName": "extra_payment_reduces",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalInstallments",
+            "columnName": "total_installments",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "paidInstallments",
+            "columnName": "paid_installments",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendingInstallments",
+            "columnName": "pending_installments",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "installmentValue",
+            "columnName": "installment_value",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amortizationSystem",
+            "columnName": "amortization_system",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nextInstallmentDate",
+            "columnName": "next_installment_date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "includeInNetWorth",
+            "columnName": "include_in_net_worth",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "financesAsset",
+            "columnName": "finances_asset",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "relatedAssetName",
+            "columnName": "related_asset_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "relatedAssetValue",
+            "columnName": "related_asset_value",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isFavorite",
+            "columnName": "is_favorite",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_account_credit_cards_account_id",
+            "unique": true,
+            "columnNames": [
+              "account_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_account_credit_cards_account_id` ON `${TABLE_NAME}` (`account_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "accounts",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "account_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "account_payroll_configs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `account_id` TEXT NOT NULL, `employer_name` TEXT NOT NULL, `default_concept` TEXT NOT NULL, `expected_income` REAL NOT NULL, `periodicity` TEXT NOT NULL, `expected_pay_day` INTEGER NOT NULL, `auto_register` INTEGER NOT NULL, `exemption_management_fee` INTEGER NOT NULL, `exemption_tax_4x1000` INTEGER NOT NULL, `free_atm_withdrawals` INTEGER NOT NULL, `created_at` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`account_id`) REFERENCES `accounts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountId",
+            "columnName": "account_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "employerName",
+            "columnName": "employer_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "defaultConcept",
+            "columnName": "default_concept",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expectedIncome",
+            "columnName": "expected_income",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "periodicity",
+            "columnName": "periodicity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expectedPayDay",
+            "columnName": "expected_pay_day",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "autoRegister",
+            "columnName": "auto_register",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "exemptionManagementFee",
+            "columnName": "exemption_management_fee",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "exemptionTax4x1000",
+            "columnName": "exemption_tax_4x1000",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "freeAtmWithdrawals",
+            "columnName": "free_atm_withdrawals",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_account_payroll_configs_account_id",
+            "unique": true,
+            "columnNames": [
+              "account_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_account_payroll_configs_account_id` ON `${TABLE_NAME}` (`account_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "accounts",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "account_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "account_cdts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `account_id` TEXT NOT NULL, `certificate_number` TEXT, `interest_rate_ea` REAL NOT NULL, `rate_type` TEXT NOT NULL, `payout_frequency` TEXT NOT NULL, `compounding` INTEGER NOT NULL, `issue_date` TEXT NOT NULL, `term_days` INTEGER NOT NULL, `maturity_date` TEXT NOT NULL, `action_at_maturity` TEXT NOT NULL, `destination_account_id` TEXT, `source_account_id` TEXT, `allows_early_withdrawal` INTEGER NOT NULL, `alert_days_before` INTEGER NOT NULL, `has_alert` INTEGER NOT NULL, `initial_amount` REAL NOT NULL, `estimated_yield` REAL NOT NULL, `created_at` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`account_id`) REFERENCES `accounts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountId",
+            "columnName": "account_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "certificateNumber",
+            "columnName": "certificate_number",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "interestRateEa",
+            "columnName": "interest_rate_ea",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rateType",
+            "columnName": "rate_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payoutFrequency",
+            "columnName": "payout_frequency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "compounding",
+            "columnName": "compounding",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "issueDate",
+            "columnName": "issue_date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "termDays",
+            "columnName": "term_days",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maturityDate",
+            "columnName": "maturity_date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actionAtMaturity",
+            "columnName": "action_at_maturity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "destinationAccountId",
+            "columnName": "destination_account_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourceAccountId",
+            "columnName": "source_account_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "allowsEarlyWithdrawal",
+            "columnName": "allows_early_withdrawal",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alertDaysBefore",
+            "columnName": "alert_days_before",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hasAlert",
+            "columnName": "has_alert",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "initialAmount",
+            "columnName": "initial_amount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estimatedYield",
+            "columnName": "estimated_yield",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_account_cdts_account_id",
+            "unique": true,
+            "columnNames": [
+              "account_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_account_cdts_account_id` ON `${TABLE_NAME}` (`account_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "accounts",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "account_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "banks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT, `name` TEXT NOT NULL, `clearingCode` TEXT NOT NULL, `countryCode` TEXT NOT NULL, `countryName` TEXT NOT NULL, `currencyCode` TEXT NOT NULL, `logoUrl` TEXT, `colorHex` TEXT NOT NULL, `iconName` TEXT NOT NULL, `cityName` TEXT, `additionalInfo` TEXT, `isGlobal` INTEGER NOT NULL, `orderIndex` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clearingCode",
+            "columnName": "clearingCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "countryCode",
+            "columnName": "countryCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "countryName",
+            "columnName": "countryName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currencyCode",
+            "columnName": "currencyCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "logoUrl",
+            "columnName": "logoUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "colorHex",
+            "columnName": "colorHex",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "iconName",
+            "columnName": "iconName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cityName",
+            "columnName": "cityName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "additionalInfo",
+            "columnName": "additionalInfo",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isGlobal",
+            "columnName": "isGlobal",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "orderIndex",
+            "columnName": "orderIndex",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "categories",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT, `name` TEXT NOT NULL, `icon` TEXT NOT NULL, `colorHex` TEXT NOT NULL, `type` TEXT NOT NULL, `isActive` INTEGER NOT NULL, `sortOrder` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "icon",
+            "columnName": "icon",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "colorHex",
+            "columnName": "colorHex",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isActive",
+            "columnName": "isActive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sortOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "income_sources",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `name` TEXT NOT NULL, `isActive` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isActive",
+            "columnName": "isActive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_income_sources_userId",
+            "unique": false,
+            "columnNames": [
+              "userId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_income_sources_userId` ON `${TABLE_NAME}` (`userId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "transactions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `accountId` TEXT NOT NULL, `accountName` TEXT NOT NULL, `categoryId` TEXT NOT NULL, `categoryName` TEXT NOT NULL, `sourceId` TEXT, `sourceName` TEXT, `amount` REAL NOT NULL, `currency` TEXT NOT NULL, `type` TEXT NOT NULL, `date` TEXT NOT NULL, `description` TEXT, `receiptUrl` TEXT, `idempotencyKey` TEXT NOT NULL, `isRecurring` INTEGER NOT NULL, `recurrenceFrequency` TEXT NOT NULL, `saveAsTemplate` INTEGER NOT NULL, `tags` TEXT NOT NULL, `transferGroupId` TEXT, `syncStatus` TEXT NOT NULL, `appliedExchangeRate` REAL, `exchangeRateSource` TEXT, `sharedExpenseId` TEXT, `sharedSettlementId` TEXT, `sharedConsecutiveCode` TEXT, `accountingRecognizedExpenseAmount` REAL, `receivableOrPayableDeltaAmount` REAL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountId",
+            "columnName": "accountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountName",
+            "columnName": "accountName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoryId",
+            "columnName": "categoryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoryName",
+            "columnName": "categoryName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceId",
+            "columnName": "sourceId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourceName",
+            "columnName": "sourceName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "amount",
+            "columnName": "amount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currency",
+            "columnName": "currency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "receiptUrl",
+            "columnName": "receiptUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "idempotencyKey",
+            "columnName": "idempotencyKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isRecurring",
+            "columnName": "isRecurring",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recurrenceFrequency",
+            "columnName": "recurrenceFrequency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "saveAsTemplate",
+            "columnName": "saveAsTemplate",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tags",
+            "columnName": "tags",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "transferGroupId",
+            "columnName": "transferGroupId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "appliedExchangeRate",
+            "columnName": "appliedExchangeRate",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "exchangeRateSource",
+            "columnName": "exchangeRateSource",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sharedExpenseId",
+            "columnName": "sharedExpenseId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sharedSettlementId",
+            "columnName": "sharedSettlementId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sharedConsecutiveCode",
+            "columnName": "sharedConsecutiveCode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "accountingRecognizedExpenseAmount",
+            "columnName": "accountingRecognizedExpenseAmount",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "receivableOrPayableDeltaAmount",
+            "columnName": "receivableOrPayableDeltaAmount",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_transactions_userId_date",
+            "unique": false,
+            "columnNames": [
+              "userId",
+              "date"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_transactions_userId_date` ON `${TABLE_NAME}` (`userId`, `date`)"
+          },
+          {
+            "name": "index_transactions_accountId",
+            "unique": false,
+            "columnNames": [
+              "accountId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_transactions_accountId` ON `${TABLE_NAME}` (`accountId`)"
+          },
+          {
+            "name": "index_transactions_idempotencyKey",
+            "unique": true,
+            "columnNames": [
+              "idempotencyKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_transactions_idempotencyKey` ON `${TABLE_NAME}` (`idempotencyKey`)"
+          }
+        ]
+      },
+      {
+        "tableName": "transfer_groups",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `concept` TEXT, `sourceAccountId` TEXT NOT NULL, `destinationAccountId` TEXT NOT NULL, `amount` REAL NOT NULL, `currency` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "concept",
+            "columnName": "concept",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourceAccountId",
+            "columnName": "sourceAccountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "destinationAccountId",
+            "columnName": "destinationAccountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amount",
+            "columnName": "amount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currency",
+            "columnName": "currency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "currencies",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT, `code` TEXT NOT NULL, `name` TEXT NOT NULL, `symbol` TEXT NOT NULL, `manualExchangeRate` REAL NOT NULL, `isActive` INTEGER NOT NULL, `isSystem` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "symbol",
+            "columnName": "symbol",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "manualExchangeRate",
+            "columnName": "manualExchangeRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isActive",
+            "columnName": "isActive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isSystem",
+            "columnName": "isSystem",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "countries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT, `isoCode` TEXT NOT NULL, `name` TEXT NOT NULL, `flagEmoji` TEXT NOT NULL, `defaultCurrencyCode` TEXT NOT NULL, `clearingSystemName` TEXT NOT NULL, `isNumericClearingCode` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isoCode",
+            "columnName": "isoCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "flagEmoji",
+            "columnName": "flagEmoji",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "defaultCurrencyCode",
+            "columnName": "defaultCurrencyCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clearingSystemName",
+            "columnName": "clearingSystemName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isNumericClearingCode",
+            "columnName": "isNumericClearingCode",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "cities",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT, `countryCode` TEXT NOT NULL, `name` TEXT NOT NULL, `stateOrDepartment` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "countryCode",
+            "columnName": "countryCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stateOrDepartment",
+            "columnName": "stateOrDepartment",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "payroll_concepts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `isDefault` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isDefault",
+            "columnName": "isDefault",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "financial_goals",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `name` TEXT NOT NULL, `categoryId` TEXT, `categoryName` TEXT NOT NULL, `description` TEXT, `colorHex` TEXT NOT NULL, `iconName` TEXT NOT NULL, `targetAmount` REAL NOT NULL, `savedAmount` REAL NOT NULL, `hasDeadline` INTEGER NOT NULL, `startDate` TEXT, `deadlineDate` TEXT, `targetAccountId` TEXT NOT NULL, `targetAccountName` TEXT NOT NULL, `sourceAccountId` TEXT, `sourceAccountName` TEXT, `autoContribute` INTEGER NOT NULL, `monthlyContribution` REAL, `contributionDay` INTEGER, `contributionFrequency` TEXT NOT NULL, `contributionMethod` TEXT NOT NULL, `virtualPocketEnabled` INTEGER NOT NULL, `isActive` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoryId",
+            "columnName": "categoryId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "categoryName",
+            "columnName": "categoryName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "colorHex",
+            "columnName": "colorHex",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "iconName",
+            "columnName": "iconName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "targetAmount",
+            "columnName": "targetAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "savedAmount",
+            "columnName": "savedAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hasDeadline",
+            "columnName": "hasDeadline",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startDate",
+            "columnName": "startDate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "deadlineDate",
+            "columnName": "deadlineDate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "targetAccountId",
+            "columnName": "targetAccountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "targetAccountName",
+            "columnName": "targetAccountName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceAccountId",
+            "columnName": "sourceAccountId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourceAccountName",
+            "columnName": "sourceAccountName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "autoContribute",
+            "columnName": "autoContribute",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "monthlyContribution",
+            "columnName": "monthlyContribution",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "contributionDay",
+            "columnName": "contributionDay",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "contributionFrequency",
+            "columnName": "contributionFrequency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contributionMethod",
+            "columnName": "contributionMethod",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "virtualPocketEnabled",
+            "columnName": "virtualPocketEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isActive",
+            "columnName": "isActive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_financial_goals_userId",
+            "unique": false,
+            "columnNames": [
+              "userId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_financial_goals_userId` ON `${TABLE_NAME}` (`userId`)"
+          },
+          {
+            "name": "index_financial_goals_targetAccountId",
+            "unique": false,
+            "columnNames": [
+              "targetAccountId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_financial_goals_targetAccountId` ON `${TABLE_NAME}` (`targetAccountId`)"
+          },
+          {
+            "name": "index_financial_goals_isActive",
+            "unique": false,
+            "columnNames": [
+              "isActive"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_financial_goals_isActive` ON `${TABLE_NAME}` (`isActive`)"
+          }
+        ]
+      },
+      {
+        "tableName": "budgets",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `name` TEXT NOT NULL, `period` TEXT NOT NULL, `startDate` TEXT NOT NULL, `endDate` TEXT NOT NULL, `totalAmount` REAL NOT NULL, `description` TEXT, `colorHex` TEXT NOT NULL, `isActive` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "period",
+            "columnName": "period",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startDate",
+            "columnName": "startDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endDate",
+            "columnName": "endDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalAmount",
+            "columnName": "totalAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "colorHex",
+            "columnName": "colorHex",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isActive",
+            "columnName": "isActive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_budgets_userId",
+            "unique": false,
+            "columnNames": [
+              "userId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_budgets_userId` ON `${TABLE_NAME}` (`userId`)"
+          },
+          {
+            "name": "index_budgets_startDate_endDate",
+            "unique": false,
+            "columnNames": [
+              "startDate",
+              "endDate"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_budgets_startDate_endDate` ON `${TABLE_NAME}` (`startDate`, `endDate`)"
+          },
+          {
+            "name": "index_budgets_isActive",
+            "unique": false,
+            "columnNames": [
+              "isActive"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_budgets_isActive` ON `${TABLE_NAME}` (`isActive`)"
+          }
+        ]
+      },
+      {
+        "tableName": "budget_items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `budgetId` TEXT NOT NULL, `categoryId` TEXT NOT NULL, `categoryName` TEXT NOT NULL, `categoryIcon` TEXT NOT NULL, `categoryColorHex` TEXT NOT NULL, `allocatedAmount` REAL NOT NULL, `spentAmount` REAL NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`budgetId`) REFERENCES `budgets`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "budgetId",
+            "columnName": "budgetId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoryId",
+            "columnName": "categoryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoryName",
+            "columnName": "categoryName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoryIcon",
+            "columnName": "categoryIcon",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoryColorHex",
+            "columnName": "categoryColorHex",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "allocatedAmount",
+            "columnName": "allocatedAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "spentAmount",
+            "columnName": "spentAmount",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_budget_items_budgetId",
+            "unique": false,
+            "columnNames": [
+              "budgetId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_budget_items_budgetId` ON `${TABLE_NAME}` (`budgetId`)"
+          },
+          {
+            "name": "index_budget_items_categoryId",
+            "unique": false,
+            "columnNames": [
+              "categoryId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_budget_items_categoryId` ON `${TABLE_NAME}` (`categoryId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "budgets",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "budgetId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "investments",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `name` TEXT NOT NULL, `typeId` TEXT NOT NULL, `typeName` TEXT NOT NULL, `institutionId` TEXT, `institutionName` TEXT NOT NULL, `currencyCode` TEXT NOT NULL, `acquisitionDate` TEXT NOT NULL, `status` TEXT NOT NULL, `initialAmount` REAL NOT NULL, `currentValue` REAL NOT NULL, `contributions` REAL NOT NULL, `withdrawals` REAL NOT NULL, `generatesYield` INTEGER NOT NULL, `yieldRate` REAL, `rateType` TEXT, `yieldPeriodicity` TEXT, `valueUpdateDate` TEXT, `originAccountId` TEXT NOT NULL, `originAccountName` TEXT NOT NULL, `yieldAccountId` TEXT, `yieldAccountName` TEXT, `includeInNetWorth` INTEGER NOT NULL, `netWorthValue` REAL NOT NULL, `iconName` TEXT NOT NULL, `colorHex` TEXT NOT NULL, `isFavorite` INTEGER NOT NULL, `tags` TEXT NOT NULL, `notes` TEXT, `documentUri` TEXT, `documentCategory` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "typeId",
+            "columnName": "typeId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "typeName",
+            "columnName": "typeName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "institutionId",
+            "columnName": "institutionId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "institutionName",
+            "columnName": "institutionName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currencyCode",
+            "columnName": "currencyCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "acquisitionDate",
+            "columnName": "acquisitionDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "initialAmount",
+            "columnName": "initialAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentValue",
+            "columnName": "currentValue",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contributions",
+            "columnName": "contributions",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "withdrawals",
+            "columnName": "withdrawals",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "generatesYield",
+            "columnName": "generatesYield",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "yieldRate",
+            "columnName": "yieldRate",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "rateType",
+            "columnName": "rateType",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "yieldPeriodicity",
+            "columnName": "yieldPeriodicity",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "valueUpdateDate",
+            "columnName": "valueUpdateDate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "originAccountId",
+            "columnName": "originAccountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "originAccountName",
+            "columnName": "originAccountName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "yieldAccountId",
+            "columnName": "yieldAccountId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "yieldAccountName",
+            "columnName": "yieldAccountName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "includeInNetWorth",
+            "columnName": "includeInNetWorth",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "netWorthValue",
+            "columnName": "netWorthValue",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "iconName",
+            "columnName": "iconName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "colorHex",
+            "columnName": "colorHex",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isFavorite",
+            "columnName": "isFavorite",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tags",
+            "columnName": "tags",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "documentUri",
+            "columnName": "documentUri",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "documentCategory",
+            "columnName": "documentCategory",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_investments_userId",
+            "unique": false,
+            "columnNames": [
+              "userId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_investments_userId` ON `${TABLE_NAME}` (`userId`)"
+          },
+          {
+            "name": "index_investments_originAccountId",
+            "unique": false,
+            "columnNames": [
+              "originAccountId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_investments_originAccountId` ON `${TABLE_NAME}` (`originAccountId`)"
+          },
+          {
+            "name": "index_investments_status",
+            "unique": false,
+            "columnNames": [
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_investments_status` ON `${TABLE_NAME}` (`status`)"
+          },
+          {
+            "name": "index_investments_isFavorite",
+            "unique": false,
+            "columnNames": [
+              "isFavorite"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_investments_isFavorite` ON `${TABLE_NAME}` (`isFavorite`)"
+          }
+        ]
+      },
+      {
+        "tableName": "investment_documents",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `investmentId` TEXT NOT NULL, `docCategory` TEXT NOT NULL, `fileUrl` TEXT NOT NULL, `fileName` TEXT NOT NULL, `fileSize` INTEGER NOT NULL, `mimeType` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`investmentId`) REFERENCES `investments`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "investmentId",
+            "columnName": "investmentId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "docCategory",
+            "columnName": "docCategory",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fileUrl",
+            "columnName": "fileUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fileName",
+            "columnName": "fileName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fileSize",
+            "columnName": "fileSize",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mimeType",
+            "columnName": "mimeType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_investment_documents_investmentId",
+            "unique": false,
+            "columnNames": [
+              "investmentId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_investment_documents_investmentId` ON `${TABLE_NAME}` (`investmentId`)"
+          },
+          {
+            "name": "index_investment_documents_docCategory",
+            "unique": false,
+            "columnNames": [
+              "docCategory"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_investment_documents_docCategory` ON `${TABLE_NAME}` (`docCategory`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "investments",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "investmentId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "merchants",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT, `canonicalName` TEXT NOT NULL, `rawDescription` TEXT NOT NULL, `alias` TEXT NOT NULL, `defaultCategoryId` TEXT, `defaultCategoryName` TEXT, `classificationConfidence` INTEGER NOT NULL, `isActive` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "canonicalName",
+            "columnName": "canonicalName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rawDescription",
+            "columnName": "rawDescription",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alias",
+            "columnName": "alias",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "defaultCategoryId",
+            "columnName": "defaultCategoryId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "defaultCategoryName",
+            "columnName": "defaultCategoryName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "classificationConfidence",
+            "columnName": "classificationConfidence",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isActive",
+            "columnName": "isActive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_merchants_canonicalName",
+            "unique": false,
+            "columnNames": [
+              "canonicalName"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_merchants_canonicalName` ON `${TABLE_NAME}` (`canonicalName`)"
+          },
+          {
+            "name": "index_merchants_alias",
+            "unique": false,
+            "columnNames": [
+              "alias"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_merchants_alias` ON `${TABLE_NAME}` (`alias`)"
+          }
+        ]
+      },
+      {
+        "tableName": "outbox_operations",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `entityType` TEXT NOT NULL, `entityId` TEXT NOT NULL, `operation` TEXT NOT NULL, `payloadJson` TEXT NOT NULL, `idempotencyKey` TEXT NOT NULL, `status` TEXT NOT NULL, `retryCount` INTEGER NOT NULL, `nextRetryAt` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `lastError` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityType",
+            "columnName": "entityType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityId",
+            "columnName": "entityId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "operation",
+            "columnName": "operation",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payloadJson",
+            "columnName": "payloadJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idempotencyKey",
+            "columnName": "idempotencyKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "retryCount",
+            "columnName": "retryCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nextRetryAt",
+            "columnName": "nextRetryAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastError",
+            "columnName": "lastError",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_outbox_operations_status_nextRetryAt",
+            "unique": false,
+            "columnNames": [
+              "status",
+              "nextRetryAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_outbox_operations_status_nextRetryAt` ON `${TABLE_NAME}` (`status`, `nextRetryAt`)"
+          },
+          {
+            "name": "index_outbox_operations_idempotencyKey",
+            "unique": true,
+            "columnNames": [
+              "idempotencyKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_outbox_operations_idempotencyKey` ON `${TABLE_NAME}` (`idempotencyKey`)"
+          }
+        ]
+      },
+      {
+        "tableName": "tags",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `colorHex` TEXT NOT NULL, `usageCount` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "colorHex",
+            "columnName": "colorHex",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "usageCount",
+            "columnName": "usageCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "exchange_rate_cache",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `baseCurrency` TEXT NOT NULL, `targetCurrency` TEXT NOT NULL, `rate` REAL NOT NULL, `rateDate` TEXT NOT NULL, `provider` TEXT NOT NULL, `lastUpdatedMillis` INTEGER NOT NULL, `isStale` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "baseCurrency",
+            "columnName": "baseCurrency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "targetCurrency",
+            "columnName": "targetCurrency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rate",
+            "columnName": "rate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rateDate",
+            "columnName": "rateDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "provider",
+            "columnName": "provider",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastUpdatedMillis",
+            "columnName": "lastUpdatedMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isStale",
+            "columnName": "isStale",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_exchange_rate_cache_baseCurrency_targetCurrency",
+            "unique": true,
+            "columnNames": [
+              "baseCurrency",
+              "targetCurrency"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_exchange_rate_cache_baseCurrency_targetCurrency` ON `${TABLE_NAME}` (`baseCurrency`, `targetCurrency`)"
+          },
+          {
+            "name": "index_exchange_rate_cache_lastUpdatedMillis",
+            "unique": false,
+            "columnNames": [
+              "lastUpdatedMillis"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_exchange_rate_cache_lastUpdatedMillis` ON `${TABLE_NAME}` (`lastUpdatedMillis`)"
+          }
+        ]
+      },
+      {
+        "tableName": "manual_exchange_rates",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `fromCurrency` TEXT NOT NULL, `toCurrency` TEXT NOT NULL, `rate` REAL NOT NULL, `isActive` INTEGER NOT NULL, `validFromDate` TEXT NOT NULL, `validToDate` TEXT NOT NULL, `note` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fromCurrency",
+            "columnName": "fromCurrency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "toCurrency",
+            "columnName": "toCurrency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rate",
+            "columnName": "rate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isActive",
+            "columnName": "isActive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "validFromDate",
+            "columnName": "validFromDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "validToDate",
+            "columnName": "validToDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_manual_exchange_rates_fromCurrency_toCurrency",
+            "unique": true,
+            "columnNames": [
+              "fromCurrency",
+              "toCurrency"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_manual_exchange_rates_fromCurrency_toCurrency` ON `${TABLE_NAME}` (`fromCurrency`, `toCurrency`)"
+          },
+          {
+            "name": "index_manual_exchange_rates_isActive",
+            "unique": false,
+            "columnNames": [
+              "isActive"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_manual_exchange_rates_isActive` ON `${TABLE_NAME}` (`isActive`)"
+          }
+        ]
+      },
+      {
+        "tableName": "manual_rate_history_logs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `pairId` TEXT NOT NULL, `fromCurrency` TEXT NOT NULL, `toCurrency` TEXT NOT NULL, `previousRate` REAL, `newRate` REAL NOT NULL, `action` TEXT NOT NULL, `reason` TEXT NOT NULL, `changedBy` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pairId",
+            "columnName": "pairId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fromCurrency",
+            "columnName": "fromCurrency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "toCurrency",
+            "columnName": "toCurrency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "previousRate",
+            "columnName": "previousRate",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "newRate",
+            "columnName": "newRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "action",
+            "columnName": "action",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reason",
+            "columnName": "reason",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "changedBy",
+            "columnName": "changedBy",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_manual_rate_history_logs_pairId",
+            "unique": false,
+            "columnNames": [
+              "pairId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_manual_rate_history_logs_pairId` ON `${TABLE_NAME}` (`pairId`)"
+          },
+          {
+            "name": "index_manual_rate_history_logs_timestamp",
+            "unique": false,
+            "columnNames": [
+              "timestamp"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_manual_rate_history_logs_timestamp` ON `${TABLE_NAME}` (`timestamp`)"
+          }
+        ]
+      },
+      {
+        "tableName": "fixed_assets",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `name` TEXT NOT NULL, `type` TEXT NOT NULL, `category` TEXT NOT NULL, `description` TEXT, `acquisitionDate` TEXT NOT NULL, `acquisitionValue` REAL NOT NULL, `currency` TEXT NOT NULL, `hasDepreciation` INTEGER NOT NULL, `depreciationMethod` TEXT NOT NULL, `usefulLifeMonths` INTEGER NOT NULL, `residualValue` REAL NOT NULL, `currentMarketValue` REAL NOT NULL, `accumulatedDepreciation` REAL NOT NULL, `lastDepreciationDate` TEXT, `brand` TEXT, `model` TEXT, `serialNumber` TEXT, `licensePlate` TEXT, `supplier` TEXT, `location` TEXT, `warrantyExpiryDate` TEXT, `notes` TEXT, `status` TEXT NOT NULL, `imageUrl` TEXT, `colorHex` TEXT NOT NULL, `includeInNetWorth` INTEGER NOT NULL, `depreciableBase` TEXT NOT NULL, `startConvention` TEXT NOT NULL, `frequency` TEXT NOT NULL, `rounding` TEXT NOT NULL, `impairmentTracking` INTEGER NOT NULL, `revaluationEnabled` INTEGER NOT NULL, `allowLifeChange` INTEGER NOT NULL, `allowResidualChange` INTEGER NOT NULL, `allowMethodChange` INTEGER NOT NULL, `noAffectInventory` INTEGER NOT NULL, `noAffectDashboard` INTEGER NOT NULL, `deletedAt` INTEGER, `stateNotes` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "acquisitionDate",
+            "columnName": "acquisitionDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "acquisitionValue",
+            "columnName": "acquisitionValue",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currency",
+            "columnName": "currency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hasDepreciation",
+            "columnName": "hasDepreciation",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "depreciationMethod",
+            "columnName": "depreciationMethod",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "usefulLifeMonths",
+            "columnName": "usefulLifeMonths",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "residualValue",
+            "columnName": "residualValue",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentMarketValue",
+            "columnName": "currentMarketValue",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accumulatedDepreciation",
+            "columnName": "accumulatedDepreciation",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastDepreciationDate",
+            "columnName": "lastDepreciationDate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "brand",
+            "columnName": "brand",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "model",
+            "columnName": "model",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "serialNumber",
+            "columnName": "serialNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "licensePlate",
+            "columnName": "licensePlate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "supplier",
+            "columnName": "supplier",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "location",
+            "columnName": "location",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "warrantyExpiryDate",
+            "columnName": "warrantyExpiryDate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "imageUrl",
+            "columnName": "imageUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "colorHex",
+            "columnName": "colorHex",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "includeInNetWorth",
+            "columnName": "includeInNetWorth",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "depreciableBase",
+            "columnName": "depreciableBase",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startConvention",
+            "columnName": "startConvention",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "frequency",
+            "columnName": "frequency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rounding",
+            "columnName": "rounding",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "impairmentTracking",
+            "columnName": "impairmentTracking",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revaluationEnabled",
+            "columnName": "revaluationEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "allowLifeChange",
+            "columnName": "allowLifeChange",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "allowResidualChange",
+            "columnName": "allowResidualChange",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "allowMethodChange",
+            "columnName": "allowMethodChange",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "noAffectInventory",
+            "columnName": "noAffectInventory",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "noAffectDashboard",
+            "columnName": "noAffectDashboard",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedAt",
+            "columnName": "deletedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "stateNotes",
+            "columnName": "stateNotes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_fixed_assets_userId",
+            "unique": false,
+            "columnNames": [
+              "userId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_fixed_assets_userId` ON `${TABLE_NAME}` (`userId`)"
+          },
+          {
+            "name": "index_fixed_assets_type",
+            "unique": false,
+            "columnNames": [
+              "type"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_fixed_assets_type` ON `${TABLE_NAME}` (`type`)"
+          },
+          {
+            "name": "index_fixed_assets_category",
+            "unique": false,
+            "columnNames": [
+              "category"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_fixed_assets_category` ON `${TABLE_NAME}` (`category`)"
+          }
+        ]
+      },
+      {
+        "tableName": "asset_movements",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `assetId` TEXT NOT NULL, `userId` TEXT NOT NULL, `type` TEXT NOT NULL, `title` TEXT NOT NULL, `date` TEXT NOT NULL, `amount` REAL NOT NULL, `notes` TEXT, `usefulLifeIncrementMonths` INTEGER NOT NULL, `newResidualValue` REAL, `costCenter` TEXT, `accountingAccount` TEXT, `providerOrVendor` TEXT, `invoiceOrDocNumber` TEXT, `documentUri` TEXT, `disposalReason` TEXT, `impairmentReason` TEXT, `financialImpact` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "assetId",
+            "columnName": "assetId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amount",
+            "columnName": "amount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "usefulLifeIncrementMonths",
+            "columnName": "usefulLifeIncrementMonths",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "newResidualValue",
+            "columnName": "newResidualValue",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "costCenter",
+            "columnName": "costCenter",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "accountingAccount",
+            "columnName": "accountingAccount",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "providerOrVendor",
+            "columnName": "providerOrVendor",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "invoiceOrDocNumber",
+            "columnName": "invoiceOrDocNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "documentUri",
+            "columnName": "documentUri",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "disposalReason",
+            "columnName": "disposalReason",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "impairmentReason",
+            "columnName": "impairmentReason",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "financialImpact",
+            "columnName": "financialImpact",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_asset_movements_assetId",
+            "unique": false,
+            "columnNames": [
+              "assetId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_asset_movements_assetId` ON `${TABLE_NAME}` (`assetId`)"
+          },
+          {
+            "name": "index_asset_movements_userId",
+            "unique": false,
+            "columnNames": [
+              "userId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_asset_movements_userId` ON `${TABLE_NAME}` (`userId`)"
+          },
+          {
+            "name": "index_asset_movements_type",
+            "unique": false,
+            "columnNames": [
+              "type"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_asset_movements_type` ON `${TABLE_NAME}` (`type`)"
+          },
+          {
+            "name": "index_asset_movements_date",
+            "unique": false,
+            "columnNames": [
+              "date"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_asset_movements_date` ON `${TABLE_NAME}` (`date`)"
+          }
+        ]
+      },
+      {
+        "tableName": "asset_categories",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `name` TEXT NOT NULL, `code` TEXT NOT NULL, `iconName` TEXT NOT NULL, `colorHex` TEXT NOT NULL, `isSystem` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "iconName",
+            "columnName": "iconName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "colorHex",
+            "columnName": "colorHex",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isSystem",
+            "columnName": "isSystem",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_asset_categories_userId",
+            "unique": false,
+            "columnNames": [
+              "userId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_asset_categories_userId` ON `${TABLE_NAME}` (`userId`)"
+          },
+          {
+            "name": "index_asset_categories_name",
+            "unique": false,
+            "columnNames": [
+              "name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_asset_categories_name` ON `${TABLE_NAME}` (`name`)"
+          }
+        ]
+      },
+      {
+        "tableName": "asset_audit_logs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `assetId` TEXT, `assetName` TEXT, `actionType` TEXT NOT NULL, `actionTitle` TEXT NOT NULL, `details` TEXT NOT NULL, `financialImpact` TEXT, `userRole` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `formattedDate` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "assetId",
+            "columnName": "assetId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "assetName",
+            "columnName": "assetName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "actionType",
+            "columnName": "actionType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actionTitle",
+            "columnName": "actionTitle",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "details",
+            "columnName": "details",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "financialImpact",
+            "columnName": "financialImpact",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "userRole",
+            "columnName": "userRole",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "formattedDate",
+            "columnName": "formattedDate",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_asset_audit_logs_assetId",
+            "unique": false,
+            "columnNames": [
+              "assetId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_asset_audit_logs_assetId` ON `${TABLE_NAME}` (`assetId`)"
+          },
+          {
+            "name": "index_asset_audit_logs_userId",
+            "unique": false,
+            "columnNames": [
+              "userId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_asset_audit_logs_userId` ON `${TABLE_NAME}` (`userId`)"
+          },
+          {
+            "name": "index_asset_audit_logs_actionType",
+            "unique": false,
+            "columnNames": [
+              "actionType"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_asset_audit_logs_actionType` ON `${TABLE_NAME}` (`actionType`)"
+          },
+          {
+            "name": "index_asset_audit_logs_timestamp",
+            "unique": false,
+            "columnNames": [
+              "timestamp"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_asset_audit_logs_timestamp` ON `${TABLE_NAME}` (`timestamp`)"
+          }
+        ]
+      },
+      {
+        "tableName": "scheduled_payments",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `user_id` TEXT NOT NULL, `entity_name` TEXT NOT NULL, `category` TEXT NOT NULL, `amount` REAL NOT NULL, `currency` TEXT NOT NULL, `due_date` TEXT NOT NULL, `recurrence` TEXT NOT NULL, `is_income` INTEGER NOT NULL, `is_paid` INTEGER NOT NULL, `paid_date` TEXT, `source_account_id` TEXT, `source_account_name` TEXT, `notes` TEXT, `reminder_days_before` INTEGER NOT NULL, `notification_enabled` INTEGER NOT NULL, `created_at` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityName",
+            "columnName": "entity_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amount",
+            "columnName": "amount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currency",
+            "columnName": "currency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dueDate",
+            "columnName": "due_date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recurrence",
+            "columnName": "recurrence",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isIncome",
+            "columnName": "is_income",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isPaid",
+            "columnName": "is_paid",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "paidDate",
+            "columnName": "paid_date",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourceAccountId",
+            "columnName": "source_account_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourceAccountName",
+            "columnName": "source_account_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "reminderDaysBefore",
+            "columnName": "reminder_days_before",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notificationEnabled",
+            "columnName": "notification_enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "user_sessions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`user_id` TEXT NOT NULL, `email` TEXT, `display_name` TEXT, `photo_url` TEXT, `auth_provider` TEXT NOT NULL, `is_email_verified` INTEGER NOT NULL, `id_token` TEXT, `session_created_at` INTEGER NOT NULL, `last_login_timestamp` INTEGER NOT NULL, `last_active_timestamp` INTEGER NOT NULL, `is_active` INTEGER NOT NULL, `is_anonymous` INTEGER NOT NULL, `metadata` TEXT, PRIMARY KEY(`user_id`))",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "columnName": "user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "displayName",
+            "columnName": "display_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "photoUrl",
+            "columnName": "photo_url",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "authProvider",
+            "columnName": "auth_provider",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isEmailVerified",
+            "columnName": "is_email_verified",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idToken",
+            "columnName": "id_token",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sessionCreatedAt",
+            "columnName": "session_created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastLoginTimestamp",
+            "columnName": "last_login_timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastActiveTimestamp",
+            "columnName": "last_active_timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isActive",
+            "columnName": "is_active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isAnonymous",
+            "columnName": "is_anonymous",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "metadata",
+            "columnName": "metadata",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "user_id"
+          ]
+        }
+      },
+      {
+        "tableName": "shared_sequence_configs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `sequenceType` TEXT NOT NULL, `scopeGroupCode` TEXT NOT NULL, `mode` TEXT NOT NULL, `prefix` TEXT NOT NULL, `patternTemplate` TEXT NOT NULL, `currentValue` INTEGER NOT NULL, `stepBy` INTEGER NOT NULL, `paddingDigits` INTEGER NOT NULL, `resetPolicy` TEXT NOT NULL, `lastResetPeriodKey` TEXT NOT NULL, `allowManualGaps` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `version` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sequenceType",
+            "columnName": "sequenceType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scopeGroupCode",
+            "columnName": "scopeGroupCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mode",
+            "columnName": "mode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "prefix",
+            "columnName": "prefix",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "patternTemplate",
+            "columnName": "patternTemplate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentValue",
+            "columnName": "currentValue",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stepBy",
+            "columnName": "stepBy",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "paddingDigits",
+            "columnName": "paddingDigits",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resetPolicy",
+            "columnName": "resetPolicy",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastResetPeriodKey",
+            "columnName": "lastResetPeriodKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "allowManualGaps",
+            "columnName": "allowManualGaps",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "version",
+            "columnName": "version",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_shared_sequence_configs_userId_sequenceType_scopeGroupCode",
+            "unique": true,
+            "columnNames": [
+              "userId",
+              "sequenceType",
+              "scopeGroupCode"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_shared_sequence_configs_userId_sequenceType_scopeGroupCode` ON `${TABLE_NAME}` (`userId`, `sequenceType`, `scopeGroupCode`)"
+          }
+        ]
+      },
+      {
+        "tableName": "shared_participants",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `isSelf` INTEGER NOT NULL, `displayName` TEXT NOT NULL, `nameNormalized` TEXT NOT NULL, `aliasOrRelation` TEXT, `phoneOrWhatsApp` TEXT, `email` TEXT, `preferredPaymentMethod` TEXT, `bankName` TEXT, `accountType` TEXT, `accountNumberOrKey` TEXT, `qrImageLocalUri` TEXT, `monthlyIncomeEstimate` REAL NOT NULL, `defaultIncomeShareWeight` REAL NOT NULL, `avatarColorHex` TEXT NOT NULL, `avatarInitials` TEXT NOT NULL, `creditTrustLimit` REAL, `isActive` INTEGER NOT NULL, `archivedAt` INTEGER, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isSelf",
+            "columnName": "isSelf",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "displayName",
+            "columnName": "displayName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nameNormalized",
+            "columnName": "nameNormalized",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aliasOrRelation",
+            "columnName": "aliasOrRelation",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "phoneOrWhatsApp",
+            "columnName": "phoneOrWhatsApp",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "preferredPaymentMethod",
+            "columnName": "preferredPaymentMethod",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "bankName",
+            "columnName": "bankName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "accountType",
+            "columnName": "accountType",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "accountNumberOrKey",
+            "columnName": "accountNumberOrKey",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "qrImageLocalUri",
+            "columnName": "qrImageLocalUri",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "monthlyIncomeEstimate",
+            "columnName": "monthlyIncomeEstimate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "defaultIncomeShareWeight",
+            "columnName": "defaultIncomeShareWeight",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avatarColorHex",
+            "columnName": "avatarColorHex",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avatarInitials",
+            "columnName": "avatarInitials",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "creditTrustLimit",
+            "columnName": "creditTrustLimit",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "isActive",
+            "columnName": "isActive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "archivedAt",
+            "columnName": "archivedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_shared_participants_userId_nameNormalized",
+            "unique": true,
+            "columnNames": [
+              "userId",
+              "nameNormalized"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_shared_participants_userId_nameNormalized` ON `${TABLE_NAME}` (`userId`, `nameNormalized`)"
+          },
+          {
+            "name": "index_shared_participants_userId_isActive",
+            "unique": false,
+            "columnNames": [
+              "userId",
+              "isActive"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_shared_participants_userId_isActive` ON `${TABLE_NAME}` (`userId`, `isActive`)"
+          }
+        ]
+      },
+      {
+        "tableName": "shared_groups",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `name` TEXT NOT NULL, `nameNormalized` TEXT NOT NULL, `groupCode` TEXT NOT NULL, `groupType` TEXT NOT NULL, `baseCurrency` TEXT NOT NULL, `iconName` TEXT NOT NULL, `colorHex` TEXT NOT NULL, `defaultRealMoneyImpactMode` TEXT NOT NULL, `defaultSplitMethod` TEXT NOT NULL, `defaultSourceAccountId` TEXT, `defaultCategoryId` TEXT, `simplifyDebtsEnabled` INTEGER NOT NULL, `autoReserveOwedInHold` INTEGER NOT NULL, `budgetImpactPolicy` TEXT NOT NULL, `settlementCycleDay` INTEGER, `status` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nameNormalized",
+            "columnName": "nameNormalized",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "groupCode",
+            "columnName": "groupCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "groupType",
+            "columnName": "groupType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "baseCurrency",
+            "columnName": "baseCurrency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "iconName",
+            "columnName": "iconName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "colorHex",
+            "columnName": "colorHex",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "defaultRealMoneyImpactMode",
+            "columnName": "defaultRealMoneyImpactMode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "defaultSplitMethod",
+            "columnName": "defaultSplitMethod",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "defaultSourceAccountId",
+            "columnName": "defaultSourceAccountId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "defaultCategoryId",
+            "columnName": "defaultCategoryId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "simplifyDebtsEnabled",
+            "columnName": "simplifyDebtsEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "autoReserveOwedInHold",
+            "columnName": "autoReserveOwedInHold",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "budgetImpactPolicy",
+            "columnName": "budgetImpactPolicy",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "settlementCycleDay",
+            "columnName": "settlementCycleDay",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_shared_groups_userId_nameNormalized",
+            "unique": true,
+            "columnNames": [
+              "userId",
+              "nameNormalized"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_shared_groups_userId_nameNormalized` ON `${TABLE_NAME}` (`userId`, `nameNormalized`)"
+          },
+          {
+            "name": "index_shared_groups_userId_groupCode",
+            "unique": true,
+            "columnNames": [
+              "userId",
+              "groupCode"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_shared_groups_userId_groupCode` ON `${TABLE_NAME}` (`userId`, `groupCode`)"
+          },
+          {
+            "name": "index_shared_groups_userId_status",
+            "unique": false,
+            "columnNames": [
+              "userId",
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_shared_groups_userId_status` ON `${TABLE_NAME}` (`userId`, `status`)"
+          }
+        ]
+      },
+      {
+        "tableName": "shared_group_members",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`groupId` TEXT NOT NULL, `participantId` TEXT NOT NULL, `defaultShareUnits` REAL NOT NULL, `defaultPercentage` REAL, `defaultAdjustmentAmount` REAL NOT NULL, `joinedAt` INTEGER NOT NULL, `isActiveInGroup` INTEGER NOT NULL, PRIMARY KEY(`groupId`, `participantId`), FOREIGN KEY(`groupId`) REFERENCES `shared_groups`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`participantId`) REFERENCES `shared_participants`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "groupId",
+            "columnName": "groupId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "participantId",
+            "columnName": "participantId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "defaultShareUnits",
+            "columnName": "defaultShareUnits",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "defaultPercentage",
+            "columnName": "defaultPercentage",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "defaultAdjustmentAmount",
+            "columnName": "defaultAdjustmentAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "joinedAt",
+            "columnName": "joinedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isActiveInGroup",
+            "columnName": "isActiveInGroup",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "groupId",
+            "participantId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_shared_group_members_groupId",
+            "unique": false,
+            "columnNames": [
+              "groupId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_shared_group_members_groupId` ON `${TABLE_NAME}` (`groupId`)"
+          },
+          {
+            "name": "index_shared_group_members_participantId",
+            "unique": false,
+            "columnNames": [
+              "participantId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_shared_group_members_participantId` ON `${TABLE_NAME}` (`participantId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "shared_groups",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "groupId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "shared_participants",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "participantId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "shared_expenses",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `consecutiveCode` TEXT NOT NULL, `consecutiveNormalized` TEXT NOT NULL, `isManualConsecutive` INTEGER NOT NULL, `receiptTicketCode` TEXT NOT NULL, `externalInvoiceNumber` TEXT, `groupId` TEXT, `title` TEXT NOT NULL, `description` TEXT, `merchantId` TEXT, `merchantNameSnapshot` TEXT, `merchantNit` TEXT, `categoryId` TEXT NOT NULL, `categoryNameSnapshot` TEXT NOT NULL, `expenseDate` TEXT NOT NULL, `expenseTime` TEXT NOT NULL, `currency` TEXT NOT NULL, `baseCurrency` TEXT NOT NULL, `appliedExchangeRate` REAL NOT NULL, `exchangeRateSource` TEXT NOT NULL, `subtotalAmount` REAL NOT NULL, `taxIvaAmount` REAL NOT NULL, `taxConsumptionAmount` REAL NOT NULL, `tipAmount` REAL NOT NULL, `discountAmount` REAL NOT NULL, `gmfAmount` REAL NOT NULL, `creditCardInterestSurcharge` REAL NOT NULL, `totalAmount` REAL NOT NULL, `splitMethod` TEXT NOT NULL, `taxAndTipProrationRule` TEXT NOT NULL, `roundingRule` TEXT NOT NULL, `roundingRemainderTarget` TEXT NOT NULL, `realMoneyImpactMode` TEXT NOT NULL, `budgetImpactPolicy` TEXT NOT NULL, `holdReserveAccountId` TEXT, `holdReservedAmount` REAL NOT NULL, `myPaidAmount` REAL NOT NULL, `myConsumptionShareAmount` REAL NOT NULL, `myNetPositionDelta` REAL NOT NULL, `settledAmountTotal` REAL NOT NULL, `status` TEXT NOT NULL, `voidReason` TEXT, `voidedAt` INTEGER, `receiptImageLocalUri` TEXT, `generatedTicketPdfUri` TEXT, `generatedTicketPngUri` TEXT, `ticketIntegrityHash` TEXT NOT NULL, `isRecurring` INTEGER NOT NULL, `recurrenceFrequency` TEXT, `nextRecurrenceDate` TEXT, `dueDateForSettlement` TEXT, `idempotencyKey` TEXT NOT NULL, `syncStatus` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "consecutiveCode",
+            "columnName": "consecutiveCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "consecutiveNormalized",
+            "columnName": "consecutiveNormalized",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isManualConsecutive",
+            "columnName": "isManualConsecutive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "receiptTicketCode",
+            "columnName": "receiptTicketCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "externalInvoiceNumber",
+            "columnName": "externalInvoiceNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "groupId",
+            "columnName": "groupId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "merchantId",
+            "columnName": "merchantId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "merchantNameSnapshot",
+            "columnName": "merchantNameSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "merchantNit",
+            "columnName": "merchantNit",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "categoryId",
+            "columnName": "categoryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoryNameSnapshot",
+            "columnName": "categoryNameSnapshot",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expenseDate",
+            "columnName": "expenseDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expenseTime",
+            "columnName": "expenseTime",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currency",
+            "columnName": "currency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "baseCurrency",
+            "columnName": "baseCurrency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "appliedExchangeRate",
+            "columnName": "appliedExchangeRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "exchangeRateSource",
+            "columnName": "exchangeRateSource",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subtotalAmount",
+            "columnName": "subtotalAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "taxIvaAmount",
+            "columnName": "taxIvaAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "taxConsumptionAmount",
+            "columnName": "taxConsumptionAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipAmount",
+            "columnName": "tipAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "discountAmount",
+            "columnName": "discountAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gmfAmount",
+            "columnName": "gmfAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "creditCardInterestSurcharge",
+            "columnName": "creditCardInterestSurcharge",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalAmount",
+            "columnName": "totalAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "splitMethod",
+            "columnName": "splitMethod",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "taxAndTipProrationRule",
+            "columnName": "taxAndTipProrationRule",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "roundingRule",
+            "columnName": "roundingRule",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "roundingRemainderTarget",
+            "columnName": "roundingRemainderTarget",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "realMoneyImpactMode",
+            "columnName": "realMoneyImpactMode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "budgetImpactPolicy",
+            "columnName": "budgetImpactPolicy",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "holdReserveAccountId",
+            "columnName": "holdReserveAccountId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "holdReservedAmount",
+            "columnName": "holdReservedAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "myPaidAmount",
+            "columnName": "myPaidAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "myConsumptionShareAmount",
+            "columnName": "myConsumptionShareAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "myNetPositionDelta",
+            "columnName": "myNetPositionDelta",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "settledAmountTotal",
+            "columnName": "settledAmountTotal",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voidReason",
+            "columnName": "voidReason",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "voidedAt",
+            "columnName": "voidedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "receiptImageLocalUri",
+            "columnName": "receiptImageLocalUri",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "generatedTicketPdfUri",
+            "columnName": "generatedTicketPdfUri",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "generatedTicketPngUri",
+            "columnName": "generatedTicketPngUri",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "ticketIntegrityHash",
+            "columnName": "ticketIntegrityHash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isRecurring",
+            "columnName": "isRecurring",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recurrenceFrequency",
+            "columnName": "recurrenceFrequency",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "nextRecurrenceDate",
+            "columnName": "nextRecurrenceDate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "dueDateForSettlement",
+            "columnName": "dueDateForSettlement",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "idempotencyKey",
+            "columnName": "idempotencyKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_shared_expenses_userId_consecutiveCode",
+            "unique": true,
+            "columnNames": [
+              "userId",
+              "consecutiveCode"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_shared_expenses_userId_consecutiveCode` ON `${TABLE_NAME}` (`userId`, `consecutiveCode`)"
+          },
+          {
+            "name": "index_shared_expenses_userId_receiptTicketCode",
+            "unique": true,
+            "columnNames": [
+              "userId",
+              "receiptTicketCode"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_shared_expenses_userId_receiptTicketCode` ON `${TABLE_NAME}` (`userId`, `receiptTicketCode`)"
+          },
+          {
+            "name": "index_shared_expenses_groupId_expenseDate",
+            "unique": false,
+            "columnNames": [
+              "groupId",
+              "expenseDate"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_shared_expenses_groupId_expenseDate` ON `${TABLE_NAME}` (`groupId`, `expenseDate`)"
+          },
+          {
+            "name": "index_shared_expenses_userId_status",
+            "unique": false,
+            "columnNames": [
+              "userId",
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_shared_expenses_userId_status` ON `${TABLE_NAME}` (`userId`, `status`)"
+          },
+          {
+            "name": "index_shared_expenses_idempotencyKey",
+            "unique": true,
+            "columnNames": [
+              "idempotencyKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_shared_expenses_idempotencyKey` ON `${TABLE_NAME}` (`idempotencyKey`)"
+          }
+        ]
+      },
+      {
+        "tableName": "shared_expense_payers",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `sharedExpenseId` TEXT NOT NULL, `participantId` TEXT NOT NULL, `paidAmount` REAL NOT NULL, `kashAccountId` TEXT, `kashAccountNameSnapshot` TEXT, `paymentInstrumentType` TEXT NOT NULL, `creditCardInstallments` INTEGER NOT NULL, `passCreditCardInterestToGroup` INTEGER NOT NULL, `gmfGeneratedAmount` REAL NOT NULL, `linkedTransactionId` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`sharedExpenseId`) REFERENCES `shared_expenses`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`participantId`) REFERENCES `shared_participants`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sharedExpenseId",
+            "columnName": "sharedExpenseId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "participantId",
+            "columnName": "participantId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "paidAmount",
+            "columnName": "paidAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kashAccountId",
+            "columnName": "kashAccountId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "kashAccountNameSnapshot",
+            "columnName": "kashAccountNameSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "paymentInstrumentType",
+            "columnName": "paymentInstrumentType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "creditCardInstallments",
+            "columnName": "creditCardInstallments",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "passCreditCardInterestToGroup",
+            "columnName": "passCreditCardInterestToGroup",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gmfGeneratedAmount",
+            "columnName": "gmfGeneratedAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "linkedTransactionId",
+            "columnName": "linkedTransactionId",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_shared_expense_payers_sharedExpenseId",
+            "unique": false,
+            "columnNames": [
+              "sharedExpenseId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_shared_expense_payers_sharedExpenseId` ON `${TABLE_NAME}` (`sharedExpenseId`)"
+          },
+          {
+            "name": "index_shared_expense_payers_participantId",
+            "unique": false,
+            "columnNames": [
+              "participantId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_shared_expense_payers_participantId` ON `${TABLE_NAME}` (`participantId`)"
+          },
+          {
+            "name": "index_shared_expense_payers_kashAccountId",
+            "unique": false,
+            "columnNames": [
+              "kashAccountId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_shared_expense_payers_kashAccountId` ON `${TABLE_NAME}` (`kashAccountId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "shared_expenses",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "sharedExpenseId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "shared_participants",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "participantId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "shared_expense_splits",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `sharedExpenseId` TEXT NOT NULL, `participantId` TEXT NOT NULL, `isIncluded` INTEGER NOT NULL, `rawInputWeightOrPct` REAL NOT NULL, `baseSubtotalShare` REAL NOT NULL, `allocatedTaxAmount` REAL NOT NULL, `allocatedTipAmount` REAL NOT NULL, `allocatedDiscountAmount` REAL NOT NULL, `allocatedGmfAmount` REAL NOT NULL, `roundingAdjustment` REAL NOT NULL, `totalOwedShare` REAL NOT NULL, `paidByThisParticipant` REAL NOT NULL, `netBalanceForExpense` REAL NOT NULL, `amountAlreadySettled` REAL NOT NULL, `remainingPendingAmount` REAL NOT NULL, `settlementStatus` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`sharedExpenseId`) REFERENCES `shared_expenses`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`participantId`) REFERENCES `shared_participants`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sharedExpenseId",
+            "columnName": "sharedExpenseId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "participantId",
+            "columnName": "participantId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isIncluded",
+            "columnName": "isIncluded",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rawInputWeightOrPct",
+            "columnName": "rawInputWeightOrPct",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "baseSubtotalShare",
+            "columnName": "baseSubtotalShare",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "allocatedTaxAmount",
+            "columnName": "allocatedTaxAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "allocatedTipAmount",
+            "columnName": "allocatedTipAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "allocatedDiscountAmount",
+            "columnName": "allocatedDiscountAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "allocatedGmfAmount",
+            "columnName": "allocatedGmfAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "roundingAdjustment",
+            "columnName": "roundingAdjustment",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalOwedShare",
+            "columnName": "totalOwedShare",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "paidByThisParticipant",
+            "columnName": "paidByThisParticipant",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "netBalanceForExpense",
+            "columnName": "netBalanceForExpense",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amountAlreadySettled",
+            "columnName": "amountAlreadySettled",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "remainingPendingAmount",
+            "columnName": "remainingPendingAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "settlementStatus",
+            "columnName": "settlementStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_shared_expense_splits_sharedExpenseId",
+            "unique": false,
+            "columnNames": [
+              "sharedExpenseId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_shared_expense_splits_sharedExpenseId` ON `${TABLE_NAME}` (`sharedExpenseId`)"
+          },
+          {
+            "name": "index_shared_expense_splits_participantId_settlementStatus",
+            "unique": false,
+            "columnNames": [
+              "participantId",
+              "settlementStatus"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_shared_expense_splits_participantId_settlementStatus` ON `${TABLE_NAME}` (`participantId`, `settlementStatus`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "shared_expenses",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "sharedExpenseId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "shared_participants",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "participantId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "shared_expense_line_items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `sharedExpenseId` TEXT NOT NULL, `itemOrder` INTEGER NOT NULL, `description` TEXT NOT NULL, `quantity` REAL NOT NULL, `unitPrice` REAL NOT NULL, `lineTotalPrice` REAL NOT NULL, `isTaxExempt` INTEGER NOT NULL, `assignedParticipantIdsCsv` TEXT NOT NULL, `splitModeWithinItem` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`sharedExpenseId`) REFERENCES `shared_expenses`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sharedExpenseId",
+            "columnName": "sharedExpenseId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "itemOrder",
+            "columnName": "itemOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unitPrice",
+            "columnName": "unitPrice",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lineTotalPrice",
+            "columnName": "lineTotalPrice",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isTaxExempt",
+            "columnName": "isTaxExempt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "assignedParticipantIdsCsv",
+            "columnName": "assignedParticipantIdsCsv",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "splitModeWithinItem",
+            "columnName": "splitModeWithinItem",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_shared_expense_line_items_sharedExpenseId",
+            "unique": false,
+            "columnNames": [
+              "sharedExpenseId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_shared_expense_line_items_sharedExpenseId` ON `${TABLE_NAME}` (`sharedExpenseId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "shared_expenses",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "sharedExpenseId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "shared_settlement_payments",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `voucherConsecutiveCode` TEXT NOT NULL, `isFullGroupSettlementAct` INTEGER NOT NULL, `groupId` TEXT, `sharedExpenseId` TEXT, `fromParticipantId` TEXT NOT NULL, `toParticipantId` TEXT NOT NULL, `amount` REAL NOT NULL, `currency` TEXT NOT NULL, `appliedExchangeRate` REAL NOT NULL, `fxGainOrLossAmount` REAL NOT NULL, `settlementMethod` TEXT NOT NULL, `reimbursementTreatmentApplied` TEXT NOT NULL, `kashAccountId` TEXT, `kashAccountNameSnapshot` TEXT, `linkedTransactionId` TEXT, `releasedHoldAmount` REAL NOT NULL, `externalReferenceCode` TEXT, `proofDocumentLocalUri` TEXT, `generatedVoucherPdfUri` TEXT, `ticketIntegrityHash` TEXT NOT NULL, `notes` TEXT, `paymentDate` TEXT NOT NULL, `paymentTime` TEXT NOT NULL, `idempotencyKey` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voucherConsecutiveCode",
+            "columnName": "voucherConsecutiveCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isFullGroupSettlementAct",
+            "columnName": "isFullGroupSettlementAct",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "groupId",
+            "columnName": "groupId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sharedExpenseId",
+            "columnName": "sharedExpenseId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fromParticipantId",
+            "columnName": "fromParticipantId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "toParticipantId",
+            "columnName": "toParticipantId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amount",
+            "columnName": "amount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currency",
+            "columnName": "currency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "appliedExchangeRate",
+            "columnName": "appliedExchangeRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fxGainOrLossAmount",
+            "columnName": "fxGainOrLossAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "settlementMethod",
+            "columnName": "settlementMethod",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reimbursementTreatmentApplied",
+            "columnName": "reimbursementTreatmentApplied",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kashAccountId",
+            "columnName": "kashAccountId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "kashAccountNameSnapshot",
+            "columnName": "kashAccountNameSnapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "linkedTransactionId",
+            "columnName": "linkedTransactionId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "releasedHoldAmount",
+            "columnName": "releasedHoldAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "externalReferenceCode",
+            "columnName": "externalReferenceCode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "proofDocumentLocalUri",
+            "columnName": "proofDocumentLocalUri",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "generatedVoucherPdfUri",
+            "columnName": "generatedVoucherPdfUri",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "ticketIntegrityHash",
+            "columnName": "ticketIntegrityHash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "paymentDate",
+            "columnName": "paymentDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "paymentTime",
+            "columnName": "paymentTime",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idempotencyKey",
+            "columnName": "idempotencyKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_shared_settlement_payments_userId_voucherConsecutiveCode",
+            "unique": true,
+            "columnNames": [
+              "userId",
+              "voucherConsecutiveCode"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_shared_settlement_payments_userId_voucherConsecutiveCode` ON `${TABLE_NAME}` (`userId`, `voucherConsecutiveCode`)"
+          },
+          {
+            "name": "index_shared_settlement_payments_groupId_paymentDate",
+            "unique": false,
+            "columnNames": [
+              "groupId",
+              "paymentDate"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_shared_settlement_payments_groupId_paymentDate` ON `${TABLE_NAME}` (`groupId`, `paymentDate`)"
+          },
+          {
+            "name": "index_shared_settlement_payments_sharedExpenseId",
+            "unique": false,
+            "columnNames": [
+              "sharedExpenseId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_shared_settlement_payments_sharedExpenseId` ON `${TABLE_NAME}` (`sharedExpenseId`)"
+          },
+          {
+            "name": "index_shared_settlement_payments_fromParticipantId_toParticipantId",
+            "unique": false,
+            "columnNames": [
+              "fromParticipantId",
+              "toParticipantId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_shared_settlement_payments_fromParticipantId_toParticipantId` ON `${TABLE_NAME}` (`fromParticipantId`, `toParticipantId`)"
+          },
+          {
+            "name": "index_shared_settlement_payments_idempotencyKey",
+            "unique": true,
+            "columnNames": [
+              "idempotencyKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_shared_settlement_payments_idempotencyKey` ON `${TABLE_NAME}` (`idempotencyKey`)"
+          }
+        ]
+      },
+      {
+        "tableName": "third_parties",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `name` TEXT NOT NULL, `normalizedName` TEXT NOT NULL, `personType` TEXT NOT NULL, `idType` TEXT NOT NULL, `idNumber` TEXT NOT NULL, `verificationDigit` TEXT, `commercialName` TEXT, `category` TEXT NOT NULL, `primaryPhone` TEXT, `secondaryPhone` TEXT, `email` TEXT, `address` TEXT, `city` TEXT, `paymentTermsDays` INTEGER NOT NULL, `defaultBank` TEXT, `bankAccountType` TEXT, `bankAccountNumber` TEXT, `iconName` TEXT NOT NULL, `colorHex` TEXT NOT NULL, `notes` TEXT, `isFavorite` INTEGER NOT NULL, `isActive` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "normalizedName",
+            "columnName": "normalizedName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "personType",
+            "columnName": "personType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idType",
+            "columnName": "idType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idNumber",
+            "columnName": "idNumber",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "verificationDigit",
+            "columnName": "verificationDigit",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "commercialName",
+            "columnName": "commercialName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "primaryPhone",
+            "columnName": "primaryPhone",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "secondaryPhone",
+            "columnName": "secondaryPhone",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "address",
+            "columnName": "address",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "city",
+            "columnName": "city",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "paymentTermsDays",
+            "columnName": "paymentTermsDays",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "defaultBank",
+            "columnName": "defaultBank",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "bankAccountType",
+            "columnName": "bankAccountType",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "bankAccountNumber",
+            "columnName": "bankAccountNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "iconName",
+            "columnName": "iconName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "colorHex",
+            "columnName": "colorHex",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isFavorite",
+            "columnName": "isFavorite",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isActive",
+            "columnName": "isActive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_third_parties_userId_normalizedName_idNumber",
+            "unique": true,
+            "columnNames": [
+              "userId",
+              "normalizedName",
+              "idNumber"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_third_parties_userId_normalizedName_idNumber` ON `${TABLE_NAME}` (`userId`, `normalizedName`, `idNumber`)"
+          },
+          {
+            "name": "index_third_parties_userId_category",
+            "unique": false,
+            "columnNames": [
+              "userId",
+              "category"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_third_parties_userId_category` ON `${TABLE_NAME}` (`userId`, `category`)"
+          },
+          {
+            "name": "index_third_parties_userId_isFavorite",
+            "unique": false,
+            "columnNames": [
+              "userId",
+              "isFavorite"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_third_parties_userId_isFavorite` ON `${TABLE_NAME}` (`userId`, `isFavorite`)"
+          },
+          {
+            "name": "index_third_parties_userId_isActive",
+            "unique": false,
+            "columnNames": [
+              "userId",
+              "isActive"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_third_parties_userId_isActive` ON `${TABLE_NAME}` (`userId`, `isActive`)"
+          },
+          {
+            "name": "index_third_parties_idNumber",
+            "unique": false,
+            "columnNames": [
+              "idNumber"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_third_parties_idNumber` ON `${TABLE_NAME}` (`idNumber`)"
+          }
+        ]
+      },
+      {
+        "tableName": "third_party_categories",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `name` TEXT NOT NULL, `code` TEXT NOT NULL, `iconName` TEXT NOT NULL, `colorHex` TEXT NOT NULL, `isSystem` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "iconName",
+            "columnName": "iconName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "colorHex",
+            "columnName": "colorHex",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isSystem",
+            "columnName": "isSystem",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_third_party_categories_userId",
+            "unique": false,
+            "columnNames": [
+              "userId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_third_party_categories_userId` ON `${TABLE_NAME}` (`userId`)"
+          },
+          {
+            "name": "index_third_party_categories_code",
+            "unique": false,
+            "columnNames": [
+              "code"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_third_party_categories_code` ON `${TABLE_NAME}` (`code`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f36b8233da9727f32474a60a2eba2796')"
+    ]
+  }
+}

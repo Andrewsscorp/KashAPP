@@ -1757,6 +1757,7 @@ class FinancialRepositoryImpl(
 
             // Deduce from source account if specified
             val accountToDeduct = sourceAccountId ?: goal.sourceAccountId
+            var txEntity: TransactionEntity? = null
             if (!accountToDeduct.isNullOrBlank()) {
                 val acc = financialDao.getAccountById(accountToDeduct)
                 if (acc != null) {
@@ -1765,23 +1766,50 @@ class FinancialRepositoryImpl(
                             IllegalStateException("Saldo insuficiente en ${acc.name}. Disponible: $${acc.availableBalance}")
                         )
                     }
-                    financialDao.deductAccountBalance(acc.id, amount)
+                    val today = java.time.LocalDate.now().toString()
+                    val txId = "tx_goal_${UUID.randomUUID().toString().take(12)}"
+                    val idemKey = "idem_goal_${goalId}_${System.currentTimeMillis()}"
+                    txEntity = TransactionEntity(
+                        id = txId,
+                        userId = goal.userId,
+                        accountId = acc.id,
+                        accountName = acc.name,
+                        categoryId = "cat_savings_goals",
+                        categoryName = "Ahorro / Metas",
+                        sourceId = null,
+                        sourceName = null,
+                        amount = amount,
+                        currency = acc.currency,
+                        type = "EXPENSE",
+                        date = today,
+                        description = "Aporte a meta: ${goal.name}",
+                        receiptUrl = null,
+                        idempotencyKey = idemKey,
+                        isRecurring = false,
+                        recurrenceFrequency = "Única vez",
+                        saveAsTemplate = false,
+                        tags = "meta,ahorro",
+                        transferGroupId = null,
+                        syncStatus = "PENDING",
+                        createdAt = System.currentTimeMillis()
+                    )
                 }
             }
 
-            // Update goal saved amount
-            financialDao.contributeToGoal(goalId, amount)
-
-            // If virtual pocket is enabled on target account, freeze in target account
-            if (goal.virtualPocketEnabled) {
-                financialDao.freezeAccountVirtualPocket(goal.targetAccountId, amount)
-            }
+            // Atomic Room Transaction (Account balance debit, Goal credit, Virtual pocket freeze, Transaction ledger)
+            financialDao.executeGoalContributionTransaction(
+                goalId = goalId,
+                amount = amount,
+                accountToDeductId = accountToDeduct,
+                transaction = txEntity,
+                virtualPocketTargetAccountId = if (goal.virtualPocketEnabled) goal.targetAccountId else null
+            )
 
             auditLogDao.insertLog(
                 AuditSecurityLog(
                     eventType = "GOAL_CONTRIBUTION",
                     authMethod = "LOCAL",
-                    details = "{\"goalId\":\"$goalId\",\"amount\":$amount,\"sourceAccountId\":\"$accountToDeduct\"}"
+                    details = "{\"goalId\":\"$goalId\",\"amount\":$amount,\"sourceAccountId\":\"$accountToDeduct\",\"txId\":\"${txEntity?.id.orEmpty()}\"}"
                 )
             )
 

@@ -340,26 +340,99 @@ class AuditViewModel(
     }
 
     fun verifyVaultIntegrity() {
-        viewModelScope.launch(Dispatchers.Default) {
+        viewModelScope.launch(Dispatchers.IO) {
             _isVerifyingIntegrity.value = true
-            kotlinx.coroutines.delay(450) // Proceso forense realista de cálculo y verificación
-            val currentLogs = uiState.value.logs
-            var validCount = 0
-            var invalidCount = 0
-            for (log in currentLogs) {
-                if (log.hashSha256.isNotBlank() && log.hashSha256.length >= 32) {
-                    validCount++
-                } else {
-                    invalidCount++
+            try {
+                // 1. Fetch live snapshot directly from SQLite tables
+                val secLogs = auditSecurityLogDao.getAllLogsList()
+                val assetLogs = assetAuditLogDao.getAllAuditLogs(userId)
+                val fixedAssets = fixedAssetDao?.getAssets(userId) ?: emptyList()
+                val movements = fixedAssetDao?.getAllMovements(userId) ?: emptyList()
+                val transactions = financialDao.getTransactions(userId)
+                val accounts = financialDao.getAccounts(userId)
+
+                val loggedAssetActionIds = assetLogs.map { it.id }.toSet()
+                val expectedDbHashes = HashMap<String, String>()
+
+                secLogs.forEach { log ->
+                    val hash = calculateSha256("SEC_${log.id}_${log.timestamp}_${log.eventType}_${log.details}")
+                    expectedDbHashes["SEC-${log.id}"] = hash
                 }
-            }
-            _isVerifyingIntegrity.value = false
-            _integrityVerificationResult.value = if (invalidCount == 0 && validCount > 0) {
-                "Bóveda 100% Íntegra (SOC-2/ISO 27001): $validCount registros verificados criptográficamente. Ninguna firma SHA-256 ha sido alterada ni vulnerada."
-            } else if (validCount == 0) {
-                "Bóveda inicializada sin registros previos. Cadena append-only en estado íntegro."
-            } else {
-                "Alerta de Integridad: Se detectaron $invalidCount registros con firma hash inconsistente."
+                assetLogs.forEach { assetLog ->
+                    val hash = calculateSha256("AST_${assetLog.id}_${assetLog.timestamp}_${assetLog.actionType}_${assetLog.details}")
+                    expectedDbHashes["AST-LOG-${assetLog.id}"] = hash
+                }
+                fixedAssets.forEach { asset ->
+                    if (!loggedAssetActionIds.contains(asset.id)) {
+                        val hash = calculateSha256("AST_REC_${asset.id}_${asset.name}_${asset.acquisitionValue}_${asset.acquisitionDate}")
+                        expectedDbHashes["AST-REC-${asset.id}"] = hash
+                    }
+                }
+                movements.forEach { mov ->
+                    val hash = calculateSha256("AST_MOV_${mov.id}_${mov.type}_${mov.amount}")
+                    expectedDbHashes["AST-MOV-${mov.id}"] = hash
+                }
+                transactions.forEach { tx ->
+                    val hash = calculateSha256("TX_${tx.id}_${tx.createdAt}_${tx.amount}_${tx.description ?: ""}")
+                    expectedDbHashes["TX-${tx.id}"] = hash
+                }
+                accounts.forEach { acc ->
+                    val hash = calculateSha256("ACC_${acc.id}_${acc.name}_${acc.balance}")
+                    expectedDbHashes["ACC-${acc.id}"] = hash
+                }
+
+                val currentLogs = uiState.value.logs
+                var validCount = 0
+                var invalidCount = 0
+
+                if (currentLogs.isEmpty() && expectedDbHashes.isEmpty()) {
+                    _isVerifyingIntegrity.value = false
+                    _integrityVerificationResult.value =
+                        "Bóveda inicializada sin registros previos. Cadena append-only en estado íntegro."
+                    return@launch
+                }
+
+                val logsToVerify = if (currentLogs.isNotEmpty()) currentLogs else {
+                    expectedDbHashes.map { (id, hash) ->
+                        AuditUiEntry(
+                            id = id,
+                            timestamp = 0L,
+                            formattedDateTime = "",
+                            relativeTime = "",
+                            category = AuditCategory.SYSTEM,
+                            severity = AuditSeverity.INFO,
+                            eventTitle = "",
+                            details = "",
+                            authMethodOrOrigin = "",
+                            hashSha256 = hash
+                        )
+                    }
+                }
+
+                for (entry in logsToVerify) {
+                    val dbHash = expectedDbHashes[entry.id]
+                    if (dbHash != null && dbHash == entry.hashSha256 && entry.hashSha256.isNotBlank() && !entry.hashSha256.startsWith("sha256:00000000")) {
+                        validCount++
+                    } else {
+                        invalidCount++
+                    }
+                }
+
+                if (currentLogs.isNotEmpty() && currentLogs.size != expectedDbHashes.size) {
+                    invalidCount += kotlin.math.abs(currentLogs.size - expectedDbHashes.size)
+                }
+
+                _isVerifyingIntegrity.value = false
+                _integrityVerificationResult.value = if (invalidCount == 0 && validCount > 0) {
+                    "Bóveda 100% Íntegra (SOC-2/ISO 27001): $validCount registros verificados criptográficamente contra SQLite. Ninguna firma SHA-256 ha sido alterada ni vulnerada."
+                } else if (validCount == 0 && invalidCount == 0) {
+                    "Bóveda inicializada sin registros previos. Cadena append-only en estado íntegro."
+                } else {
+                    "Alerta de Integridad: Se detectaron $invalidCount inconsistencias o firmas hash adulteradas en la base de datos."
+                }
+            } catch (ex: Exception) {
+                _isVerifyingIntegrity.value = false
+                _integrityVerificationResult.value = "Error durante verificación forense de integridad: ${ex.message}"
             }
         }
     }

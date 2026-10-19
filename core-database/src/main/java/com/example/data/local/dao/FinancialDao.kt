@@ -38,6 +38,9 @@ interface FinancialDao {
     @Query("SELECT * FROM transactions WHERE idempotencyKey = :idempotencyKey LIMIT 1")
     suspend fun getTransactionByIdempotencyKey(idempotencyKey: String): TransactionEntity?
 
+    @Query("SELECT * FROM transactions WHERE id = :transactionId LIMIT 1")
+    suspend fun getTransactionById(transactionId: String): TransactionEntity?
+
     @Query("SELECT * FROM accounts WHERE userId = :userId AND :userId != '' ORDER BY isFavorite DESC, balance DESC")
     fun getAccountsFlow(userId: String): Flow<List<AccountEntity>>
 
@@ -559,6 +562,46 @@ interface FinancialDao {
             check(freezeAccountVirtualPocket(goal.targetAccountId, freezeAmount) == 1) {
                 "La cuenta objetivo de la meta no existe."
             }
+        }
+    }
+
+    /**
+     * ACID Atomic Double-Entry Transaction for Goal Contributions (HALL-08 / REM-P2-02):
+     * 1. Validates sufficient liquidity in source account if specified.
+     * 2. Debits source account balance.
+     * 3. Credits savedAmount in financial_goals.
+     * 4. Freezes liquidity in target account if virtual pocket is enabled.
+     * 5. Inserts a TransactionEntity record into transactions table for full ledger traceability.
+     */
+    @Transaction
+    suspend fun executeGoalContributionTransaction(
+        goalId: String,
+        amount: Double,
+        accountToDeductId: String?,
+        transaction: TransactionEntity?,
+        virtualPocketTargetAccountId: String? = null
+    ) {
+        require(amount > 0.0) { "El monto del aporte debe ser mayor que cero." }
+
+        if (!accountToDeductId.isNullOrBlank()) {
+            val acc = getAccountById(accountToDeductId)
+                ?: throw IllegalStateException("No se encontró la cuenta de origen.")
+            if (acc.availableBalance < amount) {
+                throw IllegalStateException("Saldo insuficiente en ${acc.name}. Disponible: $${acc.availableBalance}")
+            }
+            check(deductAccountBalance(accountToDeductId, amount) == 1) {
+                "Error al debitar saldo de la cuenta de origen."
+            }
+        }
+
+        contributeToGoal(goalId, amount)
+
+        if (!virtualPocketTargetAccountId.isNullOrBlank()) {
+            freezeAccountVirtualPocket(virtualPocketTargetAccountId, amount)
+        }
+
+        if (transaction != null) {
+            insertTransaction(transaction)
         }
     }
 

@@ -14,6 +14,9 @@ interface AuditSecurityLogDao {
     @Query("SELECT * FROM audit_security_logs ORDER BY timestamp DESC")
     fun getAllLogs(): Flow<List<AuditSecurityLog>>
 
+    @Query("SELECT * FROM audit_security_logs ORDER BY timestamp DESC")
+    suspend fun getAllLogsList(): List<AuditSecurityLog>
+
     @Query("SELECT * FROM audit_security_logs ORDER BY timestamp DESC LIMIT :limit")
     fun getRecentLogs(limit: Int = 20): Flow<List<AuditSecurityLog>>
 }

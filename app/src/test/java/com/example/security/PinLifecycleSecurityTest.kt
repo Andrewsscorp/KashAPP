@@ -85,6 +85,7 @@ class PinLifecycleSecurityTest {
         val logs = mutableListOf<AuditSecurityLog>()
         override suspend fun insertLog(log: AuditSecurityLog) { logs.add(log) }
         override fun getAllLogs(): Flow<List<AuditSecurityLog>> = flowOf(logs)
+        override suspend fun getAllLogsList(): List<AuditSecurityLog> = logs.toList()
         override fun getRecentLogs(limit: Int): Flow<List<AuditSecurityLog>> = flowOf(logs.take(limit))
     }
 

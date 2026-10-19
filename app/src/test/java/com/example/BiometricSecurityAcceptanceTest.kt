@@ -147,6 +147,7 @@ class BiometricSecurityAcceptanceTest {
             flow.value = logs.toList()
         }
         override fun getAllLogs(): Flow<List<AuditSecurityLog>> = flow
+        override suspend fun getAllLogsList(): List<AuditSecurityLog> = logs.toList()
         override fun getRecentLogs(limit: Int): Flow<List<AuditSecurityLog>> = flow.map { it.take(limit) }
     }
 

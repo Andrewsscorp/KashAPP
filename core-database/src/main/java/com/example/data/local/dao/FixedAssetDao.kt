@@ -40,6 +40,9 @@ interface FixedAssetDao {
     @Query("SELECT * FROM fixed_assets WHERE id = :assetId LIMIT 1")
     suspend fun getAssetById(assetId: String): FixedAssetEntity?
 
+    @Query("SELECT * FROM fixed_assets WHERE userId = :userId AND :userId != '' ORDER BY createdAt DESC")
+    suspend fun getAssets(userId: String): List<FixedAssetEntity>
+
     @Query("SELECT * FROM fixed_assets WHERE id = :assetId LIMIT 1")
     fun observeAssetById(assetId: String): Flow<FixedAssetEntity?>
 
@@ -67,6 +70,9 @@ interface FixedAssetDao {
     // Movements
     @Query("SELECT * FROM asset_movements WHERE userId = :userId AND :userId != '' ORDER BY date DESC, createdAt DESC")
     fun observeAllMovements(userId: String): Flow<List<AssetMovementEntity>>
+
+    @Query("SELECT * FROM asset_movements WHERE userId = :userId AND :userId != '' ORDER BY date DESC, createdAt DESC")
+    suspend fun getAllMovements(userId: String): List<AssetMovementEntity>
 
     @Query("SELECT * FROM asset_movements WHERE userId = :userId AND :userId != '' ORDER BY date DESC, createdAt DESC")
     fun getAllMovementsFlow(userId: String = "user_default"): Flow<List<AssetMovementEntity>>
