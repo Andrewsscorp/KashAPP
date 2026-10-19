@@ -10,7 +10,9 @@ build/
 /captures
 .externalNativeBuild
 .cxx
-.env
+*.env
 debug.keystore
+*.jks
+*.keystore
 *.log
 *.hprof
