@@ -23,6 +23,9 @@ data class UserPreferencesDomain(
     val autoNoAffectInventoryForAssets: Boolean = false,
     val autoNoAffectDashboardForAssets: Boolean = false,
     val excludeAllFixedAssetsFromDashboard: Boolean = false,
+    val privacyPolicyAccepted: Boolean = false,
+    val privacyPolicyVersion: String = "1.0-LEY-1581-2012",
+    val privacyPolicyAcceptedTimestamp: Long = 0L,
     val updatedAt: Long = System.currentTimeMillis(),
     val version: Long = 1L
 )

@@ -53,6 +53,12 @@ class SharedExpenseFirebaseAiEngine {
     )
 
     /**
+     * Sanitiza el texto de instrucciones en lenguaje natural antes de enviarlo a Firebase AI.
+     */
+    fun sanitizePiiBeforeCloudAi(rawText: String): String =
+        FirebaseApiProtectionGuard.sanitizePiiBeforeCloudAi(rawText)
+
+    /**
      * 1. Analiza una instrucción en lenguaje natural (ej. "Cena en Crepes por $180.000 con Ana y Luis,
      * Luis pidió un vino extra de $30.000 y yo pagué todo con Bancolombia") usando Firebase AI protegido,
      * o el parser heurístico local si no hay conexión.
@@ -65,7 +71,8 @@ class SharedExpenseFirebaseAiEngine {
         val guardVerdict = FirebaseApiProtectionGuard.authorizeAndSanitizeRequest(
             rawPrompt = userPrompt,
             participantRealNames = participantNames,
-            requireAuthenticatedUser = true
+            requireAuthenticatedUser = true,
+            requireInformedConsent = true
         )
 
         if (guardVerdict is FirebaseApiProtectionGuard.GuardVerdict.Allowed) {

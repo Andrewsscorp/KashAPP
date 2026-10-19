@@ -22,5 +22,7 @@ interface SettingsRepository {
     suspend fun setAutoNoAffectDashboardForAssets(userId: String, enabled: Boolean): Result<Unit>
     suspend fun applyNoAffectDashboardToAllAssets(userId: String, noAffect: Boolean): Result<Int>
     suspend fun setExcludeAllFixedAssetsFromDashboard(userId: String, excluded: Boolean): Result<Unit>
+    suspend fun setPrivacyPolicyConsent(userId: String, accepted: Boolean, version: String = "1.0-LEY-1581-2012"): Result<Unit>
+    suspend fun isPrivacyPolicyAccepted(userId: String): Boolean
     suspend fun executeProtocolLogout(userId: String): Result<Unit>
 }

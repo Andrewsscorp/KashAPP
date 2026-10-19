@@ -107,6 +107,17 @@ class SiemExportAndSecurityAuditEventsTest {
         override suspend fun setAutoNoAffectDashboardForAssets(userId: String, enabled: Boolean): Result<Unit> = Result.success(Unit)
         override suspend fun applyNoAffectDashboardToAllAssets(userId: String, noAffect: Boolean): Result<Int> = Result.success(0)
         override suspend fun setExcludeAllFixedAssetsFromDashboard(userId: String, excluded: Boolean): Result<Unit> = Result.success(Unit)
+        override suspend fun setPrivacyPolicyConsent(userId: String, accepted: Boolean, version: String): Result<Unit> {
+            val updated = currentPreferences.copy(
+                privacyPolicyAccepted = accepted,
+                privacyPolicyVersion = version,
+                privacyPolicyAcceptedTimestamp = if (accepted) System.currentTimeMillis() else 0L
+            )
+            currentPreferences = updated
+            flow.value = updated
+            return Result.success(Unit)
+        }
+        override suspend fun isPrivacyPolicyAccepted(userId: String): Boolean = currentPreferences.privacyPolicyAccepted
         override suspend fun executeProtocolLogout(userId: String): Result<Unit> = Result.success(Unit)
     }
 

@@ -31,7 +31,30 @@ object FirebaseApiProtectionGuard {
     @Volatile
     private var appCheckInitialized = false
 
+    @Volatile
+    private var isPrivacyConsentGranted: Boolean = false
+
+    @Volatile
+    private var privacyConsentVersion: String = "1.0-LEY-1581-2012"
+
+    @Volatile
+    private var privacyConsentTimestampMs: Long = 0L
+
     private val responseCache = ConcurrentHashMap<String, CachedAiResponse>()
+
+    fun setPrivacyConsent(
+        granted: Boolean,
+        version: String = "1.0-LEY-1581-2012",
+        timestampMs: Long = System.currentTimeMillis()
+    ) {
+        isPrivacyConsentGranted = granted
+        privacyConsentVersion = version
+        privacyConsentTimestampMs = timestampMs
+    }
+
+    fun isPrivacyConsentGranted(): Boolean = isPrivacyConsentGranted
+    fun getPrivacyConsentVersion(): String = privacyConsentVersion
+    fun getPrivacyConsentTimestamp(): Long = privacyConsentTimestampMs
 
     data class CachedAiResponse(
         val responseJson: String,
@@ -44,7 +67,9 @@ object FirebaseApiProtectionGuard {
         val remainingMinuteQuota: Int,
         val remainingDailyQuota: Int,
         val isCircuitBreakerOpen: Boolean,
-        val piiMaskingActive: Boolean = true
+        val piiMaskingActive: Boolean = true,
+        val isPrivacyConsentGranted: Boolean = false,
+        val privacyConsentVersion: String = "1.0-LEY-1581-2012"
     )
 
     sealed interface GuardVerdict {
@@ -116,6 +141,7 @@ object FirebaseApiProtectionGuard {
         rawPrompt: String,
         participantRealNames: List<String> = emptyList(),
         requireAuthenticatedUser: Boolean = false,
+        requireInformedConsent: Boolean = true,
         cacheTtlMs: Long = 10 * 60 * 1000L // 10 minutos
     ): GuardVerdict {
         val now = System.currentTimeMillis()
@@ -137,13 +163,21 @@ object FirebaseApiProtectionGuard {
             )
         }
 
-        // 3. Sanitizar PII (ocultar números de cuenta, teléfonos, correos, NITs y nombres de participantes)
+        // 3. Verificar autorización previa e informada conforme a la Ley 1581 de 2012 y Decreto 1377 de 2013
+        if (requireInformedConsent && !isPrivacyConsentGranted) {
+            return GuardVerdict.Blocked(
+                reasonCode = "CONSENT_REQUIRED_LEY_1581",
+                userMessage = "Se requiere autorización previa e informada de tratamiento de datos personales (Ley 1581 de 2012) para procesar información con IA en la nube."
+            )
+        }
+
+        // 4. Sanitizar PII (PANs, correos, teléfonos, documentos y nombres de participantes)
         val (sanitizedPrompt, aliasMap) = sanitizePiiWithRehydrationMap(
             rawText = rawPrompt,
             participantRealNames = participantRealNames
         )
 
-        // 4. Verificar Caché Criptográfica SHA-256 antes de consumir cuota de red
+        // 5. Verificar Caché Criptográfica SHA-256 antes de consumir cuota de red
         val hashKey = sha256(sanitizedPrompt)
         val cached = responseCache[hashKey]
         if (cached != null && (now - cached.timestampMs) <= cacheTtlMs) {
@@ -155,7 +189,7 @@ object FirebaseApiProtectionGuard {
             )
         }
 
-        // 5. Verificar Rate Limiting (Token Bucket por minuto y diario)
+        // 6. Verificar Rate Limiting (Token Bucket por minuto y diario)
         if (now - windowStartMinuteMs >= 60_000L) {
             windowStartMinuteMs = now
             minuteCounter.set(0)
@@ -202,7 +236,19 @@ object FirebaseApiProtectionGuard {
     }
 
     /**
+     * Función pública para sanitizar PII antes de enviar texto a modelos en la nube.
+     */
+    fun sanitizePiiBeforeCloudAi(rawText: String): String {
+        return sanitizePiiWithRehydrationMap(rawText, emptyList()).first
+    }
+
+    /**
      * Reemplaza información personal identificable (PII) por tokens anónimos seguros.
+     * Preserva montos monetarios en pesos colombianos ($ 35.000, 150000, etc.) y enmascara:
+     * - Números de tarjetas PAN (13 a 19 dígitos o patrones enmascarados como **** **** **** 1234) -> [REDACTED_PAN]
+     * - Correos electrónicos -> [REDACTED_EMAIL]
+     * - Números de teléfono/celular -> [REDACTED_PHONE]
+     * - Documentos de identidad (Cédula, CC, NIT, RUT) -> [REDACTED_ID]
      */
     fun sanitizePiiWithRehydrationMap(
         rawText: String,
@@ -222,13 +268,59 @@ object FirebaseApiProtectionGuard {
                 sanitized = sanitized.replace(Regex("\\b${Regex.escape(realName)}\\b", RegexOption.IGNORE_CASE), token)
             }
 
-        // 2. Enmascarar posibles números de tarjeta o cuenta bancaria (10 a 16 dígitos continuos)
-        sanitized = sanitized.replace(Regex("\\b\\d{10,16}\\b"), "[REDACTED_ACCOUNT]")
-
-        // 3. Enmascarar correos electrónicos
+        // 2. Enmascarar números de tarjeta PAN enmascarados (ej. **** **** **** 1234, 4532 **** **** 1234, XXXX-XXXX-XXXX-1234)
         sanitized = sanitized.replace(
-            Regex("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"),
+            Regex("""\b(?:\d{4}[ -]?[*Xx]{4}[ -]?[*Xx]{4}[ -]?\d{4}|[*Xx]{4}[ -]?[*Xx]{4}[ -]?[*Xx]{4}[ -]?\d{4}|[*Xx]{12}\d{4}|\*{4}\s*\*{4}\s*\*{4}\s*\d{4})\b"""),
+            "[REDACTED_PAN]"
+        )
+
+        // 3. Enmascarar tarjetas explícitamente etiquetadas
+        sanitized = sanitized.replace(
+            Regex("""(?i)\b(tarjeta|card|visa|mastercard|amex|franquicia)\s*[:#-]?\s*([0-9Xx* -]{12,24})\b"""),
+            "$1: [REDACTED_PAN]"
+        )
+
+        // 4. Enmascarar secuencias continuas de 13 a 19 dígitos o bloques 4x4 (posibles PAN de tarjetas)
+        // Nota: no afecta montos COP formateados con punto/coma ni números de 1 a 12 dígitos
+        sanitized = sanitized.replace(
+            Regex("""(?<![$€£¥0-9.,])\b(?:\d{4}[ -]\d{4}[ -]\d{4}[ -]\d{1,7}|\d{13,19})\b(?!%)"""),
+            "[REDACTED_PAN]"
+        )
+
+        // 5. Enmascarar números de cuenta bancaria explícitos
+        sanitized = sanitized.replace(
+            Regex("""(?i)\b(cta|cuenta(?:\s+bancaria|\s+de\s+ahorros|\s+corriente)?)\s*[:#-]?\s*([0-9 -]{10,20})\b"""),
+            "$1: [REDACTED_ACCOUNT]"
+        )
+
+        // 6. Enmascarar correos electrónicos
+        sanitized = sanitized.replace(
+            Regex("""[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"""),
             "[REDACTED_EMAIL]"
+        )
+
+        // 7. Enmascarar teléfonos con etiqueta explícita
+        sanitized = sanitized.replace(
+            Regex("""(?iu)\b(tel(?:[eéEÉ]fono)?|cel(?:ular)?|m[oóOÓ]vil|whatsapp|wa)\s*[:#-]?\s*(\+?[0-9 -]{7,15})\b"""),
+            "$1: [REDACTED_PHONE]"
+        )
+
+        // 8. Enmascarar teléfonos celulares colombianos (10 dígitos empezando en 3)
+        sanitized = sanitized.replace(
+            Regex("""(?<![$€£¥0-9.,])\b(?:\+57\s*)?3\d{2}[ -]?\d{3}[ -]?\d{4}\b(?!\s*(?:COP|pesos|%))"""),
+            "[REDACTED_PHONE]"
+        )
+
+        // 9. Enmascarar documentos de identidad colombianos con etiqueta explícita (Cédula, CC, TI, DNI)
+        sanitized = sanitized.replace(
+            Regex("""(?iu)\b(c[eéEÉ]dula(?:\s+de\s+ciudadan[iíIÍ]a)?|c\.?c\.?|t\.?i\.?|d\.?n\.?i\.?|documento|doc)\s*[:#-]?\s*([0-9.]{6,12})\b"""),
+            "$1: [REDACTED_ID]"
+        )
+
+        // 10. Enmascarar NIT o RUT con etiqueta explícita
+        sanitized = sanitized.replace(
+            Regex("""(?iu)\b(nit|rut)\s*[:#-]?\s*([0-9]{3}[.\s]?[0-9]{3}[.\s]?[0-9]{3}(?:-[0-9kK])?|[0-9]{8,11}(?:-[0-9kK])?)\b"""),
+            "$1: [REDACTED_ID]"
         )
 
         return sanitized to aliasToRealName
@@ -253,7 +345,9 @@ object FirebaseApiProtectionGuard {
             remainingMinuteQuota = (MAX_REQUESTS_PER_MINUTE - minuteCounter.get()).coerceAtLeast(0),
             remainingDailyQuota = (MAX_REQUESTS_PER_DAY - dailyCounter.get()).coerceAtLeast(0),
             isCircuitBreakerOpen = now < circuitOpenedUntilMs,
-            piiMaskingActive = true
+            piiMaskingActive = true,
+            isPrivacyConsentGranted = isPrivacyConsentGranted,
+            privacyConsentVersion = privacyConsentVersion
         )
     }
 

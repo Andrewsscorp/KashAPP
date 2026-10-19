@@ -26,6 +26,12 @@ object SharedOcrReceiptBridge {
     @Volatile
     var cloudAiContentGenerator: (suspend (prompt: String) -> String)? = null
 
+    /**
+     * Sanitiza el texto extraído del recibo antes de transmitirlo a modelos de IA en la nube.
+     */
+    fun sanitizePiiBeforeCloudAi(rawText: String): String =
+        FirebaseApiProtectionGuard.sanitizePiiBeforeCloudAi(rawText)
+
     private val NIT_REGEX = Regex(
         """(?i)\b(?:nit|n\.i\.t\.?|rut)\s*[:#-]?\s*([0-9]{3}[.\s]?[0-9]{3}[.\s]?[0-9]{3}(?:-[0-9kK])?|[0-9]{8,10}(?:-[0-9kK])?)\b"""
     )
@@ -188,7 +194,8 @@ object SharedOcrReceiptBridge {
         val verdict = FirebaseApiProtectionGuard.authorizeAndSanitizeRequest(
             rawPrompt = scanResult.rawText,
             participantRealNames = emptyList(),
-            requireAuthenticatedUser = true
+            requireAuthenticatedUser = true,
+            requireInformedConsent = true
         )
 
         if (verdict is FirebaseApiProtectionGuard.GuardVerdict.Allowed) {

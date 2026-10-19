@@ -22,6 +22,14 @@ class SettingsRepositoryImpl(
     private val _preferencesFlow = MutableStateFlow(loadInitialPreferences())
 
     private fun loadInitialPreferences(): UserPreferencesDomain {
+        val accepted = prefs.getBoolean("privacy_policy_accepted", false)
+        val version = prefs.getString("privacy_policy_version", "1.0-LEY-1581-2012") ?: "1.0-LEY-1581-2012"
+        val timestamp = prefs.getLong("privacy_policy_accepted_timestamp", 0L)
+        com.example.domain.security.FirebaseApiProtectionGuard.setPrivacyConsent(
+            granted = accepted,
+            version = version,
+            timestampMs = timestamp
+        )
         return UserPreferencesDomain(
             userId = "user_default",
             language = prefs.getString("language", "es") ?: "es",
@@ -41,6 +49,9 @@ class SettingsRepositoryImpl(
             autoNoAffectInventoryForAssets = prefs.getBoolean("auto_no_affect_inventory_for_assets", false),
             autoNoAffectDashboardForAssets = prefs.getBoolean("auto_no_affect_dashboard_for_assets", false),
             excludeAllFixedAssetsFromDashboard = prefs.getBoolean("exclude_all_fixed_assets_dashboard", false),
+            privacyPolicyAccepted = accepted,
+            privacyPolicyVersion = version,
+            privacyPolicyAcceptedTimestamp = timestamp,
             version = prefs.getLong("version", 1L)
         )
     }
@@ -74,6 +85,9 @@ class SettingsRepositoryImpl(
             .putBoolean("auto_no_affect_inventory_for_assets", updated.autoNoAffectInventoryForAssets)
             .putBoolean("auto_no_affect_dashboard_for_assets", updated.autoNoAffectDashboardForAssets)
             .putBoolean("exclude_all_fixed_assets_dashboard", updated.excludeAllFixedAssetsFromDashboard)
+            .putBoolean("privacy_policy_accepted", updated.privacyPolicyAccepted)
+            .putString("privacy_policy_version", updated.privacyPolicyVersion)
+            .putLong("privacy_policy_accepted_timestamp", updated.privacyPolicyAcceptedTimestamp)
             .putLong("version", nextVersion)
             .apply()
 
@@ -231,6 +245,37 @@ class SettingsRepositoryImpl(
             } catch (_: Exception) {}
             count
         }
+    }
+
+    override suspend fun setPrivacyPolicyConsent(userId: String, accepted: Boolean, version: String): Result<Unit> {
+        val now = System.currentTimeMillis()
+        val current = _preferencesFlow.value
+        val res = updatePreferences(
+            current.copy(
+                privacyPolicyAccepted = accepted,
+                privacyPolicyVersion = version,
+                privacyPolicyAcceptedTimestamp = if (accepted) now else 0L
+            )
+        )
+        com.example.domain.security.FirebaseApiProtectionGuard.setPrivacyConsent(
+            granted = accepted,
+            version = version,
+            timestampMs = if (accepted) now else 0L
+        )
+        try {
+            auditSecurityLogDao?.insertLog(
+                com.example.data.local.entity.AuditSecurityLog(
+                    eventType = if (accepted) "PRIVACY_CONSENT_GRANTED" else "PRIVACY_CONSENT_REVOKED",
+                    authMethod = "LEY_1581_CONSENT",
+                    details = "Autorización previa e informada Ley 1581 de 2012 / Decreto 1377 de 2013: ${if (accepted) "OTORGADA" else "REVOCADA"}, versión: $version, timestamp UTC: $now"
+                )
+            )
+        } catch (_: Exception) {}
+        return res.map { }
+    }
+
+    override suspend fun isPrivacyPolicyAccepted(userId: String): Boolean {
+        return _preferencesFlow.value.privacyPolicyAccepted
     }
 
     override suspend fun executeProtocolLogout(userId: String): Result<Unit> {

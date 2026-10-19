@@ -117,6 +117,15 @@ class SettingsBackupRealOperationsTest {
         override suspend fun setAutoNoAffectDashboardForAssets(userId: String, enabled: Boolean): Result<Unit> = Result.success(Unit)
         override suspend fun setExcludeAllFixedAssetsFromDashboard(userId: String, excluded: Boolean): Result<Unit> = Result.success(Unit)
         override suspend fun applyNoAffectDashboardToAllAssets(userId: String, noAffect: Boolean): Result<Int> = Result.success(0)
+        override suspend fun setPrivacyPolicyConsent(userId: String, accepted: Boolean, version: String): Result<Unit> {
+            preferences = preferences.copy(
+                privacyPolicyAccepted = accepted,
+                privacyPolicyVersion = version,
+                privacyPolicyAcceptedTimestamp = if (accepted) System.currentTimeMillis() else 0L
+            )
+            return Result.success(Unit)
+        }
+        override suspend fun isPrivacyPolicyAccepted(userId: String): Boolean = preferences.privacyPolicyAccepted
         override suspend fun executeProtocolLogout(userId: String): Result<Unit> = Result.success(Unit)
     }
 
