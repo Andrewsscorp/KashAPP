@@ -207,32 +207,18 @@ open class FirebaseDataSource(private val context: Context) {
         return try {
             initFirebaseIfNeeded()
             val currentFbUid = getCurrentUserId()
-            val currentEmail = getCurrentUserEmail()
             val targetId = if (!currentFbUid.isNullOrBlank()) currentFbUid else userId
 
             val enrichedPayload = HashMap(backupPayload)
             enrichedPayload["userId"] = targetId
             enrichedPayload["lastSyncedAt"] = System.currentTimeMillis()
-            if (!currentEmail.isNullOrBlank()) {
-                enrichedPayload["userEmail"] = currentEmail
-            }
 
             firestore.collection("financial_backups")
                 .document(targetId)
                 .set(enrichedPayload)
                 .await()
 
-            val dummyOrGenericIds = setOf("user_default", "kash_user_bio", "local_pin", "biometric")
-            if (userId.isNotBlank() && userId != targetId && !dummyOrGenericIds.contains(userId)) {
-                try {
-                    firestore.collection("financial_backups")
-                        .document(userId)
-                        .set(enrichedPayload)
-                        .await()
-                } catch (_: Exception) {}
-            }
-
-            Log.i("FirebaseDataSource", "✓ Respaldo financiero guardado exitosamente en Firestore para $targetId (colección: financial_backups)")
+            Log.i("FirebaseDataSource", "✓ Respaldo financiero E2EE guardado exitosamente en Firestore para $targetId (colección: financial_backups)")
             true
         } catch (e: Exception) {
             Log.w("FirebaseDataSource", "Offline sync queued in Firestore cache: ${e.message}")
@@ -242,97 +228,46 @@ open class FirebaseDataSource(private val context: Context) {
 
     /**
      * Downloads user financial backup snapshot from Firebase Firestore.
-     * Strictly scopes retrieval to the authenticated user's UID or verified email.
+     * Strictly scopes retrieval to the authenticated user's UID.
      * Prevents cross-account data leaks.
      */
     open suspend fun getFinancialBackup(userId: String): Map<String, Any>? {
         return try {
             initFirebaseIfNeeded()
             val currentFbUid = getCurrentUserId()
-            val currentEmail = getCurrentUserEmail()
+            val targetId = if (!currentFbUid.isNullOrBlank()) currentFbUid else userId
 
-            val candidates = linkedSetOf<String>()
-            if (!currentFbUid.isNullOrBlank()) candidates.add(currentFbUid)
-            if (userId.isNotBlank() && userId != "user_default" && userId != "kash_user_bio") candidates.add(userId)
-            if (!currentEmail.isNullOrBlank()) candidates.add(currentEmail)
-
-            // Fallback for purely unauthenticated local accounts
-            if (candidates.isEmpty()) {
-                candidates.add(userId.ifBlank { "user_default" })
+            // 1. Direct document retrieval in financial_backups for target UID
+            try {
+                val snapshot = firestore.collection("financial_backups")
+                    .document(targetId)
+                    .get()
+                    .await()
+                if (snapshot.exists() && snapshot.data != null && snapshot.data!!.isNotEmpty()) {
+                    Log.i("FirebaseDataSource", "✓ Respaldo encontrado en Firestore doc financial_backups/$targetId")
+                    return snapshot.data
+                }
+            } catch (e: Exception) {
+                Log.d("FirebaseDataSource", "No direct doc in financial_backups/$targetId: ${e.message}")
             }
 
-            // 1. Direct document retrieval in financial_backups for current user candidates
-            for (key in candidates) {
+            // 2. Fallback check for local userId if different
+            if (userId.isNotBlank() && userId != targetId && userId != "user_default" && userId != "kash_user_bio") {
                 try {
                     val snapshot = firestore.collection("financial_backups")
-                        .document(key)
+                        .document(userId)
                         .get()
                         .await()
                     if (snapshot.exists() && snapshot.data != null && snapshot.data!!.isNotEmpty()) {
-                        Log.i("FirebaseDataSource", "✓ Respaldo encontrado en Firestore doc financial_backups/$key (claves: ${snapshot.data?.keys})")
+                        Log.i("FirebaseDataSource", "✓ Respaldo encontrado en fallback doc financial_backups/$userId")
                         return snapshot.data
-                    }
-                } catch (e: Exception) {
-                    Log.d("FirebaseDataSource", "No direct doc in financial_backups/$key: ${e.message}")
-                }
-            }
-
-            // 2. Query financial_backups by userId field matching current user candidates
-            for (candidate in candidates) {
-                try {
-                    val querySnap = firestore.collection("financial_backups")
-                        .whereEqualTo("userId", candidate)
-                        .limit(1)
-                        .get()
-                        .await()
-                    if (!querySnap.isEmpty) {
-                        val doc = querySnap.documents.first()
-                        Log.i("FirebaseDataSource", "✓ Respaldo encontrado por query userId=$candidate en doc ${doc.id}")
-                        return doc.data
-                    }
-                } catch (e: Exception) {
-                    Log.d("FirebaseDataSource", "Query by userId=$candidate failed: ${e.message}")
-                }
-            }
-
-            // 3. Query financial_backups by userEmail matching current user's email
-            if (!currentEmail.isNullOrBlank()) {
-                try {
-                    val queryEmailSnap = firestore.collection("financial_backups")
-                        .whereEqualTo("userEmail", currentEmail)
-                        .limit(1)
-                        .get()
-                        .await()
-                    if (!queryEmailSnap.isEmpty) {
-                        val doc = queryEmailSnap.documents.first()
-                        Log.i("FirebaseDataSource", "✓ Respaldo encontrado por query userEmail=$currentEmail en doc ${doc.id}")
-                        return doc.data
-                    }
-                } catch (e: Exception) {
-                    Log.d("FirebaseDataSource", "Query by userEmail failed: ${e.message}")
-                }
-            }
-
-            // 4. Check user subcollection strictly for current user candidates
-            for (key in candidates) {
-                try {
-                    val subDoc = firestore.collection("users")
-                        .document(key)
-                        .collection("financial_backup")
-                        .document("latest")
-                        .get()
-                        .await()
-                    if (subDoc.exists() && subDoc.data != null) {
-                        Log.i("FirebaseDataSource", "✓ Respaldo subcolección encontrado para $key")
-                        return subDoc.data
                     }
                 } catch (_: Exception) {}
             }
 
-            Log.i("FirebaseDataSource", "No se encontró ningún respaldo en Firestore para los candidatos evaluados: $candidates")
             null
         } catch (e: Exception) {
-            Log.w("FirebaseDataSource", "Error al consultar respaldo en Firestore: ${e.message}", e)
+            Log.w("FirebaseDataSource", "Notice getting financial backup: ${e.message}")
             null
         }
     }

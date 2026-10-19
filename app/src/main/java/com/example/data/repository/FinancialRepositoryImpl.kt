@@ -48,6 +48,32 @@ class FinancialRepositoryImpl(
     private val syncScope = CoroutineScope(ioDispatcher)
     private val deletedAccountIds = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
 
+    companion object {
+        fun compressGzip(input: String): String {
+            val bos = java.io.ByteArrayOutputStream()
+            java.util.zip.GZIPOutputStream(bos).use { gzip ->
+                gzip.write(input.toByteArray(Charsets.UTF_8))
+            }
+            val compressedBytes = bos.toByteArray()
+            return try {
+                java.util.Base64.getEncoder().encodeToString(compressedBytes)
+            } catch (_: Throwable) {
+                android.util.Base64.encodeToString(compressedBytes, android.util.Base64.NO_WRAP)
+            }
+        }
+
+        fun decompressGzip(compressedBase64: String): String {
+            val bytes = try {
+                java.util.Base64.getDecoder().decode(compressedBase64)
+            } catch (_: Throwable) {
+                android.util.Base64.decode(compressedBase64, android.util.Base64.NO_WRAP)
+            }
+            return java.util.zip.GZIPInputStream(java.io.ByteArrayInputStream(bytes))
+                .bufferedReader(Charsets.UTF_8)
+                .use { it.readText() }
+        }
+    }
+
     override fun getAccounts(userId: String): Flow<List<AccountEntity>> {
         return financialDao.getAccountsFlow(userId)
     }
@@ -2259,98 +2285,188 @@ class FinancialRepositoryImpl(
 
             var restoredAny = false
             val accountsToInsert = mutableListOf<AccountEntity>()
+            val transactionsToInsert = mutableListOf<TransactionEntity>()
+            var isLegacyBackup = false
 
-            // Formato 1: Lista de cuentas en backupData["accounts"]
-            val accountsListObj = backupData["accounts"] as? List<*>
-            if (accountsListObj != null && accountsListObj.isNotEmpty()) {
-                for (item in accountsListObj) {
-                    val map = item as? Map<*, *> ?: continue
-                    val id = map["id"] as? String ?: ("acc_" + UUID.randomUUID().toString().take(8))
-                    val name = map["name"] as? String ?: map["nombre"] as? String ?: "Cuenta"
-                    val balance = parseDoubleAmount(map["balance"] ?: map["saldo"] ?: map["monto"])
-                    val currency = map["currency"] as? String ?: map["moneda"] as? String ?: "COP"
-                    val type = map["type"] as? String ?: map["tipo"] as? String ?: "SAVINGS"
-                    val bankName: String = (map["bankName"] as? String) ?: (map["banco"] as? String) ?: "Bancolombia"
-                    val isFavorite = map["isFavorite"] as? Boolean ?: true
-                    val masked = map["accountNumberMasked"] as? String
-
-                    accountsToInsert.add(
-                        AccountEntity(
-                            id = id,
-                            userId = userId,
-                            name = name,
-                            balance = balance,
-                            currency = currency,
-                            type = type,
-                            bankName = bankName,
-                            isFavorite = isFavorite,
-                            accountNumberMasked = masked
-                        )
-                    )
+            if (backupData.containsKey("encryptedPayload")) {
+                val encryptedPayload = backupData["encryptedPayload"] as? String
+                if (encryptedPayload.isNullOrBlank()) {
+                    Log.w("FinancialRepository", "Respaldo cifrado tiene payload vacío.")
+                    return@withContext Result.success(false)
                 }
-            }
 
-            // Formato 2: Mapa de cuentas en backupData["accounts"]
-            val accountsMapObj = backupData["accounts"] as? Map<*, *>
-            if (accountsMapObj != null && accountsToInsert.isEmpty()) {
-                for ((k, item) in accountsMapObj) {
-                    val map = item as? Map<*, *> ?: continue
-                    val id = map["id"] as? String ?: (k as? String) ?: ("acc_" + UUID.randomUUID().toString().take(8))
-                    val name = map["name"] as? String ?: map["nombre"] as? String ?: "Cuenta"
-                    val balance = parseDoubleAmount(map["balance"] ?: map["saldo"] ?: map["monto"])
-                    val currency = map["currency"] as? String ?: map["moneda"] as? String ?: "COP"
-                    val type = map["type"] as? String ?: map["tipo"] as? String ?: "SAVINGS"
-                    val bankName: String = (map["bankName"] as? String) ?: (map["banco"] as? String) ?: "Bancolombia"
-                    val isFavorite = map["isFavorite"] as? Boolean ?: true
-                    val masked = map["accountNumberMasked"] as? String
-
-                    accountsToInsert.add(
-                        AccountEntity(
-                            id = id,
-                            userId = userId,
-                            name = name,
-                            balance = balance,
-                            currency = currency,
-                            type = type,
-                            bankName = bankName,
-                            isFavorite = isFavorite,
-                            accountNumberMasked = masked
-                        )
-                    )
+                val decryptedContent = cryptoManager.decryptData(encryptedPayload)
+                if (decryptedContent.isNullOrBlank()) {
+                    Log.e("FinancialRepository", "Fallo al descifrar el payload del respaldo en la nube.")
+                    return@withContext Result.failure(IllegalStateException("No fue posible descifrar el respaldo de Firestore."))
                 }
-            }
 
-            // Formato 3: Documento individual directo (con o sin "table": "accounts")
-            if (accountsToInsert.isEmpty()) {
-                val directBalance = parseDoubleAmount(backupData["balance"] ?: backupData["saldo"] ?: backupData["monto"])
-                val hasAccountTraits = backupData.containsKey("balance") ||
-                        backupData.containsKey("saldo") ||
-                        backupData.containsKey("bankName") ||
-                        backupData.containsKey("banco") ||
-                        backupData["table"] == "accounts"
+                val jsonString = if (decryptedContent.trim().startsWith("{")) {
+                    decryptedContent
+                } else {
+                    decompressGzip(decryptedContent)
+                }
 
-                if (hasAccountTraits) {
-                    val accId = backupData["id"] as? String ?: ("acc_cloud_" + userId.take(6))
-                    val accName = backupData["name"] as? String ?: backupData["nombre"] as? String ?: "Cuenta Principal"
-                    val currency = backupData["currency"] as? String ?: backupData["moneda"] as? String ?: "COP"
-                    val type = backupData["type"] as? String ?: backupData["tipo"] as? String ?: "SAVINGS"
-                    val bankName: String = (backupData["bankName"] as? String) ?: (backupData["banco"] as? String) ?: "Bancolombia"
-                    val isFav = backupData["isFavorite"] as? Boolean ?: true
-                    val masked = backupData["accountNumberMasked"] as? String
+                val rootObj = org.json.JSONObject(jsonString)
+                val accountsJsonArr = rootObj.optJSONArray("accounts")
+                if (accountsJsonArr != null) {
+                    for (i in 0 until accountsJsonArr.length()) {
+                        val obj = accountsJsonArr.getJSONObject(i)
+                        val id = obj.optString("id", "acc_" + UUID.randomUUID().toString().take(8))
+                        val name = obj.optString("name", "Cuenta")
+                        val balance = obj.optDouble("balance", 0.0)
+                        val currency = obj.optString("currency", "COP")
+                        val type = obj.optString("type", "SAVINGS")
+                        val bankName = obj.optString("bankName", "Bancolombia")
+                        val isFavorite = obj.optBoolean("isFavorite", true)
+                        val masked = obj.optString("accountNumberMasked", "")
+                        val enc = obj.optString("accountNumberEncrypted", "")
 
-                    accountsToInsert.add(
-                        AccountEntity(
-                            id = accId,
-                            userId = userId,
-                            name = accName,
-                            balance = directBalance,
-                            currency = currency,
-                            type = type,
-                            bankName = bankName,
-                            isFavorite = isFav,
-                            accountNumberMasked = masked
+                        accountsToInsert.add(
+                            AccountEntity(
+                                id = id,
+                                userId = userId,
+                                name = name,
+                                balance = balance,
+                                currency = currency,
+                                type = type,
+                                bankName = bankName,
+                                isFavorite = isFavorite,
+                                accountNumberMasked = masked.ifBlank { null },
+                                accountNumberEncrypted = enc.ifBlank { null }
+                            )
                         )
-                    )
+                    }
+                }
+
+                val txJsonArr = rootObj.optJSONArray("transactions")
+                if (txJsonArr != null) {
+                    for (i in 0 until txJsonArr.length()) {
+                        val obj = txJsonArr.getJSONObject(i)
+                        val txId = obj.optString("id", UUID.randomUUID().toString())
+                        val accId = obj.optString("accountId", "")
+                        val accName = obj.optString("accountName", "Cuenta")
+                        val amount = obj.optDouble("amount", 0.0)
+                        val currency = obj.optString("currency", "COP")
+                        val type = obj.optString("type", "EXPENSE")
+                        val date = obj.optString("date", java.time.LocalDate.now().toString())
+                        val desc = obj.optString("description", "")
+                        val catName = obj.optString("categoryName", "Varios")
+                        val catId = obj.optString("categoryId", "cat_otros")
+
+                        transactionsToInsert.add(
+                            TransactionEntity(
+                                id = txId,
+                                userId = userId,
+                                accountId = accId,
+                                accountName = accName,
+                                categoryId = catId,
+                                categoryName = catName,
+                                amount = amount,
+                                currency = currency,
+                                type = type,
+                                date = date,
+                                description = desc.ifBlank { null },
+                                receiptUrl = null,
+                                idempotencyKey = "cloud_" + txId
+                            )
+                        )
+                    }
+                }
+            } else {
+                isLegacyBackup = true
+                // Formato 1 legado: Lista de cuentas en backupData["accounts"]
+                val accountsListObj = backupData["accounts"] as? List<*>
+                if (accountsListObj != null && accountsListObj.isNotEmpty()) {
+                    for (item in accountsListObj) {
+                        val map = item as? Map<*, *> ?: continue
+                        val id = map["id"] as? String ?: ("acc_" + UUID.randomUUID().toString().take(8))
+                        val name = map["name"] as? String ?: map["nombre"] as? String ?: "Cuenta"
+                        val balance = parseDoubleAmount(map["balance"] ?: map["saldo"] ?: map["monto"])
+                        val currency = map["currency"] as? String ?: map["moneda"] as? String ?: "COP"
+                        val type = map["type"] as? String ?: map["tipo"] as? String ?: "SAVINGS"
+                        val bankName: String = (map["bankName"] as? String) ?: (map["banco"] as? String) ?: "Bancolombia"
+                        val isFavorite = map["isFavorite"] as? Boolean ?: true
+                        val masked = map["accountNumberMasked"] as? String
+
+                        accountsToInsert.add(
+                            AccountEntity(
+                                id = id,
+                                userId = userId,
+                                name = name,
+                                balance = balance,
+                                currency = currency,
+                                type = type,
+                                bankName = bankName,
+                                isFavorite = isFavorite,
+                                accountNumberMasked = masked
+                            )
+                        )
+                    }
+                }
+
+                // Formato 2 legado: Mapa de cuentas en backupData["accounts"]
+                val accountsMapObj = backupData["accounts"] as? Map<*, *>
+                if (accountsMapObj != null && accountsToInsert.isEmpty()) {
+                    for ((k, item) in accountsMapObj) {
+                        val map = item as? Map<*, *> ?: continue
+                        val id = map["id"] as? String ?: (k as? String) ?: ("acc_" + UUID.randomUUID().toString().take(8))
+                        val name = map["name"] as? String ?: map["nombre"] as? String ?: "Cuenta"
+                        val balance = parseDoubleAmount(map["balance"] ?: map["saldo"] ?: map["monto"])
+                        val currency = map["currency"] as? String ?: map["moneda"] as? String ?: "COP"
+                        val type = map["type"] as? String ?: map["tipo"] as? String ?: "SAVINGS"
+                        val bankName: String = (map["bankName"] as? String) ?: (map["banco"] as? String) ?: "Bancolombia"
+                        val isFavorite = map["isFavorite"] as? Boolean ?: true
+                        val masked = map["accountNumberMasked"] as? String
+
+                        accountsToInsert.add(
+                            AccountEntity(
+                                id = id,
+                                userId = userId,
+                                name = name,
+                                balance = balance,
+                                currency = currency,
+                                type = type,
+                                bankName = bankName,
+                                isFavorite = isFavorite,
+                                accountNumberMasked = masked
+                            )
+                        )
+                    }
+                }
+
+                // Formato 3 legado: Documento individual directo
+                if (accountsToInsert.isEmpty()) {
+                    val directBalance = parseDoubleAmount(backupData["balance"] ?: backupData["saldo"] ?: backupData["monto"])
+                    val hasAccountTraits = backupData.containsKey("balance") ||
+                            backupData.containsKey("saldo") ||
+                            backupData.containsKey("bankName") ||
+                            backupData.containsKey("banco") ||
+                            backupData["table"] == "accounts"
+
+                    if (hasAccountTraits) {
+                        val accId = backupData["id"] as? String ?: ("acc_cloud_" + userId.take(6))
+                        val accName = backupData["name"] as? String ?: backupData["nombre"] as? String ?: "Cuenta Principal"
+                        val currency = backupData["currency"] as? String ?: backupData["moneda"] as? String ?: "COP"
+                        val type = backupData["type"] as? String ?: backupData["tipo"] as? String ?: "SAVINGS"
+                        val bankName: String = (backupData["bankName"] as? String) ?: (backupData["banco"] as? String) ?: "Bancolombia"
+                        val isFav = backupData["isFavorite"] as? Boolean ?: true
+                        val masked = backupData["accountNumberMasked"] as? String
+
+                        accountsToInsert.add(
+                            AccountEntity(
+                                id = accId,
+                                userId = userId,
+                                name = accName,
+                                balance = directBalance,
+                                currency = currency,
+                                type = type,
+                                bankName = bankName,
+                                isFavorite = isFav,
+                                accountNumberMasked = masked
+                            )
+                        )
+                    }
                 }
             }
 
@@ -2371,69 +2487,83 @@ class FinancialRepositoryImpl(
                     }
                 }
 
-                // 1. Restauración de transacciones si vienen en el respaldo
-                val txListObj = backupData["transactions"] as? List<*>
-                var restoredTransactionsCount = 0
-                if (txListObj != null && txListObj.isNotEmpty()) {
-                    for (item in txListObj) {
-                        val map = item as? Map<*, *> ?: continue
-                        val txId = map["id"] as? String ?: continue
-                        val accId = map["accountId"] as? String ?: continue
-                        val accName = map["accountName"] as? String ?: "Cuenta"
-                        val catId = map["categoryId"] as? String ?: "cat_otros"
-                        val catName = map["categoryName"] as? String ?: "Varios"
-                        val amount = parseDoubleAmount(map["amount"] ?: map["monto"])
-                        val currency = map["currency"] as? String ?: "COP"
-                        val type = map["type"] as? String ?: "EXPENSE"
-                        val date = map["date"] as? String ?: java.time.LocalDate.now().toString()
-                        val desc = map["description"] as? String
-
-                        val tx = TransactionEntity(
-                            id = txId,
-                            userId = userId,
-                            accountId = accId,
-                            accountName = accName,
-                            categoryId = catId,
-                            categoryName = catName,
-                            amount = amount,
-                            currency = currency,
-                            type = type,
-                            date = date,
-                            description = desc,
-                            receiptUrl = null,
-                            idempotencyKey = "cloud_" + txId
-                        )
+                // Inserción de transacciones (V2 o legado)
+                if (transactionsToInsert.isNotEmpty()) {
+                    for (tx in transactionsToInsert) {
                         financialDao.insertTransaction(tx)
-                        restoredTransactionsCount++
                     }
-                    if (restoredTransactionsCount > 0) {
-                        restoredAny = true
+                    restoredAny = true
+                } else if (isLegacyBackup) {
+                    val txListObj = backupData["transactions"] as? List<*>
+                    var restoredTransactionsCount = 0
+                    if (txListObj != null && txListObj.isNotEmpty()) {
+                        for (item in txListObj) {
+                            val map = item as? Map<*, *> ?: continue
+                            val txId = map["id"] as? String ?: continue
+                            val accId = map["accountId"] as? String ?: continue
+                            val accName = map["accountName"] as? String ?: "Cuenta"
+                            val catId = map["categoryId"] as? String ?: "cat_otros"
+                            val catName = map["categoryName"] as? String ?: "Varios"
+                            val amount = parseDoubleAmount(map["amount"] ?: map["monto"])
+                            val currency = map["currency"] as? String ?: "COP"
+                            val type = map["type"] as? String ?: "EXPENSE"
+                            val date = map["date"] as? String ?: java.time.LocalDate.now().toString()
+                            val desc = map["description"] as? String
+
+                            val tx = TransactionEntity(
+                                id = txId,
+                                userId = userId,
+                                accountId = accId,
+                                accountName = accName,
+                                categoryId = catId,
+                                categoryName = catName,
+                                amount = amount,
+                                currency = currency,
+                                type = type,
+                                date = date,
+                                description = desc,
+                                receiptUrl = null,
+                                idempotencyKey = "cloud_" + txId
+                            )
+                            financialDao.insertTransaction(tx)
+                            restoredTransactionsCount++
+                        }
+                        if (restoredTransactionsCount > 0) {
+                            restoredAny = true
+                        }
+                    }
+
+                    // Asegurar movimiento inicial para cuentas con saldo si no hay transacciones
+                    if (restoredTransactionsCount == 0) {
+                        val existingTxs = financialDao.getTransactionsFlow(userId).firstOrNull().orEmpty()
+                        if (existingTxs.isEmpty()) {
+                            for (acc in accountsToInsert.filter { it.balance > 0.0 }) {
+                                val initTx = TransactionEntity(
+                                    id = "tx_cloud_init_" + acc.id.takeLast(6) + "_" + (System.currentTimeMillis() % 10000),
+                                    userId = userId,
+                                    accountId = acc.id,
+                                    accountName = acc.name,
+                                    categoryId = "cat_inc_otros",
+                                    categoryName = "Saldo Inicial",
+                                    amount = acc.balance,
+                                    currency = acc.currency,
+                                    type = "INCOME",
+                                    date = java.time.LocalDate.now().toString(),
+                                    description = "Saldo inicial de ${acc.name}",
+                                    receiptUrl = null,
+                                    idempotencyKey = "init_" + acc.id + "_" + acc.balance.toLong()
+                                )
+                                financialDao.insertTransaction(initTx)
+                                Log.i("FinancialRepository", "✓ Generado movimiento inicial para cuenta ${acc.name} con monto ${acc.balance}")
+                            }
+                        }
                     }
                 }
 
-                // 2. Si no había transacciones en el respaldo, asegurar movimiento inicial para cuentas con saldo
-                if (restoredTransactionsCount == 0) {
-                    val existingTxs = financialDao.getTransactionsFlow(userId).firstOrNull().orEmpty()
-                    if (existingTxs.isEmpty()) {
-                        for (acc in accountsToInsert.filter { it.balance > 0.0 }) {
-                            val initTx = TransactionEntity(
-                                id = "tx_cloud_init_" + acc.id.takeLast(6) + "_" + (System.currentTimeMillis() % 10000),
-                                userId = userId,
-                                accountId = acc.id,
-                                accountName = acc.name,
-                                categoryId = "cat_inc_otros",
-                                categoryName = "Saldo Inicial",
-                                amount = acc.balance,
-                                currency = acc.currency,
-                                type = "INCOME",
-                                date = java.time.LocalDate.now().toString(),
-                                description = "Saldo inicial de ${acc.name}",
-                                receiptUrl = null,
-                                idempotencyKey = "init_" + acc.id + "_" + acc.balance.toLong()
-                            )
-                            financialDao.insertTransaction(initTx)
-                            Log.i("FinancialRepository", "✓ Generado movimiento inicial para cuenta ${acc.name} con monto ${acc.balance}")
-                        }
+                // Migración transparente si se restauró de un respaldo legado
+                if (isLegacyBackup) {
+                    syncScope.launch {
+                        backupFullPortfolioToCloud(userId)
                     }
                 }
             }
@@ -2459,74 +2589,85 @@ class FinancialRepositoryImpl(
 
             val categories = financialDao.getCategoriesFlow().firstOrNull().orEmpty()
 
-            val accountsPayload = allAccounts.map { acc ->
-                mapOf(
-                    "id" to acc.id,
-                    "name" to acc.name,
-                    "balance" to acc.balance,
-                    "currency" to acc.currency,
-                    "type" to acc.type,
-                    "bankName" to acc.bankName,
-                    "isFavorite" to acc.isFavorite,
-                    "accountNumberMasked" to (acc.accountNumberMasked ?: ""),
-                    "hasOverdraft" to acc.hasOverdraft,
-                    "overdraftLimit" to acc.overdraftLimit,
-                    "customColorHex" to acc.customColorHex,
-                    "userId" to userId
-                )
+            // Construir payload JSON completo sin truncar transacciones
+            val rootJson = org.json.JSONObject().apply {
+                put("version", "9.3.5")
+                put("userId", userId)
+                put("timestamp", System.currentTimeMillis())
+
+                val accountsArr = org.json.JSONArray()
+                for (acc in allAccounts) {
+                    accountsArr.put(org.json.JSONObject().apply {
+                        put("id", acc.id)
+                        put("name", acc.name)
+                        put("balance", acc.balance)
+                        put("currency", acc.currency)
+                        put("type", acc.type)
+                        put("bankName", acc.bankName)
+                        put("isFavorite", acc.isFavorite)
+                        put("accountNumberMasked", acc.accountNumberMasked ?: "")
+                        put("accountNumberEncrypted", acc.accountNumberEncrypted ?: "")
+                        put("hasOverdraft", acc.hasOverdraft)
+                        put("overdraftLimit", acc.overdraftLimit)
+                        put("customColorHex", acc.customColorHex)
+                        put("userId", userId)
+                    })
+                }
+                put("accounts", accountsArr)
+
+                val transactionsArr = org.json.JSONArray()
+                for (tx in allTransactions) {
+                    transactionsArr.put(org.json.JSONObject().apply {
+                        put("id", tx.id)
+                        put("accountId", tx.accountId)
+                        put("accountName", tx.accountName)
+                        put("amount", tx.amount)
+                        put("currency", tx.currency)
+                        put("type", tx.type)
+                        put("date", tx.date)
+                        put("description", tx.description ?: "")
+                        put("categoryName", tx.categoryName)
+                        put("categoryId", tx.categoryId)
+                        put("userId", userId)
+                    })
+                }
+                put("transactions", transactionsArr)
+
+                val categoriesArr = org.json.JSONArray()
+                for (cat in categories) {
+                    categoriesArr.put(org.json.JSONObject().apply {
+                        put("id", cat.id)
+                        put("name", cat.name)
+                        put("icon", cat.icon)
+                        put("colorHex", cat.colorHex)
+                        put("type", cat.type)
+                    })
+                }
+                put("categories", categoriesArr)
             }
 
-            val transactionsPayload = allTransactions.take(150).map { tx ->
-                mapOf(
-                    "id" to tx.id,
-                    "accountId" to tx.accountId,
-                    "accountName" to tx.accountName,
-                    "amount" to tx.amount,
-                    "currency" to tx.currency,
-                    "type" to tx.type,
-                    "date" to tx.date,
-                    "description" to (tx.description ?: ""),
-                    "categoryName" to tx.categoryName,
-                    "categoryId" to tx.categoryId,
-                    "userId" to userId
-                )
-            }
+            val rawJson = rootJson.toString()
+            val compressedBase64 = compressGzip(rawJson)
+            val encryptedPayload = cryptoManager.encryptData(compressedBase64)
 
-            val categoriesPayload = categories.map { cat ->
-                mapOf(
-                    "id" to cat.id,
-                    "name" to cat.name,
-                    "icon" to cat.icon,
-                    "colorHex" to cat.colorHex,
-                    "type" to cat.type
-                )
-            }
+            val digest = java.security.MessageDigest.getInstance("SHA-256").digest(rawJson.toByteArray(Charsets.UTF_8))
+            val checksumSha256 = digest.joinToString("") { "%02x".format(it) }
 
-            val fullPayload = hashMapOf<String, Any>(
+            // Sobre cifrado estricto E2EE según firestore.rules
+            val envelope = hashMapOf<String, Any>(
+                "schemaVersion" to 2,
                 "userId" to userId,
-                "version" to "9.1.0",
-                "table" to "portfolio_backup",
-                "lastBackupTimestamp" to System.currentTimeMillis(),
-                "accounts" to accountsPayload,
-                "transactions" to transactionsPayload,
-                "categories" to categoriesPayload
+                "encryptedPayload" to encryptedPayload,
+                "recordCount" to (allAccounts.size + allTransactions.size),
+                "checksumSha256" to checksumSha256,
+                "updatedAt" to System.currentTimeMillis()
             )
 
-            val primaryAcc = allAccounts.firstOrNull { it.isFavorite } ?: allAccounts.firstOrNull()
-            if (primaryAcc != null) {
-                fullPayload["name"] = primaryAcc.name
-                fullPayload["balance"] = primaryAcc.balance
-                fullPayload["bankName"] = primaryAcc.bankName
-                fullPayload["currency"] = primaryAcc.currency
-                fullPayload["type"] = primaryAcc.type
-                fullPayload["id"] = primaryAcc.id
-            }
-
-            val success = firebaseDataSource.syncOfflineFinancialBackup(userId, fullPayload)
-            Log.i("FinancialRepository", "✓ Portafolio respaldado en Firestore (${allAccounts.size} cuentas, ${allTransactions.size} txs): $success")
+            val success = firebaseDataSource.syncOfflineFinancialBackup(userId, envelope)
+            Log.i("FinancialRepository", "✓ Portafolio respaldado en Firestore con cifrado E2EE (${allAccounts.size} cuentas, ${allTransactions.size} txs): $success")
             Result.success(success)
         } catch (e: Exception) {
-            Log.e("FinancialRepository", "Error respaldando portafolio completo a Firestore: ${e.message}", e)
+            Log.e("FinancialRepository", "Error respaldando portafolio completo E2EE a Firestore: ${e.message}", e)
             Result.failure(e)
         }
     }

@@ -2,10 +2,25 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // E2EE encrypted financial backup envelope strictly owned by authenticated user
     match /financial_backups/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, delete: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['schemaVersion', 'userId', 'encryptedPayload', 'recordCount', 'checksumSha256', 'updatedAt', 'lastSyncedAt'])
+        && request.resource.data.encryptedPayload is string
+        && request.resource.data.encryptedPayload.size() < 950000;
     }
 
+    // User profile and data strictly scoped to authenticated owner
+    match /users/{userId} {
+      allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+
+      match /{allSubcollections=**} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Read-only system exchange rates for authenticated users
     match /system_exchange_rates/{currency} {
       allow read: if request.auth != null;
       allow write: if request.auth != null
