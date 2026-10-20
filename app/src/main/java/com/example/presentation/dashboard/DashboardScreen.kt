@@ -78,6 +78,13 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import com.example.presentation.dashboard.components.drawer.DashboardDrawerContent
+import com.example.feature.capturaautomatica.ui.AutoCaptureViewModel
+import com.example.feature.capturaautomatica.ui.components.AutoCaptureInboxBanner
+import com.example.feature.capturaautomatica.ui.components.AutoCaptureInboxSheet
+import com.example.feature.capturaautomatica.ui.components.AutoCaptureSettingsSheet
+import com.example.feature.capturaautomatica.ui.components.QuickCashEntryDialog
+import com.example.feature.capturaautomatica.service.AutoCaptureNotificationHelper
+import com.example.feature.capturaautomatica.service.QuickCashTileService
 
 /**
  * Main Enterprise Dashboard Screen for KashApp.
@@ -146,10 +153,29 @@ fun DashboardScreen(
     }
 
     val currentActivity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity
+    val autoCaptureViewModel: AutoCaptureViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+        factory = AutoCaptureViewModel.Factory(
+            repository = appContainer.autoCaptureRepository,
+            userId = viewModel.userId.ifBlank { "user_default" }
+        )
+    )
+    val pendingAutoCaptures by autoCaptureViewModel.pendingCaptures.collectAsState()
+    val pendingAutoCapturesCount by autoCaptureViewModel.pendingCount.collectAsState()
+    var showAutoCaptureInbox by rememberSaveable { mutableStateOf(false) }
+    var showAutoCaptureSettings by rememberSaveable { mutableStateOf(false) }
+    var showQuickCashEntry by rememberSaveable { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         if (currentActivity?.intent?.getBooleanExtra("open_upcoming_payments", false) == true) {
             showUpcomingPaymentsModule = true
             currentActivity.intent?.removeExtra("open_upcoming_payments")
+        }
+        if (currentActivity?.intent?.getBooleanExtra(QuickCashTileService.EXTRA_OPEN_QUICK_CASH, false) == true) {
+            showQuickCashEntry = true
+            currentActivity.intent?.removeExtra(QuickCashTileService.EXTRA_OPEN_QUICK_CASH)
+        }
+        if (currentActivity?.intent?.action == AutoCaptureNotificationHelper.ACTION_OPEN_INBOX) {
+            showAutoCaptureInbox = true
         }
     }
 
@@ -211,6 +237,12 @@ fun DashboardScreen(
                 },
                 onOpenSharedExpenses = {
                     showSharedExpensesModule = true
+                },
+                onOpenAutoCapture = {
+                    showAutoCaptureSettings = true
+                },
+                onOpenQuickCash = {
+                    showQuickCashEntry = true
                 },
                 onOpenAuditVault = {
                     showAuditVault = true
@@ -307,6 +339,14 @@ fun DashboardScreen(
                         .padding(vertical = 14.dp),
                     verticalArrangement = Arrangement.spacedBy(18.dp)
                 ) {
+
+                // ==========================================
+                // CAPTURA AUTOMÁTICA: BANNER DE MOVIMIENTOS DETECTADOS
+                // ==========================================
+                AutoCaptureInboxBanner(
+                    pendingCount = pendingAutoCapturesCount,
+                    onClickReview = { showAutoCaptureInbox = true }
+                )
 
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                     // PARTE 2: TU POSICIÓN — Así está tu dinero (2x2 Grid con apertura a análisis completo)
@@ -1107,6 +1147,69 @@ fun DashboardScreen(
         com.example.presentation.audit.AuditModuleScreen(
             viewModel = auditViewModel,
             onNavigateBack = { showAuditVault = false }
+        )
+    }
+
+    if (showAutoCaptureInbox) {
+        AutoCaptureInboxSheet(
+            pendingCaptures = pendingAutoCaptures,
+            onConfirmCapture = { captureId ->
+                autoCaptureViewModel.confirmCapture(captureId)
+                viewModel.onEvent(DashboardEvent.Refresh)
+            },
+            onDismissCapture = { captureId ->
+                autoCaptureViewModel.dismissCapture(captureId)
+            },
+            onDismissRequest = { showAutoCaptureInbox = false }
+        )
+    }
+
+    if (showAutoCaptureSettings) {
+        AutoCaptureSettingsSheet(
+            onSimulate = { bankName ->
+                autoCaptureViewModel.simulateCapture(bankName)
+            },
+            onDismissRequest = { showAutoCaptureSettings = false }
+        )
+    }
+
+    if (showQuickCashEntry) {
+        QuickCashEntryDialog(
+            onDismissRequest = { showQuickCashEntry = false },
+            onSaveCashExpense = { amount, desc, catName ->
+                showQuickCashEntry = false
+                coroutineScope.launch {
+                    val currentUserId = viewModel.userId.ifBlank { "user_default" }
+                    val accounts = appContainer.financialDao.getAccounts(currentUserId)
+                    val cashAccount = accounts.find { it.type == "CASH" || it.name.contains("Efectivo", ignoreCase = true) }
+                        ?: accounts.firstOrNull()
+
+                    val categories = appContainer.financialDao.getCategories()
+                    val matchedCat = categories.find { it.name.contains(catName, ignoreCase = true) }
+                        ?: categories.firstOrNull()
+
+                    if (cashAccount != null) {
+                        val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.ROOT).format(java.util.Date())
+                        appContainer.recordExpenseUseCase(
+                            userId = currentUserId,
+                            accountId = cashAccount.id,
+                            accountName = cashAccount.name,
+                            categoryId = matchedCat?.id ?: "cat_default",
+                            categoryName = matchedCat?.name ?: catName,
+                            amount = amount,
+                            currency = cashAccount.currency,
+                            dateFormatted = dateStr,
+                            description = desc,
+                            receiptUrl = null,
+                            isRecurring = false,
+                            saveAsTemplate = false,
+                            tags = listOf("Efectivo", "QuickCash"),
+                            idempotencyKey = "cash_${java.util.UUID.randomUUID().toString().take(12)}"
+                        )
+                        viewModel.onEvent(DashboardEvent.Refresh)
+                    }
+                }
+            }
         )
     }
 }

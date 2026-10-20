@@ -272,5 +272,66 @@ class AppContainer(private val context: Context) {
             secureDocumentManager = com.example.data.local.SecureDocumentManager(context)
         )
     }
+
+    // =========================================================================
+    // MÓDULO DE CAPTURA AUTOMÁTICA BANCARIA (:feature-captura-automatica)
+    // =========================================================================
+
+    val autoCaptureDao: com.example.data.local.dao.AutoCaptureDao by lazy {
+        securityDatabase.autoCaptureDao()
+    }
+
+    val autoCaptureRepository: com.example.feature.capturaautomatica.domain.repository.AutoCaptureRepository by lazy {
+        val repo = com.example.feature.capturaautomatica.data.repository.AutoCaptureRepositoryImpl(
+            autoCaptureDao = autoCaptureDao,
+            financialDao = financialDao,
+            merchantDao = securityDatabase.merchantDao(),
+            auditSecurityLogDao = securityDatabase.auditSecurityLogDao(),
+            recordExpense = { userId, accountId, accountName, categoryId, categoryName, amount, dateFormatted, description, idempotencyKey ->
+                recordExpenseUseCase(
+                    userId = userId,
+                    accountId = accountId,
+                    accountName = accountName,
+                    categoryId = categoryId,
+                    categoryName = categoryName,
+                    amount = amount,
+                    currency = "COP",
+                    dateFormatted = dateFormatted,
+                    description = description,
+                    receiptUrl = null,
+                    isRecurring = false,
+                    saveAsTemplate = false,
+                    tags = emptyList(),
+                    idempotencyKey = idempotencyKey
+                ).map { it.id }
+            },
+            recordIncome = { userId, accountId, accountName, categoryId, categoryName, amount, dateFormatted, description, idempotencyKey ->
+                recordIncomeUseCase(
+                    userId = userId,
+                    accountId = accountId,
+                    accountName = accountName,
+                    categoryId = categoryId,
+                    categoryName = categoryName,
+                    sourceId = null,
+                    sourceName = categoryName,
+                    amount = amount,
+                    currency = "COP",
+                    dateFormatted = dateFormatted,
+                    description = description,
+                    receiptUrl = null,
+                    isRecurring = false,
+                    recurrenceFrequency = "Mensual",
+                    saveAsTemplate = false,
+                    tags = emptyList(),
+                    idempotencyKey = idempotencyKey
+                ).map { it.id }
+            }
+        )
+        com.example.feature.capturaautomatica.di.AutoCaptureEntryPoint.setRepository(repo)
+        com.example.feature.capturaautomatica.di.AutoCaptureEntryPoint.setActiveUserIdProvider {
+            securityDatabase.userSessionDao().getActiveSession()?.userId
+        }
+        repo
+    }
 }
 

@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.ReceiptLong
@@ -82,6 +83,8 @@ fun DashboardDrawerContent(
     onOpenThirdParties: (() -> Unit)? = null,
     onOpenUpcomingPayments: (() -> Unit)? = null,
     onOpenSharedExpenses: (() -> Unit)? = null,
+    onOpenAutoCapture: (() -> Unit)? = null,
+    onOpenQuickCash: (() -> Unit)? = null,
     onOpenAuditVault: (() -> Unit)? = null,
     onOpenSettings: () -> Unit,
     onLogoutClick: () -> Unit,
@@ -366,6 +369,30 @@ fun DashboardDrawerContent(
                     onClick = {
                         onCloseDrawer()
                         onOpenSharedExpenses?.invoke()
+                    }
+                )
+
+                DrawerMenuItem(
+                    icon = Icons.Default.NotificationsActive,
+                    label = "Captura Automática Bancos",
+                    badgeText = "Auto",
+                    iconColor = Color(0xFF10B981),
+                    isSelected = false,
+                    onClick = {
+                        onCloseDrawer()
+                        onOpenAutoCapture?.invoke()
+                    }
+                )
+
+                DrawerMenuItem(
+                    icon = Icons.Default.Payments,
+                    label = "Gasto Rápido en Efectivo",
+                    badgeText = "1 Toque",
+                    iconColor = Color(0xFF38BDF8),
+                    isSelected = false,
+                    onClick = {
+                        onCloseDrawer()
+                        onOpenQuickCash?.invoke()
                     }
                 )
 

@@ -231,6 +231,11 @@ class MainActivity : FragmentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         // HALL-07 / GATE-07 (REM-P1-04): Purge remaining unencrypted shared exports on activity exit
