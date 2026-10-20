@@ -9,6 +9,10 @@ object OtpSafetyFilter {
 
     fun isSensitiveAuthMessage(title: String, body: String): Boolean {
         val combined = "$title $body"
-        return BLOCKED_AUTH_PATTERNS.any { it.containsMatchIn(combined) }
+        return isSensitiveAuthMessage(combined)
+    }
+
+    fun isSensitiveAuthMessage(text: String): Boolean {
+        return BLOCKED_AUTH_PATTERNS.any { it.containsMatchIn(text) }
     }
 }
