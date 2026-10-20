@@ -57,6 +57,7 @@ class AuthRepositoryImpl(
     private val outboxDao: OutboxDao? = null,
     private val assetAuditLogDao: AssetAuditLogDao? = null,
     private val assetCategoryDao: AssetCategoryDao? = null,
+    private val autoCaptureDao: com.example.data.local.dao.AutoCaptureDao? = null,
     private val securityDatabase: SecurityDatabase? = null,
     private val context: Context? = null,
     private val keystoreCryptoManager: com.example.data.local.KeystoreCryptoManager = com.example.data.local.KeystoreCryptoManager(),
@@ -760,9 +761,10 @@ class AuthRepositoryImpl(
                 thirdPartyDao?.deleteThirdPartiesByUserId(userId)
                 thirdPartyCategoryDao?.deleteCategoriesByUserId(userId)
 
-                // Step E: Merchants and Outbox operations
+                // Step E: Merchants, Outbox operations, and Pending auto-captures
                 merchantDao?.deleteMerchantsByUserId(userId)
                 outboxDao?.deleteOperationsByUserId(userId)
+                (autoCaptureDao ?: securityDatabase?.autoCaptureDao())?.deleteAllByUserId(userId)
 
                 // Step F: Accounts (now completely safe to delete since no transactions/goals/investments/payments reference them)
                 financialDao?.deleteAccountsByUserId(userId)

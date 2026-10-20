@@ -65,6 +65,7 @@ class AppContainer(private val context: Context) {
             outboxDao = securityDatabase.outboxDao(),
             assetAuditLogDao = securityDatabase.assetAuditLogDao(),
             assetCategoryDao = securityDatabase.assetCategoryDao(),
+            autoCaptureDao = securityDatabase.autoCaptureDao(),
             securityDatabase = securityDatabase,
             context = context,
             keystoreCryptoManager = keystoreCryptoManager
