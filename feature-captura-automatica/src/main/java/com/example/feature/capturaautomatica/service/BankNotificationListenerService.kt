@@ -27,9 +27,6 @@ class BankNotificationListenerService : NotificationListenerService() {
 
         val packageName = sbn.packageName ?: return
 
-        // 1. Filtrado instantáneo por paquete bancario soportado
-        val bank = SupportedColombianBank.findByPackage(packageName) ?: return
-
         val extras = sbn.notification.extras ?: return
         val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()
@@ -37,6 +34,18 @@ class BankNotificationListenerService : NotificationListenerService() {
         val subText = extras.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString()
 
         val fullTextForAnalysis = listOfNotNull(title, text, bigText, subText).joinToString(" ")
+
+        // 1. Filtrado instantáneo por paquete bancario soportado o SMS transaccional
+        val bank = SupportedColombianBank.findByPackage(packageName, title, fullTextForAnalysis)
+            ?: if (packageName.contains("bank", ignoreCase = true) ||
+                packageName.contains("banco", ignoreCase = true) ||
+                packageName.contains("wallet", ignoreCase = true) ||
+                packageName.contains("finance", ignoreCase = true)
+            ) {
+                SupportedColombianBank.ENTIDAD_FINANCIERA
+            } else {
+                return
+            }
 
         // 2. Filtro estricto Anti-OTP y Privacidad (Ley 1581)
         if (OtpSafetyFilter.isSensitiveAuthMessage(fullTextForAnalysis)) {

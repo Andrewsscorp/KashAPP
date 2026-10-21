@@ -107,12 +107,16 @@ class AutoCaptureViewModel(
         }
     }
 
-    fun simulateCapture(bankName: String) {
+    fun simulateCapture(bankName: String, context: android.content.Context? = null) {
         viewModelScope.launch {
             _isProcessing.value = true
             val result = repository.simulateTestCapture(userId, bankName)
             _isProcessing.value = false
             if (result.isSuccess) {
+                val entity = result.getOrNull()
+                if (entity != null && context != null) {
+                    com.example.feature.capturaautomatica.service.AutoCaptureNotificationHelper.showCaptureNotification(context, entity)
+                }
                 _events.emit(AutoCaptureUiEvent.ShowMessage("Simulación de $bankName creada con éxito"))
             } else {
                 _events.emit(AutoCaptureUiEvent.ShowError(result.exceptionOrNull()?.message ?: "Error en simulación"))

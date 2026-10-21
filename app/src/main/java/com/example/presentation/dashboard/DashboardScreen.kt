@@ -16,6 +16,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -166,7 +168,16 @@ fun DashboardScreen(
     var showAutoCaptureSettings by rememberSaveable { mutableStateOf(false) }
     var showQuickCashEntry by rememberSaveable { mutableStateOf(false) }
 
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { _ -> }
+
     LaunchedEffect(Unit) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (!AutoCaptureNotificationHelper.isNotificationPermissionGranted(dashContext)) {
+                notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
         if (currentActivity?.intent?.getBooleanExtra("open_upcoming_payments", false) == true) {
             showUpcomingPaymentsModule = true
             currentActivity.intent?.removeExtra("open_upcoming_payments")
@@ -1222,7 +1233,7 @@ fun DashboardScreen(
     if (showAutoCaptureSettings) {
         AutoCaptureSettingsSheet(
             onSimulate = { bankName ->
-                autoCaptureViewModel.simulateCapture(bankName)
+                autoCaptureViewModel.simulateCapture(bankName, dashContext)
             },
             onDismissRequest = { showAutoCaptureSettings = false }
         )

@@ -3,11 +3,16 @@ package com.example.feature.capturaautomatica.service
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.media.RingtoneManager
 import android.os.Build
+import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import com.example.data.local.entity.PendingAutoCaptureEntity
 import java.text.NumberFormat
 import java.util.Locale
@@ -26,17 +31,41 @@ object AutoCaptureNotificationHelper {
     const val EXTRA_USER_ID = "extra_user_id"
     const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
 
+    fun isNotificationPermissionGranted(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            NotificationManagerCompat.from(context).areNotificationsEnabled()
+        }
+    }
+
+    fun isNotificationListenerServiceEnabled(context: Context): Boolean {
+        val enabledListeners = Settings.Secure.getString(
+            context.contentResolver,
+            "enabled_notification_listeners"
+        ) ?: return false
+        val myService = ComponentName(context, BankNotificationListenerService::class.java)
+        return enabledListeners.contains(myService.flattenToString()) ||
+            enabledListeners.contains(context.packageName)
+    }
+
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = CHANNEL_DESC
-                lockscreenVisibility = NotificationCompat.VISIBILITY_PRIVATE
+                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
                 enableVibration(true)
+                vibrationPattern = longArrayOf(0, 200, 100, 250)
                 setShowBadge(true)
+                setSound(defaultSoundUri, null)
             }
             val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
             manager?.createNotificationChannel(channel)
@@ -107,17 +136,24 @@ object AutoCaptureNotificationHelper {
             )
         }
 
+        val appIcon = if (context.applicationInfo.icon != 0) {
+            context.applicationInfo.icon
+        } else {
+            android.R.drawable.ic_dialog_info
+        }
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(appIcon)
             .setContentTitle(title)
             .setContentText(content)
             .setStyle(
                 NotificationCompat.BigTextStyle().bigText(
-                    "$content\nCuenta: ${entity.matchedAccountName ?: "Por asignar"}\nCategoría sugerida: ${entity.matchedCategoryName ?: "General"}"
+                    "$content\nCuenta: ${entity.matchedAccountName ?: "Por asignar"}\nCategoría: ${entity.matchedCategoryName ?: "General"}"
                 )
             )
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(true)
             .setContentIntent(contentPendingIntent)
             .addAction(
