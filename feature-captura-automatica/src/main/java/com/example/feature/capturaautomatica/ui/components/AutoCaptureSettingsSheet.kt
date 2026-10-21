@@ -204,61 +204,63 @@ fun AutoCaptureSettingsSheet(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Supported banks list
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Supported banks list (22 entidades colombianas)
             Text(
-                text = "Entidades Financieras Soportadas (7)",
+                text = "Entidades Financieras y Billeteras (${SupportedColombianBank.entries.size})",
                 style = MaterialTheme.typography.titleSmall.copy(
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                SupportedColombianBank.entries.take(4).forEach { bank ->
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFF1E232B),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 8.dp)) {
-                            Text(
-                                text = bank.displayName,
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFFCBD5E1),
-                                    fontSize = 10.sp
-                                ),
-                                maxLines = 1
-                            )
+            Text(
+                text = "Bancos, billeteras digitales, tarjetas de crédito, cooperativas y SMS transaccionales de Colombia.",
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = Color(0xFF94A3B8)
+                )
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Grid flexible de bancos soportados con acento de color
+            SupportedColombianBank.entries.chunked(3).forEach { rowBanks ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 3.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    rowBanks.forEach { bank ->
+                        val color = try {
+                            Color(android.graphics.Color.parseColor(bank.brandColorHex))
+                        } catch (e: Exception) {
+                            Color(0xFF10B981)
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFF1A1F29),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.3f)),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    text = bank.displayName,
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.White,
+                                        fontSize = 10.sp
+                                    ),
+                                    maxLines = 1
+                                )
+                            }
                         }
                     }
-                }
-            }
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                SupportedColombianBank.entries.drop(4).forEach { bank ->
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFF1E232B),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 8.dp)) {
-                            Text(
-                                text = bank.displayName,
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFFCBD5E1),
-                                    fontSize = 10.sp
-                                ),
-                                maxLines = 1
-                            )
-                        }
+                    // Rellenar espacios vacíos si la última fila tiene menos de 3 elementos
+                    repeat(3 - rowBanks.size) {
+                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }
@@ -282,15 +284,25 @@ fun AutoCaptureSettingsSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            listOf("Bancolombia", "Nequi", "Nu Colombia", "DaviPlata").forEach { bankName ->
+            listOf(
+                "nequi bre-b" to "⚡ Simular Bre-B Nequi ($5 COP)",
+                "Bancolombia" to "💳 Simular compra Bancolombia ($48.500)",
+                "Nequi" to "💜 Simular pago Nequi ($22.000)",
+                "Nu Colombia" to "🟣 Simular compra Nu ($42.000)",
+                "DaviPlata" to "🔴 Simular compra DaviPlata ($45.000)",
+                "Banco de Bogota" to "🔵 Simular compra Banco de Bogotá ($89.000)",
+                "Falabella" to "🟢 Simular compra CMR Falabella ($120.000)",
+                "Dale" to "🟡 Simular Bre-B Dale! ($25.000)",
+                "RappiPay" to "🟠 Simular pago RappiPay ($35.000)"
+            ).forEach { (key, label) ->
                 OutlinedButton(
                     onClick = {
-                        onSimulate(bankName)
+                        onSimulate(key)
                         onDismissRequest()
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp),
+                        .padding(vertical = 3.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -301,7 +313,7 @@ fun AutoCaptureSettingsSheet(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Simular compra en $bankName")
+                    Text(text = label, fontSize = 13.sp)
                 }
             }
         }

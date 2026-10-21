@@ -1151,10 +1151,27 @@ fun DashboardScreen(
     }
 
     if (showAutoCaptureInbox) {
+        val accountOptions = remember(uiState.accounts) {
+            uiState.accounts.map { acc ->
+                com.example.feature.capturaautomatica.domain.model.AutoCaptureAccountOption(
+                    id = acc.rawId.ifBlank { acc.id.toString() },
+                    name = acc.name,
+                    bankName = acc.bankName,
+                    balance = acc.balance.toDouble(),
+                    type = acc.type.name,
+                    colorHex = acc.colorHex
+                )
+            }
+        }
         AutoCaptureInboxSheet(
             pendingCaptures = pendingAutoCaptures,
-            onConfirmCapture = { captureId ->
-                autoCaptureViewModel.confirmCapture(captureId)
+            availableAccounts = accountOptions,
+            onConfirmCapture = { captureId, selectedAccountId, selectedAccountName ->
+                autoCaptureViewModel.confirmCapture(
+                    captureId = captureId,
+                    customAccountId = selectedAccountId,
+                    customAccountName = selectedAccountName
+                )
                 viewModel.onEvent(DashboardEvent.Refresh)
             },
             onDismissCapture = { captureId ->

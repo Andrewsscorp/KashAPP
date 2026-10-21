@@ -256,9 +256,14 @@ class AutoCaptureRepositoryImpl(
         val now = System.currentTimeMillis()
         val (pkg, title, text) = when (bankName.lowercase(Locale.ROOT)) {
             "nequi" -> Triple("com.nequi.MobileApp", "Nequi", "Pagaste $22.000,00 en CREPES Y WAFFLES con tu Nequi")
+            "nequi bre-b", "bre-b", "breb" -> Triple("com.nequi.MobileApp", "Te enviaron plata por Bre-B", "Te enviaron $5. Entra a tu app y revisa tu saldo.")
             "nu", "nu colombia" -> Triple("com.nu.production", "Nu", "Compra aprobada por $ 42.000,00 en DIDI RIDES con tu tarjeta ...9104")
             "daviplata" -> Triple("com.davivienda.daviplataapp", "DaviPlata", "Compra por $45.000 en ALMACENES EXITO")
             "davivienda" -> Triple("com.davivienda.daviviendaapp", "Davivienda", "Davivienda informa compra por $68.000 en RESTAURANTE con tarjeta terminada en 1234")
+            "banco de bogota", "bogota" -> Triple("com.bancodebogota.bancamovil", "Banco de Bogotá", "Banco de Bogotá le informa Compra por $89.000 en HOME CENTER")
+            "falabella", "banco falabella" -> Triple("cl.falabella.bancafalabella.co", "Banco Falabella", "Compra aprobada por $120.000 en FALABELLA con tu tarjeta CMR")
+            "dale", "dale!" -> Triple("co.com.dale.app", "Dale!", "Te enviaron $25.000 por Bre-B de ANDRES")
+            "rappipay" -> Triple("co.com.rappipay.app", "RappiPay", "Pagaste $35.000 en RAPPI con tu RappiCard")
             else -> Triple("com.todo1.mobile", "Bancolombia", "Bancolombia le informa Compra por $48.500,00 en D1 TUNJA CENTRO 14:22 ${SimpleDateFormat("dd/MM/yyyy", Locale.ROOT).format(Date(now))} T.Deb *4821")
         }
 

@@ -196,5 +196,86 @@ class ColombianBankNotificationParserTest {
         assertEquals(30000.0, dp.amount, 0.001)
         assertEquals("Transferencia Bre-B DaviPlata", dp.merchantOrCounterparty)
     }
+
+    @Test
+    fun testAc11_bancoDeBogotaPurchase() {
+        val pkg = "com.bancodebogota.bancamovil"
+        val title = "Banco de Bogotá"
+        val text = "Banco de Bogotá le informa Compra por $89.000 en HOME CENTER 14:15 T.Deb *4321"
+
+        val parsed = parser.parse(pkg, title, text)
+        assertNotNull(parsed)
+        assertEquals("EXPENSE", parsed!!.transactionType)
+        assertEquals(89000.0, parsed.amount, 0.001)
+        assertEquals("HOME CENTER", parsed.merchantOrCounterparty)
+        assertEquals("4321", parsed.lastFourDigits)
+        assertEquals(SupportedColombianBank.BANCO_DE_BOGOTA, parsed.detectedBank)
+    }
+
+    @Test
+    fun testAc12_scotiabankColpatriaPurchase() {
+        val pkg = "com.colpatria.banca.movil"
+        val title = "Scotiabank Colpatria"
+        val text = "Scotiabank Colpatria informa: Compra aprobada por $150.000 en ZARA con tarjeta terminada en 9876"
+
+        val parsed = parser.parse(pkg, title, text)
+        assertNotNull(parsed)
+        assertEquals("EXPENSE", parsed!!.transactionType)
+        assertEquals(150000.0, parsed.amount, 0.001)
+        assertEquals("ZARA", parsed.merchantOrCounterparty)
+        assertEquals("9876", parsed.lastFourDigits)
+        assertEquals(SupportedColombianBank.SCOTIABANK_COLPATRIA, parsed.detectedBank)
+    }
+
+    @Test
+    fun testAc13_bancoFalabellaCmr() {
+        val pkg = "cl.falabella.bancafalabella.co"
+        val title = "Banco Falabella"
+        val text = "Compra por $230.000 en FALABELLA TITAN con tu tarjeta CMR *6543"
+
+        val parsed = parser.parse(pkg, title, text)
+        assertNotNull(parsed)
+        assertEquals("EXPENSE", parsed!!.transactionType)
+        assertEquals(230000.0, parsed.amount, 0.001)
+        assertEquals("FALABELLA TITAN", parsed.merchantOrCounterparty)
+        assertEquals("6543", parsed.lastFourDigits)
+        assertEquals(SupportedColombianBank.BANCO_FALABELLA, parsed.detectedBank)
+    }
+
+    @Test
+    fun testAc14_daleAndRappiPay() {
+        // Dale!
+        val dale = parser.parse("co.com.dale.app", "Dale!", "Te enviaron $25.000 por Bre-B de ANDRES")
+        assertNotNull(dale)
+        assertEquals("INCOME", dale!!.transactionType)
+        assertEquals(25000.0, dale.amount, 0.001)
+        assertEquals("ANDRES", dale.merchantOrCounterparty)
+        assertEquals(SupportedColombianBank.DALE, dale.detectedBank)
+
+        // RappiPay
+        val rappi = parser.parse("co.com.rappipay.app", "RappiPay", "Pagaste $35.000 en RAPPI RESTAURANTES con tu RappiCard")
+        assertNotNull(rappi)
+        assertEquals("EXPENSE", rappi!!.transactionType)
+        assertEquals(35000.0, rappi.amount, 0.001)
+        assertEquals("RAPPI RESTAURANTES", rappi.merchantOrCounterparty)
+        assertEquals(SupportedColombianBank.RAPPIPAY, rappi.detectedBank)
+    }
+
+    @Test
+    fun testAc15_smsTransactionalNotificationDetection() {
+        // Notificación de compra que llega por app de SMS (Google Mensajes)
+        val pkg = "com.google.android.apps.messaging"
+        val title = "Bancolombia"
+        val text = "Bancolombia le informa Compra por $32.500 en TIENDA D1 16:30 T.Deb *1122"
+
+        val parsed = parser.parse(pkg, title, text)
+        assertNotNull("Debe capturar transacciones bancarias que llegan por SMS", parsed)
+        assertEquals("EXPENSE", parsed!!.transactionType)
+        assertEquals(32500.0, parsed.amount, 0.001)
+        assertEquals("TIENDA D1", parsed.merchantOrCounterparty)
+        assertEquals("1122", parsed.lastFourDigits)
+        assertEquals(SupportedColombianBank.BANCOLOMBIA, parsed.detectedBank)
+    }
 }
+
 

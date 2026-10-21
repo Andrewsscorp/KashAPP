@@ -28,12 +28,12 @@ class ColombianBankNotificationParser {
             return null
         }
 
-        // 2. Validar que el paquete pertenezca a la lista blanca de bancos soportados
-        val bank = SupportedColombianBank.findByPackage(packageName) ?: return null
+        // 2. Validar que el paquete pertenezca a la lista blanca de bancos soportados (o SMS transaccional)
+        val bank = SupportedColombianBank.findByPackage(packageName, safeTitle, safeText) ?: return null
 
         val combined = "$safeTitle $safeText".trim()
 
-        return when (bank) {
+        val parsed = when (bank) {
             SupportedColombianBank.BANCOLOMBIA -> parseBancolombia(packageName, bank, combined, postTime)
             SupportedColombianBank.NEQUI -> parseNequi(packageName, bank, combined, postTime)
             SupportedColombianBank.NU_COLOMBIA -> parseNu(packageName, bank, combined, postTime)
@@ -41,7 +41,10 @@ class ColombianBankNotificationParser {
             SupportedColombianBank.DAVIVIENDA -> parseDavivienda(packageName, bank, combined, postTime)
             SupportedColombianBank.BBVA -> parseBbva(packageName, bank, combined, postTime)
             SupportedColombianBank.LULO_BANK -> parseLulo(packageName, bank, combined, postTime)
+            else -> null
         }
+
+        return parsed ?: parseUniversalFinancialTransaction(packageName, bank, combined, postTime)
     }
 
     private fun parseBancolombia(
@@ -337,6 +340,78 @@ class ColombianBankNotificationParser {
         return null
     }
 
+    /**
+     * Motor de análisis heurístico universal para bancos colombianos, cooperativas, fintechs y SMS.
+     * Soporta compras en comercios, transferencias, retiros, ingresos, pagos de nómina, PSE, Bre-B y Transfiya.
+     */
+    private fun parseUniversalFinancialTransaction(
+        pkg: String,
+        bank: SupportedColombianBank,
+        text: String,
+        postTime: Long
+    ): ParsedBankNotification? {
+        val cardDigits = extractLastFourDigits(text)
+
+        // 1. Detección universal de Compras, Pagos en comercios, PSE, Facturas
+        val compraRegex = Regex(
+            """(?iu)(?:compra\s+(?:aprobada|autorizada)?\s*(?:por)?|pagaste|pago\s+(?:exitoso|pse|de\s+servicios?|de\s+factura)?\s*(?:por)?)\s+\$?\s*([0-9]+(?:[.,][0-9]+)*)(?:\s+(?:en|a)\s+([^.]+?))?(?:\s+con\s+(?:tu\s+)?tarjeta|\s+T\.(?:Deb|Cred)|\.|\$|$)"""
+        )
+        val compraMatch = compraRegex.find(text)
+        if (compraMatch != null) {
+            val amount = parseAmount(compraMatch.groupValues[1])
+            val rawMerchant = compraMatch.groupValues.getOrNull(2)?.takeIf { it.isNotBlank() } ?: "Comercio no especificado"
+            if (amount > 0.0) {
+                return buildResult(pkg, bank, "EXPENSE", amount, cleanMerchantName(rawMerchant), cardDigits, postTime)
+            }
+        }
+
+        // 2. Transferencias enviadas / Envío de dinero / Giros / Pasaste plata
+        val envioRegex = Regex(
+            """(?iu)(?:transferencia\s+enviada|enviaste|pasaste\s+plata|giro\s+enviado)\s+(?:por\s+)?\$?\s*([0-9]+(?:[.,][0-9]+)*)(?:\s+a\s+([^.]+?))?(?:\.|\$|$)"""
+        )
+        val envioMatch = envioRegex.find(text)
+        if (envioMatch != null) {
+            val amount = parseAmount(envioMatch.groupValues[1])
+            val rawDest = envioMatch.groupValues.getOrNull(2)?.takeIf { it.isNotBlank() } ?: "Transferencia ${bank.displayName}"
+            if (amount > 0.0) {
+                return buildResult(pkg, bank, "EXPENSE", amount, cleanMerchantName(rawDest), cardDigits, postTime)
+            }
+        }
+
+        // 3. Retiros en cajero / Retiro sin tarjeta
+        val retiroRegex = Regex("""(?iu)retiro\s+(?:por|en\s+cajero|sin\s+tarjeta)?\s*(?:por\s+)?\$?\s*([0-9]+(?:[.,][0-9]+)*)""")
+        val retiroMatch = retiroRegex.find(text)
+        if (retiroMatch != null) {
+            val amount = parseAmount(retiroMatch.groupValues[1])
+            if (amount > 0.0) {
+                return buildResult(pkg, bank, "EXPENSE", amount, "Retiro Cajero ${bank.displayName}", cardDigits, postTime)
+            }
+        }
+
+        // 4. Recepción de dinero / Ingresos / Bre-B / Transfiya / Nómina / Abono
+        val ingresoRegex = Regex(
+            """(?iu)(?:te\s+enviaron|te\s+pasaron|recibiste|recepci[oóOÓ]n\s+de\s+transferencia|abono|consignaci[oóOÓ]n|pago\s+de\s+n[oóOÓ]mina|le\s+pasaron)\s+(?:plata\s+)?(?:por\s+)?\$?\s*([0-9]+(?:[.,][0-9]+)*)(.*?)(?:\.|\$|$)"""
+        )
+        val ingresoMatch = ingresoRegex.find(text)
+        if (ingresoMatch != null) {
+            val amount = parseAmount(ingresoMatch.groupValues[1])
+            val remainder = ingresoMatch.groupValues.getOrNull(2).orEmpty()
+            val deMatch = Regex("""(?iu)\bde\s+([^.]+)""").find(remainder)
+            val rawSender = deMatch?.groupValues?.getOrNull(1)?.takeIf { it.isNotBlank() }
+            val sender = when {
+                !rawSender.isNullOrBlank() -> cleanMerchantName(rawSender)
+                text.contains("Bre-B", ignoreCase = true) -> "Transferencia Bre-B ${bank.displayName}"
+                text.contains("Transfiya", ignoreCase = true) -> "Transferencia Transfiya ${bank.displayName}"
+                else -> "Transferencia Recibida ${bank.displayName}"
+            }
+            if (amount > 0.0) {
+                return buildResult(pkg, bank, "INCOME", amount, sender, cardDigits, postTime)
+            }
+        }
+
+        return null
+    }
+
     private fun extractLastFourDigits(text: String): String? {
         val regex = Regex("""(?:\*+|\.{2,}|terminada\s+en\s+)(\d{4})\b""")
         return regex.find(text)?.groupValues?.getOrNull(1)
@@ -344,7 +419,9 @@ class ColombianBankNotificationParser {
 
     private fun cleanMerchantName(raw: String): String {
         return raw
-            .replace(Regex("""(?i)\s+(?:con\s+tu|desde|en\s+su|cta|cuenta|tarjeta).*$"""), "")
+            .replace(Regex("""(?i)\s+(?:con\s+tu|desde|en\s+su|en\s+tu|cta|cuenta|tarjeta|T\.Deb|T\.Cred|por\s+bre-b|por\s+transfiya).*$"""), "")
+            .replace(Regex("""\s+\d{1,2}:\d{2}(?::\d{2})?.*$"""), "")
+            .replace(Regex("""\s+\d{1,2}/\d{1,2}(?:/\d{2,4})?.*$"""), "")
             .replace(Regex("""[.,;:]+$"""), "")
             .trim()
             .ifBlank { "Comercio no especificado" }
