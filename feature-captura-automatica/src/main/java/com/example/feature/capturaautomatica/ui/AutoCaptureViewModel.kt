@@ -52,7 +52,8 @@ class AutoCaptureViewModel(
         customAccountId: String? = null,
         customAccountName: String? = null,
         customCategoryId: String? = null,
-        customCategoryName: String? = null
+        customCategoryName: String? = null,
+        customTags: List<String> = emptyList()
     ) {
         viewModelScope.launch {
             _isProcessing.value = true
@@ -62,7 +63,8 @@ class AutoCaptureViewModel(
                 customAccountId = customAccountId,
                 customAccountName = customAccountName,
                 customCategoryId = customCategoryId,
-                customCategoryName = customCategoryName
+                customCategoryName = customCategoryName,
+                customTags = customTags
             )
             _isProcessing.value = false
             if (result.isSuccess) {
@@ -70,6 +72,25 @@ class AutoCaptureViewModel(
             } else {
                 _events.emit(AutoCaptureUiEvent.ShowError(result.exceptionOrNull()?.message ?: "Error al confirmar"))
             }
+        }
+    }
+
+    fun updateDraftSelection(
+        captureId: String,
+        accountId: String?,
+        accountName: String?,
+        categoryId: String?,
+        categoryName: String?
+    ) {
+        viewModelScope.launch {
+            repository.updateDraftSelection(
+                captureId = captureId,
+                userId = userId,
+                accountId = accountId,
+                accountName = accountName,
+                categoryId = categoryId,
+                categoryName = categoryName
+            )
         }
     }
 

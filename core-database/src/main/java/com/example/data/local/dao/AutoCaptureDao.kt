@@ -42,6 +42,23 @@ interface AutoCaptureDao {
     @Query("SELECT * FROM pending_auto_captures WHERE userId = :userId ORDER BY notificationTimestamp DESC")
     suspend fun getAllCapturesByUserId(userId: String): List<PendingAutoCaptureEntity>
 
+    @Query("""
+        UPDATE pending_auto_captures
+        SET matchedAccountId = :accountId,
+            matchedAccountName = :accountName,
+            matchedCategoryId = :categoryId,
+            matchedCategoryName = :categoryName
+        WHERE id = :id AND userId = :userId
+    """)
+    suspend fun updateDraftSelection(
+        id: String,
+        userId: String,
+        accountId: String?,
+        accountName: String?,
+        categoryId: String?,
+        categoryName: String?
+    )
+
     @Query("DELETE FROM pending_auto_captures WHERE id = :id AND userId = :userId")
     suspend fun deleteCaptureById(id: String, userId: String)
 }

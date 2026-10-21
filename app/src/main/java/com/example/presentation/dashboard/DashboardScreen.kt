@@ -19,6 +19,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -1150,6 +1151,9 @@ fun DashboardScreen(
         )
     }
 
+    val roomCategories by appContainer.financialDao.getCategoriesFlow().collectAsStateWithLifecycle(initialValue = emptyList())
+    val roomTags by appContainer.financialDao.getTagsFlow().collectAsStateWithLifecycle(initialValue = emptyList())
+
     if (showAutoCaptureInbox) {
         val accountOptions = remember(uiState.accounts) {
             uiState.accounts.map { acc ->
@@ -1163,16 +1167,50 @@ fun DashboardScreen(
                 )
             }
         }
+        val categoryOptions = remember(roomCategories) {
+            roomCategories.filter { it.isActive }.map { cat ->
+                com.example.feature.capturaautomatica.domain.model.AutoCaptureCategoryOption(
+                    id = cat.id,
+                    name = cat.name,
+                    type = cat.type,
+                    colorHex = cat.colorHex,
+                    icon = cat.icon
+                )
+            }
+        }
+        val tagOptions = remember(roomTags) {
+            roomTags.map { tag ->
+                com.example.feature.capturaautomatica.domain.model.AutoCaptureTagOption(
+                    id = tag.id,
+                    name = tag.name,
+                    colorHex = tag.colorHex
+                )
+            }
+        }
         AutoCaptureInboxSheet(
             pendingCaptures = pendingAutoCaptures,
             availableAccounts = accountOptions,
-            onConfirmCapture = { captureId, selectedAccountId, selectedAccountName ->
+            availableCategories = categoryOptions,
+            availableTags = tagOptions,
+            onConfirmCapture = { captureId, selectedAccountId, selectedAccountName, selectedCategoryId, selectedCategoryName, selectedTags ->
                 autoCaptureViewModel.confirmCapture(
                     captureId = captureId,
                     customAccountId = selectedAccountId,
-                    customAccountName = selectedAccountName
+                    customAccountName = selectedAccountName,
+                    customCategoryId = selectedCategoryId,
+                    customCategoryName = selectedCategoryName,
+                    customTags = selectedTags
                 )
                 viewModel.onEvent(DashboardEvent.Refresh)
+            },
+            onDraftChange = { captureId, accountId, accountName, categoryId, categoryName ->
+                autoCaptureViewModel.updateDraftSelection(
+                    captureId = captureId,
+                    accountId = accountId,
+                    accountName = accountName,
+                    categoryId = categoryId,
+                    categoryName = categoryName
+                )
             },
             onDismissCapture = { captureId ->
                 autoCaptureViewModel.dismissCapture(captureId)

@@ -287,7 +287,7 @@ class AppContainer(private val context: Context) {
             financialDao = financialDao,
             merchantDao = securityDatabase.merchantDao(),
             auditSecurityLogDao = securityDatabase.auditSecurityLogDao(),
-            recordExpense = { userId, accountId, accountName, categoryId, categoryName, amount, dateFormatted, description, idempotencyKey ->
+            recordExpense = { userId, accountId, accountName, categoryId, categoryName, amount, dateFormatted, description, idempotencyKey, tags ->
                 recordExpenseUseCase(
                     userId = userId,
                     accountId = accountId,
@@ -301,11 +301,11 @@ class AppContainer(private val context: Context) {
                     receiptUrl = null,
                     isRecurring = false,
                     saveAsTemplate = false,
-                    tags = emptyList(),
+                    tags = tags,
                     idempotencyKey = idempotencyKey
                 ).map { it.id }
             },
-            recordIncome = { userId, accountId, accountName, categoryId, categoryName, amount, dateFormatted, description, idempotencyKey ->
+            recordIncome = { userId, accountId, accountName, categoryId, categoryName, amount, dateFormatted, description, idempotencyKey, tags ->
                 recordIncomeUseCase(
                     userId = userId,
                     accountId = accountId,
@@ -322,7 +322,7 @@ class AppContainer(private val context: Context) {
                     isRecurring = false,
                     recurrenceFrequency = "Mensual",
                     saveAsTemplate = false,
-                    tags = emptyList(),
+                    tags = tags,
                     idempotencyKey = idempotencyKey
                 ).map { it.id }
             }

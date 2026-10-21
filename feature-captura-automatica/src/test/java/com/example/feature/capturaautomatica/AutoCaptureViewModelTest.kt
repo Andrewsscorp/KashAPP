@@ -147,8 +147,18 @@ private class FakeViewModelRepository : AutoCaptureRepository {
         customAccountId: String?,
         customAccountName: String?,
         customCategoryId: String?,
-        customCategoryName: String?
+        customCategoryName: String?,
+        customTags: List<String>
     ): Result<String> = Result.success("tx_confirmed_99")
+
+    override suspend fun updateDraftSelection(
+        captureId: String,
+        userId: String,
+        accountId: String?,
+        accountName: String?,
+        categoryId: String?,
+        categoryName: String?
+    ): Result<Unit> = Result.success(Unit)
 
     override suspend fun dismissCapture(captureId: String, userId: String): Result<Unit> = Result.success(Unit)
 

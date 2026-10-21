@@ -78,7 +78,7 @@ class AutoCaptureRepositoryTest {
             auditSecurityLogDao = fakeAuditLogDao,
             accountProvider = { userId -> fakeAccounts.filter { it.userId == userId } },
             categoryProvider = { fakeCategories },
-            recordExpense = { userId, accountId, accountName, categoryId, categoryName, amount, dateStr, desc, idempotencyKey ->
+            recordExpense = { userId, accountId, accountName, categoryId, categoryName, amount, dateStr, desc, idempotencyKey, tags ->
                 val txId = "tx_${UUID.randomUUID().toString().take(8)}"
                 fakeTransactions.add(
                     TransactionEntity(
@@ -94,7 +94,8 @@ class AutoCaptureRepositoryTest {
                         date = dateStr,
                         description = desc,
                         receiptUrl = null,
-                        idempotencyKey = idempotencyKey
+                        idempotencyKey = idempotencyKey,
+                        tags = tags.joinToString(",")
                     )
                 )
                 val accIdx = fakeAccounts.indexOfFirst { it.id == accountId }
@@ -104,7 +105,7 @@ class AutoCaptureRepositoryTest {
                 }
                 Result.success(txId)
             },
-            recordIncome = { userId, accountId, accountName, categoryId, categoryName, amount, dateStr, desc, idempotencyKey ->
+            recordIncome = { userId, accountId, accountName, categoryId, categoryName, amount, dateStr, desc, idempotencyKey, tags ->
                 val txId = "tx_${UUID.randomUUID().toString().take(8)}"
                 fakeTransactions.add(
                     TransactionEntity(
@@ -120,7 +121,8 @@ class AutoCaptureRepositoryTest {
                         date = dateStr,
                         description = desc,
                         receiptUrl = null,
-                        idempotencyKey = idempotencyKey
+                        idempotencyKey = idempotencyKey,
+                        tags = tags.joinToString(",")
                     )
                 )
                 val accIdx = fakeAccounts.indexOfFirst { it.id == accountId }
@@ -232,14 +234,55 @@ class AutoCaptureRepositoryTest {
     }
 
     @Test
-    fun testSimulateTestCapture_createsValidCapture() = runTest(testDispatcher) {
-        val simRes = repository.simulateTestCapture(testUserId, "Nequi")
-        assertTrue(simRes.isSuccess)
-        val capture = simRes.getOrNull()
-        assertNotNull(capture)
-        assertEquals("Nequi", capture!!.detectedBankName)
-        assertEquals(22000.0, capture.amount, 0.01)
-        assertEquals("CREPES Y WAFFLES", capture.merchantOrCounterparty)
+    fun testUpdateDraftSelection_persistsDraftChanges() = runTest(testDispatcher) {
+        val processRes = repository.processNotification(
+            "com.todo1.mobile",
+            "Bancolombia",
+            "Bancolombia le informa Compra por $48.500,00 en D1 TUNJA CENTRO 14:22 19/10/2026 T.Deb *4821",
+            1776600000000L,
+            testUserId
+        )
+        val capture = processRes.getOrNull()!!
+
+        val updateRes = repository.updateDraftSelection(
+            captureId = capture.id,
+            userId = testUserId,
+            accountId = "acc_custom_draft",
+            accountName = "Cuenta Borrador",
+            categoryId = "cat_custom_draft",
+            categoryName = "Mercado Draft"
+        )
+        assertTrue(updateRes.isSuccess)
+
+        val updated = fakeAutoCaptureDao.captures.find { it.id == capture.id }
+        assertNotNull(updated)
+        assertEquals("acc_custom_draft", updated!!.matchedAccountId)
+        assertEquals("Cuenta Borrador", updated.matchedAccountName)
+        assertEquals("cat_custom_draft", updated.matchedCategoryId)
+        assertEquals("Mercado Draft", updated.matchedCategoryName)
+    }
+
+    @Test
+    fun testConfirmCapture_withCustomTags_forwardsTagsToTransaction() = runTest(testDispatcher) {
+        val processRes = repository.processNotification(
+            "com.todo1.mobile",
+            "Bancolombia",
+            "Bancolombia le informa Compra por $48.500,00 en D1 TUNJA CENTRO 14:22 19/10/2026 T.Deb *4821",
+            1776600000000L,
+            testUserId
+        )
+        val capture = processRes.getOrNull()!!
+
+        val confirmRes = repository.confirmCapture(
+            captureId = capture.id,
+            userId = testUserId,
+            customTags = listOf("Supermercado", "Quincena")
+        )
+        assertTrue(confirmRes.isSuccess)
+
+        val createdTx = fakeTransactions.firstOrNull()
+        assertNotNull(createdTx)
+        assertEquals("Supermercado,Quincena", createdTx!!.tags)
     }
 }
 
@@ -279,6 +322,26 @@ private class FakeAutoCaptureDao : AutoCaptureDao {
         if (index != -1) {
             val old = captures[index]
             captures[index] = old.copy(status = status, linkedTransactionId = linkedTransactionId)
+        }
+    }
+
+    override suspend fun updateDraftSelection(
+        id: String,
+        userId: String,
+        accountId: String?,
+        accountName: String?,
+        categoryId: String?,
+        categoryName: String?
+    ) {
+        val index = captures.indexOfFirst { it.id == id && it.userId == userId }
+        if (index != -1) {
+            val old = captures[index]
+            captures[index] = old.copy(
+                matchedAccountId = accountId,
+                matchedAccountName = accountName,
+                matchedCategoryId = categoryId,
+                matchedCategoryName = categoryName
+            )
         }
     }
 

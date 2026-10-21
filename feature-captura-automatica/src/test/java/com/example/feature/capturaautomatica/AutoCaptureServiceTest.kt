@@ -34,8 +34,18 @@ class AutoCaptureServiceTest {
                 customAccountId: String?,
                 customAccountName: String?,
                 customCategoryId: String?,
-                customCategoryName: String?
+                customCategoryName: String?,
+                customTags: List<String>
             ): Result<String> = Result.success("tx_123")
+
+            override suspend fun updateDraftSelection(
+                captureId: String,
+                userId: String,
+                accountId: String?,
+                accountName: String?,
+                categoryId: String?,
+                categoryName: String?
+            ): Result<Unit> = Result.success(Unit)
             override suspend fun dismissCapture(captureId: String, userId: String): Result<Unit> = Result.success(Unit)
             override suspend fun simulateTestCapture(userId: String, bankName: String): Result<PendingAutoCaptureEntity> {
                 throw UnsupportedOperationException()

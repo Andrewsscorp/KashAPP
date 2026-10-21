@@ -22,8 +22,18 @@ interface AutoCaptureRepository {
         customAccountId: String? = null,
         customAccountName: String? = null,
         customCategoryId: String? = null,
-        customCategoryName: String? = null
+        customCategoryName: String? = null,
+        customTags: List<String> = emptyList()
     ): Result<String>
+
+    suspend fun updateDraftSelection(
+        captureId: String,
+        userId: String,
+        accountId: String?,
+        accountName: String?,
+        categoryId: String?,
+        categoryName: String?
+    ): Result<Unit>
 
     suspend fun dismissCapture(captureId: String, userId: String): Result<Unit>
 

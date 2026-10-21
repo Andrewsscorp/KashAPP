@@ -1,8 +1,11 @@
 package com.example.presentation.dashboard.components.drawer
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -128,21 +131,15 @@ fun DashboardDrawerContent(
                     ) {
                         // Brand Logo
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Surface(
-                                shape = CircleShape,
-                                color = Color.White,
-                                shadowElevation = 4.dp,
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = "K",
-                                        fontSize = 19.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = Color(0xFF007BFF)
-                                    )
-                                }
-                            }
+                            Image(
+                                painter = painterResource(id = com.example.R.drawable.logo_nuevo),
+                                contentDescription = "KashAPP Logo",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
+                            )
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(

@@ -12,9 +12,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -206,24 +209,15 @@ fun LoginScreen(
                             modifier = Modifier.weight(1f, fill = false),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = Color.White,
-                                shadowElevation = 4.dp,
-                                modifier = Modifier.size(38.dp)
-                            ) {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    Text(
-                                        text = "K",
-                                        fontSize = 20.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = Color(0xFF007BFF)
-                                    )
-                                }
-                            }
+                            Image(
+                                painter = painterResource(id = com.example.R.drawable.logo_nuevo),
+                                contentDescription = "KashAPP Logo",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clip(RoundedCornerShape(11.dp))
+                                    .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(11.dp))
+                            )
 
                             Spacer(modifier = Modifier.width(10.dp))
 

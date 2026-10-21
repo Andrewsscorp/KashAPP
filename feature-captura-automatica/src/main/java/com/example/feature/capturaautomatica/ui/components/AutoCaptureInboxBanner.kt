@@ -59,8 +59,9 @@ fun AutoCaptureInboxBanner(
                 .clickable { onClickReview() },
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = Color(0xFF0F291E) // Deep Emerald background
+                containerColor = Color(0xFF0F2440) // KashApp Deep Blue background
             ),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1E3A66)),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Row(
@@ -69,8 +70,8 @@ fun AutoCaptureInboxBanner(
                     .background(
                         brush = Brush.horizontalGradient(
                             colors = listOf(
-                                Color(0xFF064E3B).copy(alpha = 0.8f),
-                                Color(0xFF065F46).copy(alpha = 0.6f)
+                                Color(0xFF0B192C),
+                                Color(0xFF132D54)
                             )
                         )
                     )
@@ -86,13 +87,13 @@ fun AutoCaptureInboxBanner(
                         modifier = Modifier
                             .size(44.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF10B981).copy(alpha = 0.2f)),
+                            .background(Color(0xFF0284C7).copy(alpha = 0.25f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.NotificationsActive,
                             contentDescription = "Notificaciones Bancarias",
-                            tint = Color(0xFF34D399),
+                            tint = Color(0xFF38BDF8),
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -110,8 +111,8 @@ fun AutoCaptureInboxBanner(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Badge(
-                                containerColor = Color(0xFF10B981),
-                                contentColor = Color.Black
+                                containerColor = Color(0xFF0284C7),
+                                contentColor = Color.White
                             ) {
                                 Text(
                                     text = pendingCount.toString(),
@@ -123,7 +124,7 @@ fun AutoCaptureInboxBanner(
                         Text(
                             text = if (pendingCount == 1) "1 movimiento bancario por revisar" else "$pendingCount movimientos bancarios por revisar",
                             style = MaterialTheme.typography.bodySmall.copy(
-                                color = Color(0xFFA7F3D0)
+                                color = Color(0xFFBAE6FD)
                             )
                         )
                     }
@@ -132,7 +133,7 @@ fun AutoCaptureInboxBanner(
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = "Revisar",
-                    tint = Color(0xFF34D399),
+                    tint = Color(0xFF38BDF8),
                     modifier = Modifier.size(24.dp)
                 )
             }

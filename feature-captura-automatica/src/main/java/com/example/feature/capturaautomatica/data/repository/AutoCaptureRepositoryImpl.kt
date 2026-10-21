@@ -39,7 +39,8 @@ class AutoCaptureRepositoryImpl(
         amount: Double,
         dateFormatted: String,
         description: String?,
-        idempotencyKey: String
+        idempotencyKey: String,
+        tags: List<String>
     ) -> Result<String>)? = null,
     private val recordIncome: (suspend (
         userId: String,
@@ -50,7 +51,8 @@ class AutoCaptureRepositoryImpl(
         amount: Double,
         dateFormatted: String,
         description: String?,
-        idempotencyKey: String
+        idempotencyKey: String,
+        tags: List<String>
     ) -> Result<String>)? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : AutoCaptureRepository {
@@ -129,7 +131,8 @@ class AutoCaptureRepositoryImpl(
         customAccountId: String?,
         customAccountName: String?,
         customCategoryId: String?,
-        customCategoryName: String?
+        customCategoryName: String?,
+        customTags: List<String>
     ): Result<String> = withContext(ioDispatcher) {
         runCatching {
             val capture = autoCaptureDao.getCaptureById(captureId, userId)
@@ -175,7 +178,8 @@ class AutoCaptureRepositoryImpl(
                     capture.amount,
                     dateStr,
                     description,
-                    capture.idempotencyKey
+                    capture.idempotencyKey,
+                    customTags
                 )
                 incomeResult?.getOrThrow() ?: fallbackInsertTransaction(
                     userId = userId,
@@ -186,7 +190,8 @@ class AutoCaptureRepositoryImpl(
                     type = "INCOME",
                     dateStr = dateStr,
                     description = description,
-                    idempotencyKey = capture.idempotencyKey
+                    idempotencyKey = capture.idempotencyKey,
+                    tags = customTags
                 )
             } else {
                 val expenseResult = recordExpense?.invoke(
@@ -198,7 +203,8 @@ class AutoCaptureRepositoryImpl(
                     capture.amount,
                     dateStr,
                     description,
-                    capture.idempotencyKey
+                    capture.idempotencyKey,
+                    customTags
                 )
                 expenseResult?.getOrThrow() ?: fallbackInsertTransaction(
                     userId = userId,
@@ -209,7 +215,8 @@ class AutoCaptureRepositoryImpl(
                     type = "EXPENSE",
                     dateStr = dateStr,
                     description = description,
-                    idempotencyKey = capture.idempotencyKey
+                    idempotencyKey = capture.idempotencyKey,
+                    tags = customTags
                 )
             }
 
@@ -228,6 +235,26 @@ class AutoCaptureRepositoryImpl(
             )
 
             txId
+        }
+    }
+
+    override suspend fun updateDraftSelection(
+        captureId: String,
+        userId: String,
+        accountId: String?,
+        accountName: String?,
+        categoryId: String?,
+        categoryName: String?
+    ): Result<Unit> = withContext(ioDispatcher) {
+        runCatching {
+            autoCaptureDao.updateDraftSelection(
+                id = captureId,
+                userId = userId,
+                accountId = accountId,
+                accountName = accountName,
+                categoryId = categoryId,
+                categoryName = categoryName
+            )
         }
     }
 
@@ -417,7 +444,8 @@ class AutoCaptureRepositoryImpl(
         type: String,
         dateStr: String,
         description: String,
-        idempotencyKey: String
+        idempotencyKey: String,
+        tags: List<String> = emptyList()
     ): String {
         val dao = financialDao ?: throw IllegalStateException("FinancialDao o recordExpense/recordIncome deben estar configurados.")
         val txId = "tx_${UUID.randomUUID().toString().take(12)}"
@@ -435,6 +463,7 @@ class AutoCaptureRepositoryImpl(
             description = description,
             receiptUrl = null,
             idempotencyKey = idempotencyKey,
+            tags = tags.joinToString(","),
             syncStatus = "PENDING"
         )
         dao.insertTransaction(tx)
