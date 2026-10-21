@@ -54,8 +54,14 @@ interface ExchangeRateDao {
     @Query("SELECT * FROM manual_exchange_rates ORDER BY updatedAt DESC")
     fun observeAllManualRates(): Flow<List<ManualExchangeRateEntity>>
 
+    @Query("SELECT * FROM manual_exchange_rates WHERE (userId = :userId OR userId = '') ORDER BY updatedAt DESC")
+    fun observeAllManualRatesByUser(userId: String): Flow<List<ManualExchangeRateEntity>>
+
     @Query("SELECT * FROM manual_exchange_rates ORDER BY updatedAt DESC")
     suspend fun getAllManualRates(): List<ManualExchangeRateEntity>
+
+    @Query("SELECT * FROM manual_exchange_rates WHERE (userId = :userId OR userId = '') ORDER BY updatedAt DESC")
+    suspend fun getAllManualRatesByUser(userId: String): List<ManualExchangeRateEntity>
 
     @Query("UPDATE manual_exchange_rates SET isActive = :isActive, updatedAt = :updatedAt WHERE id = :id")
     suspend fun updateManualRateStatus(id: String, isActive: Boolean, updatedAt: Long = System.currentTimeMillis())

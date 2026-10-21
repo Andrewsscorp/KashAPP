@@ -11,12 +11,14 @@ import androidx.room.PrimaryKey
     tableName = "manual_rate_history_logs",
     indices = [
         Index(value = ["pairId"]),
-        Index(value = ["timestamp"])
+        Index(value = ["timestamp"]),
+        Index(value = ["userId"])
     ]
 )
 data class ManualRateHistoryLogEntity(
     @PrimaryKey
     val id: String,
+    val userId: String = "",
     val pairId: String, // e.g. "USD_COP"
     val fromCurrency: String,
     val toCurrency: String,

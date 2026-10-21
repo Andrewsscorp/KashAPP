@@ -13,6 +13,7 @@ import androidx.room.PrimaryKey
     indices = [
         Index(value = ["userId", "date"]),
         Index(value = ["accountId"]),
+        Index(value = ["userId", "accountId"]),
         Index(value = ["idempotencyKey"], unique = true)
     ]
 )

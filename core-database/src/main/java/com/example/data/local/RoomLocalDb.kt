@@ -814,6 +814,38 @@ object RoomLocalDb {
         }
     }
 
+    val MIGRATION_38_39 = object : androidx.room.migration.Migration(38, 39) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+            try {
+                db.execSQL("ALTER TABLE local_auth_config ADD COLUMN bound_user_id TEXT DEFAULT NULL")
+            } catch (e: Throwable) {
+                Log.w(TAG, "Notice running MIGRATION_38_39 (local_auth_config.bound_user_id): ${e.message}")
+            }
+            try {
+                db.execSQL("ALTER TABLE audit_security_logs ADD COLUMN userId TEXT NOT NULL DEFAULT ''")
+            } catch (e: Throwable) {
+                Log.w(TAG, "Notice running MIGRATION_38_39 (audit_security_logs.userId): ${e.message}")
+            }
+            try {
+                db.execSQL("ALTER TABLE manual_exchange_rates ADD COLUMN userId TEXT NOT NULL DEFAULT ''")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_manual_exchange_rates_userId` ON `manual_exchange_rates` (`userId`)")
+            } catch (e: Throwable) {
+                Log.w(TAG, "Notice running MIGRATION_38_39 (manual_exchange_rates.userId): ${e.message}")
+            }
+            try {
+                db.execSQL("ALTER TABLE manual_rate_history_logs ADD COLUMN userId TEXT NOT NULL DEFAULT ''")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_manual_rate_history_logs_userId` ON `manual_rate_history_logs` (`userId`)")
+            } catch (e: Throwable) {
+                Log.w(TAG, "Notice running MIGRATION_38_39 (manual_rate_history_logs.userId): ${e.message}")
+            }
+            try {
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_transactions_userId_accountId` ON `transactions` (`userId`, `accountId`)")
+            } catch (e: Throwable) {
+                Log.w(TAG, "Notice running MIGRATION_38_39 (index_transactions_userId_accountId): ${e.message}")
+            }
+        }
+    }
+
     private fun tryCreateEncryptedDb(context: Context, passphraseBytes: ByteArray): SecurityDatabase? {
         return try {
             // Attempt to load native SQLCipher library if available
@@ -828,7 +860,7 @@ object RoomLocalDb {
                 ENCRYPTED_DB_NAME
             )
                 .openHelperFactory(openHelperFactory)
-                .addMigrations(MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33, MIGRATION_33_34, MIGRATION_34_35, MIGRATION_35_36, MIGRATION_36_37, MIGRATION_37_38)
+                .addMigrations(MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33, MIGRATION_33_34, MIGRATION_34_35, MIGRATION_35_36, MIGRATION_36_37, MIGRATION_37_38, MIGRATION_38_39)
                 .addCallback(foreignKeyCallback)
                 .build()
 

@@ -22,8 +22,14 @@ interface UserSessionDao {
     @Query("SELECT * FROM user_sessions ORDER BY last_active_timestamp DESC LIMIT 1")
     suspend fun getLastSession(): UserSessionEntity?
 
+    @Query("SELECT * FROM user_sessions WHERE is_active = 1 ORDER BY last_active_timestamp DESC LIMIT 1")
+    suspend fun getLastActiveSession(): UserSessionEntity?
+
     @Query("SELECT * FROM user_sessions WHERE user_id = :userId LIMIT 1")
     suspend fun getSessionByUserId(userId: String): UserSessionEntity?
+
+    @Query("SELECT * FROM user_sessions WHERE user_id = :userId AND is_active = 1 LIMIT 1")
+    suspend fun getActiveSessionByUserId(userId: String): UserSessionEntity?
 
     @Query("SELECT * FROM user_sessions ORDER BY last_active_timestamp DESC")
     fun getAllSessionsFlow(): Flow<List<UserSessionEntity>>

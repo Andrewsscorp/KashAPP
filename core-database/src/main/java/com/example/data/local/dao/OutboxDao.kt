@@ -19,11 +19,20 @@ interface OutboxDao {
     @Query("SELECT * FROM outbox_operations WHERE status = 'PENDING' AND nextRetryAt <= :currentTime ORDER BY createdAt ASC LIMIT :limit")
     suspend fun getPendingOperations(currentTime: Long = System.currentTimeMillis(), limit: Int = 50): List<OutboxOperationEntity>
 
+    @Query("SELECT * FROM outbox_operations WHERE (userId = :userId OR :userId = '') AND status = 'PENDING' AND nextRetryAt <= :currentTime ORDER BY createdAt ASC LIMIT :limit")
+    suspend fun getPendingOperationsByUser(userId: String, currentTime: Long = System.currentTimeMillis(), limit: Int = 50): List<OutboxOperationEntity>
+
     @Query("SELECT COUNT(*) FROM outbox_operations WHERE status = 'PENDING'")
     fun observePendingCount(): Flow<Int>
 
+    @Query("SELECT COUNT(*) FROM outbox_operations WHERE (userId = :userId OR :userId = '') AND status = 'PENDING'")
+    fun observePendingCountByUser(userId: String): Flow<Int>
+
     @Query("SELECT COUNT(*) FROM outbox_operations WHERE status = 'PENDING'")
     suspend fun getPendingCount(): Int
+
+    @Query("SELECT COUNT(*) FROM outbox_operations WHERE (userId = :userId OR :userId = '') AND status = 'PENDING'")
+    suspend fun getPendingCountByUser(userId: String): Int
 
     @Query("SELECT * FROM outbox_operations ORDER BY createdAt DESC LIMIT 100")
     fun observeAllOperations(): Flow<List<OutboxOperationEntity>>

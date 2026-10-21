@@ -22,5 +22,8 @@ data class AuditSecurityLog(
     val authMethod: String,
 
     @ColumnInfo(name = "details")
-    val details: String
+    val details: String,
+
+    @ColumnInfo(name = "userId")
+    val userId: String = ""
 )

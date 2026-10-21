@@ -32,5 +32,8 @@ data class LocalAuthConfig(
     val lastLoginTimestamp: Long = 0L,
 
     @ColumnInfo(name = "hash_algorithm")
-    val hashAlgorithm: String = "PBKDF2-HMAC-SHA256-600000"
+    val hashAlgorithm: String = "PBKDF2-HMAC-SHA256-600000",
+
+    @ColumnInfo(name = "bound_user_id")
+    val boundUserId: String? = null
 )

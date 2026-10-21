@@ -258,6 +258,31 @@ interface FinancialDao {
     @Query("SELECT * FROM categories WHERE type = 'INCOME' AND isActive = 1 AND TRIM(name) != '' ORDER BY name ASC")
     fun getActiveIncomeCategoriesFlow(): Flow<List<CategoryEntity>>
 
+    // Isolated category queries by userId (System defaults + user's own categories)
+    @Query("SELECT * FROM categories WHERE TRIM(name) != '' AND (userId IS NULL OR userId = 'system' OR userId = :userId) ORDER BY name ASC")
+    fun getCategoriesFlow(userId: String): Flow<List<CategoryEntity>>
+
+    @Query("SELECT * FROM categories WHERE TRIM(name) != '' AND (userId IS NULL OR userId = 'system' OR userId = :userId) ORDER BY name ASC")
+    suspend fun getCategories(userId: String): List<CategoryEntity>
+
+    @Query("SELECT * FROM categories WHERE isActive = 1 AND TRIM(name) != '' AND (userId IS NULL OR userId = 'system' OR userId = :userId) ORDER BY name ASC")
+    fun getActiveCategoriesFlow(userId: String): Flow<List<CategoryEntity>>
+
+    @Query("SELECT * FROM categories WHERE type = 'EXPENSE' AND TRIM(name) != '' AND (userId IS NULL OR userId = 'system' OR userId = :userId) ORDER BY name ASC")
+    fun getExpenseCategoriesFlow(userId: String): Flow<List<CategoryEntity>>
+
+    @Query("SELECT * FROM categories WHERE type = 'EXPENSE' AND isActive = 1 AND TRIM(name) != '' AND (userId IS NULL OR userId = 'system' OR userId = :userId) ORDER BY name ASC")
+    fun getActiveExpenseCategoriesFlow(userId: String): Flow<List<CategoryEntity>>
+
+    @Query("SELECT * FROM categories WHERE type = 'EXPENSE' AND TRIM(name) != '' AND (userId IS NULL OR userId = 'system' OR userId = :userId) ORDER BY name ASC")
+    suspend fun getExpenseCategories(userId: String): List<CategoryEntity>
+
+    @Query("SELECT * FROM categories WHERE type = 'INCOME' AND TRIM(name) != '' AND (userId IS NULL OR userId = 'system' OR userId = :userId) ORDER BY name ASC")
+    suspend fun getIncomeCategories(userId: String): List<CategoryEntity>
+
+    @Query("SELECT * FROM categories WHERE type = 'INCOME' AND isActive = 1 AND TRIM(name) != '' AND (userId IS NULL OR userId = 'system' OR userId = :userId) ORDER BY name ASC")
+    fun getActiveIncomeCategoriesFlow(userId: String): Flow<List<CategoryEntity>>
+
     @Query("DELETE FROM categories WHERE TRIM(name) = ''")
     suspend fun deleteBlankCategories()
 
@@ -491,6 +516,20 @@ interface FinancialDao {
 
     @Query("SELECT * FROM account_credit_cards")
     fun getAllAccountCreditCardsFlow(): kotlinx.coroutines.flow.Flow<List<com.example.data.local.entity.AccountCreditCardEntity>>
+
+    @Query("""
+        SELECT acc.* FROM account_credit_cards acc
+        INNER JOIN accounts a ON a.id = acc.account_id
+        WHERE a.userId = :userId
+    """)
+    suspend fun getAccountCreditCardsByUser(userId: String): List<com.example.data.local.entity.AccountCreditCardEntity>
+
+    @Query("""
+        SELECT acc.* FROM account_credit_cards acc
+        INNER JOIN accounts a ON a.id = acc.account_id
+        WHERE a.userId = :userId
+    """)
+    fun getAccountCreditCardsByUserFlow(userId: String): kotlinx.coroutines.flow.Flow<List<com.example.data.local.entity.AccountCreditCardEntity>>
 
     @Query("UPDATE account_credit_cards SET quota_used = quota_used + :amount, quota_available = quota_total - (quota_used + :amount) WHERE account_id = :accountId")
     suspend fun updateCardQuotaOnExpense(accountId: String, amount: Double): Int

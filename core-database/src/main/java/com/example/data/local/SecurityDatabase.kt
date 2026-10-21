@@ -76,7 +76,7 @@ import com.example.data.local.entity.UserSessionEntity
         com.example.data.local.entity.ThirdPartyCategoryEntity::class,
         com.example.data.local.entity.PendingAutoCaptureEntity::class
     ],
-    version = 38,
+    version = 39,
     exportSchema = true
 )
 abstract class SecurityDatabase : RoomDatabase() {

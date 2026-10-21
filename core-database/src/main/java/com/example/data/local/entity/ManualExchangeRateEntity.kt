@@ -12,12 +12,14 @@ import androidx.room.PrimaryKey
     tableName = "manual_exchange_rates",
     indices = [
         Index(value = ["fromCurrency", "toCurrency"], unique = true),
-        Index(value = ["isActive"])
+        Index(value = ["isActive"]),
+        Index(value = ["userId"])
     ]
 )
 data class ManualExchangeRateEntity(
     @PrimaryKey
     val id: String, // Format: "${fromCurrency}_${toCurrency}" e.g., "USD_COP"
+    val userId: String = "",
     val fromCurrency: String,
     val toCurrency: String,
     val rate: Double,
