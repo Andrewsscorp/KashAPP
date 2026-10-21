@@ -61,7 +61,8 @@ class AuthRepositoryImpl(
     private val securityDatabase: SecurityDatabase? = null,
     private val context: Context? = null,
     private val keystoreCryptoManager: com.example.data.local.KeystoreCryptoManager = com.example.data.local.KeystoreCryptoManager(),
-    private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO
+    private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO,
+    private val onLogoutCleanup: (suspend (String) -> Unit)? = null
 ) : AuthRepository {
 
     companion object {
@@ -92,7 +93,8 @@ class AuthRepositoryImpl(
                     failedAttempts = 0,
                     maxAllowedAttempts = MAX_FAILED_ATTEMPTS,
                     isLockedOut = false,
-                    lockoutRemainingSeconds = 0L
+                    lockoutRemainingSeconds = 0L,
+                    boundUserId = null
                 )
             } else {
                 val isLocked = entity.lockoutUntilTimestamp > now
@@ -106,7 +108,8 @@ class AuthRepositoryImpl(
                     failedAttempts = entity.failedAttempts,
                     maxAllowedAttempts = MAX_FAILED_ATTEMPTS,
                     isLockedOut = isLocked,
-                    lockoutRemainingSeconds = remainingSeconds
+                    lockoutRemainingSeconds = remainingSeconds,
+                    boundUserId = entity.boundUserId
                 )
             }
         }.catch { e ->
@@ -158,16 +161,22 @@ class AuthRepositoryImpl(
 
         return if (isValid) {
             localAuthConfigDao.resetLockoutAndRecordLogin(now)
-            val targetSession = userSessionDao?.getActiveSession() ?: userSessionDao?.getLastSession()
+            val boundUserId = currentConfig.boundUserId
+            val targetSession = if (!boundUserId.isNullOrBlank()) {
+                userSessionDao?.getActiveSessionByUserId(boundUserId)
+                    ?: userSessionDao?.getSessionByUserId(boundUserId)
+            } else {
+                userSessionDao?.getActiveSession() ?: userSessionDao?.getLastActiveSession()
+            }
             val currentFbUser = firebaseDataSource.getCurrentUser()
-            val userId = targetSession?.userId ?: currentFbUser?.uid ?: DEFAULT_LOCAL_USER_ID
+            val userId = targetSession?.userId ?: boundUserId ?: currentFbUser?.uid ?: DEFAULT_LOCAL_USER_ID
             val displayName = targetSession?.displayName ?: currentFbUser?.displayName ?: "Usuario KashApp"
             val email = targetSession?.email ?: currentFbUser?.email
             ensureLocalSession(userId, displayName, email, "local_pin")
             logSecurityEvent(
                 eventType = "AUTH_PIN_SUCCESS",
                 method = AuthMethod.PIN,
-                details = "Autenticación exitosa por PIN"
+                details = "Autenticación exitosa por PIN para usuario: $userId"
             )
             UserAuthResult.Success(
                 userId = userId,
@@ -217,6 +226,9 @@ class AuthRepositoryImpl(
             return false
         }
         val hashResult = Pbkdf2PinHasher.createNewPinHash(cleanPin)
+        val activeSession = userSessionDao?.getActiveSession() ?: userSessionDao?.getLastActiveSession()
+        val currentFbUser = firebaseDataSource.getCurrentUser()
+        val boundUserId = activeSession?.userId ?: currentFbUser?.uid
         val config = LocalAuthConfig(
             id = 1,
             pinHash = hashResult.hashFormatted,
@@ -224,13 +236,14 @@ class AuthRepositoryImpl(
             isBiometricEnabled = true,
             failedAttempts = 0,
             lockoutUntilTimestamp = 0L,
-            lastLoginTimestamp = System.currentTimeMillis()
+            lastLoginTimestamp = System.currentTimeMillis(),
+            boundUserId = boundUserId
         )
         localAuthConfigDao.insertOrUpdate(config)
         logSecurityEvent(
             eventType = "PIN_CONFIGURED",
             method = AuthMethod.PIN,
-            details = "PIN configurado con hash y salt PBKDF2"
+            details = "PIN configurado con hash y salt PBKDF2 vinculado a ${boundUserId ?: "dispositivo"}"
         )
         return true
     }
@@ -293,7 +306,8 @@ class AuthRepositoryImpl(
             pinSalt = hashResult.saltBase64,
             failedAttempts = 0,
             lockoutUntilTimestamp = 0L,
-            lastLoginTimestamp = now
+            lastLoginTimestamp = now,
+            boundUserId = currentConfig.boundUserId ?: userSessionDao?.getActiveSession()?.userId
         )
         localAuthConfigDao.insertOrUpdate(updatedConfig)
 
@@ -322,9 +336,16 @@ class AuthRepositoryImpl(
 
         val now = System.currentTimeMillis()
         localAuthConfigDao.resetLockoutAndRecordLogin(now)
-        val targetSession = userSessionDao?.getActiveSession() ?: userSessionDao?.getLastSession()
+        val currentConfig = localAuthConfigDao.getConfig()
+        val boundUserId = currentConfig?.boundUserId
+        val targetSession = if (!boundUserId.isNullOrBlank()) {
+            userSessionDao?.getActiveSessionByUserId(boundUserId)
+                ?: userSessionDao?.getSessionByUserId(boundUserId)
+        } else {
+            userSessionDao?.getActiveSession() ?: userSessionDao?.getLastActiveSession()
+        }
         val currentFbUser = firebaseDataSource.getCurrentUser()
-        val userId = targetSession?.userId ?: currentFbUser?.uid ?: DEFAULT_LOCAL_USER_ID
+        val userId = targetSession?.userId ?: boundUserId ?: currentFbUser?.uid ?: DEFAULT_LOCAL_USER_ID
         val displayName = targetSession?.displayName ?: currentFbUser?.displayName ?: "Usuario KashApp"
         val email = targetSession?.email ?: currentFbUser?.email
         ensureLocalSession(userId, displayName, email, "biometric")
@@ -502,8 +523,14 @@ class AuthRepositoryImpl(
 
     override suspend fun logout() {
         val activeUser = userSessionDao?.getActiveSession()
+        val uid = activeUser?.userId.orEmpty()
         firebaseDataSource.signOut()
         userSessionDao?.deactivateAllSessions()
+        try {
+            onLogoutCleanup?.invoke(uid)
+        } catch (e: Exception) {
+            Log.w("AuthRepositoryImpl", "Notice during logout cleanup: ${e.message}")
+        }
         logSecurityEvent(
             eventType = "LOGOUT",
             method = AuthMethod.OTHER,
@@ -833,26 +860,6 @@ class AuthRepositoryImpl(
         )
         userSessionDao?.deactivateAllSessions()
         userSessionDao?.insertOrUpdateSession(entity)
-
-        // Automatically bind legacy 'user_default' records to the authenticated tenant
-        if (userId.isNotBlank() && userId != "user_default") {
-            try {
-                financialDao?.migrateAccountsUserDefault(userId)
-                financialDao?.migrateTransactionsUserDefault(userId)
-                financialDao?.migrateGoalsUserDefault(userId)
-                financialDao?.migrateBudgetsUserDefault(userId)
-                financialDao?.migrateScheduledPaymentsUserDefault(userId)
-                financialDao?.migrateIncomeSourcesUserDefault(userId)
-                fixedAssetDao?.migrateAssetsUserDefault(userId)
-                fixedAssetDao?.migrateMovementsUserDefault(userId)
-                sharedExpenseDao?.migrateExpensesUserDefault(userId)
-                sharedExpenseDao?.migrateParticipantsUserDefault(userId)
-                sharedExpenseDao?.migrateGroupsUserDefault(userId)
-                thirdPartyDao?.migrateThirdPartiesUserDefault(userId)
-                thirdPartyCategoryDao?.migrateCategoriesUserDefault(userId)
-            } catch (e: Exception) {
-                Log.w("AuthRepositoryImpl", "Notice during multi-tenant legacy migration: ${e.message}")
-            }
-        }
+        // Secuestro automático de datos eliminado para preservar aislamiento estricto Punto 1.
     }
 }

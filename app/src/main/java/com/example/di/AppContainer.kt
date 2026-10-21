@@ -68,7 +68,15 @@ class AppContainer(private val context: Context) {
             autoCaptureDao = securityDatabase.autoCaptureDao(),
             securityDatabase = securityDatabase,
             context = context,
-            keystoreCryptoManager = keystoreCryptoManager
+            keystoreCryptoManager = keystoreCryptoManager,
+            onLogoutCleanup = { userId ->
+                try {
+                    settingsRepository.executeProtocolLogout(userId)
+                    financialRepository.clearMemoryCaches()
+                } catch (e: Exception) {
+                    android.util.Log.w("AppContainer", "Logout cleanup error: ${e.message}")
+                }
+            }
         )
     }
 

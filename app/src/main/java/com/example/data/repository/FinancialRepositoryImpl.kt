@@ -2756,6 +2756,11 @@ class FinancialRepositoryImpl(
             Result.failure(e)
         }
     }
+
+    override fun clearMemoryCaches() {
+        deletedAccountIds.clear()
+        Log.i("FinancialRepository", "Memoria de cuentas eliminadas limpiada exitosamente.")
+    }
 }
 
 /**

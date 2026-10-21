@@ -71,6 +71,8 @@ class PinLifecycleSecurityTest {
         override fun getActiveSessionFlow(): Flow<UserSessionEntity?> = flowOf(activeSession)
         override suspend fun getActiveSession(): UserSessionEntity? = activeSession
         override suspend fun getLastSession(): UserSessionEntity? = activeSession
+        override suspend fun getLastActiveSession(): UserSessionEntity? = activeSession?.takeIf { it.isActive }
+        override suspend fun getActiveSessionByUserId(userId: String): UserSessionEntity? = activeSession?.takeIf { it.userId == userId && it.isActive }
         override suspend fun getSessionByUserId(userId: String): UserSessionEntity? = activeSession
         override fun getAllSessionsFlow(): Flow<List<UserSessionEntity>> = flowOf(listOfNotNull(activeSession))
         override suspend fun insertOrUpdateSession(session: UserSessionEntity) { activeSession = session }
@@ -87,6 +89,8 @@ class PinLifecycleSecurityTest {
         override fun getAllLogs(): Flow<List<AuditSecurityLog>> = flowOf(logs)
         override suspend fun getAllLogsList(): List<AuditSecurityLog> = logs.toList()
         override fun getRecentLogs(limit: Int): Flow<List<AuditSecurityLog>> = flowOf(logs.take(limit))
+        override fun getAllLogsByUser(userId: String): Flow<List<AuditSecurityLog>> = flowOf(logs.filter { it.userId == userId || it.userId.isEmpty() })
+        override fun getRecentLogsByUser(userId: String, limit: Int): Flow<List<AuditSecurityLog>> = flowOf(logs.filter { it.userId == userId || it.userId.isEmpty() }.take(limit))
     }
 
     @Before

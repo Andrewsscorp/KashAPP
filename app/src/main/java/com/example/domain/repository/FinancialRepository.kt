@@ -295,4 +295,5 @@ interface FinancialRepository {
     suspend fun restoreFullPortfolioFromCloud(userId: String): Result<Boolean> = Result.success(false)
     suspend fun backupFullPortfolioToCloud(userId: String): Result<Boolean> = Result.success(false)
     suspend fun getCloudBackupMetadata(userId: String): Map<String, Any>? = null
+    fun clearMemoryCaches() {}
 }

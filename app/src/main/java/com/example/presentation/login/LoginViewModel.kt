@@ -240,11 +240,14 @@ class LoginViewModel(
     fun checkRegisteredSessionAndAutoPrompt() {
         viewModelScope.launch {
             try {
-                val session = authRepository.getCurrentSession()
-                    ?: authRepository.getLastSession()
+                val config = authenticateUserUseCase.observeSecurityConfig().first()
+                val currentActiveSession = authRepository.getCurrentSession()
                     ?: authRepository.syncFirebaseSessionWithLocalDb().getOrNull()
 
-                val config = authenticateUserUseCase.observeSecurityConfig().first()
+                // Only recognize a session if active or specifically bound to device PIN
+                val session = currentActiveSession ?: if (!config.boundUserId.isNullOrBlank()) {
+                    authRepository.getLastSession()?.takeIf { it.userId == config.boundUserId }
+                } else null
 
                 _uiState.update { current ->
                     current.copy(

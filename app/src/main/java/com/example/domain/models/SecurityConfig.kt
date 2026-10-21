@@ -9,5 +9,6 @@ data class SecurityConfig(
     val failedAttempts: Int,
     val maxAllowedAttempts: Int = 3,
     val isLockedOut: Boolean,
-    val lockoutRemainingSeconds: Long
+    val lockoutRemainingSeconds: Long,
+    val boundUserId: String? = null
 )

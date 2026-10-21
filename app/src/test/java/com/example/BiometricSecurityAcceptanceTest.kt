@@ -80,6 +80,8 @@ class BiometricSecurityAcceptanceTest {
         override fun getActiveSessionFlow(): Flow<UserSessionEntity?> = _flow
         override suspend fun getActiveSession(): UserSessionEntity? = _flow.value
         override suspend fun getLastSession(): UserSessionEntity? = sessions.values.maxByOrNull { it.lastActiveTimestamp }
+        override suspend fun getLastActiveSession(): UserSessionEntity? = getActiveSession()
+        override suspend fun getActiveSessionByUserId(userId: String): UserSessionEntity? = sessions[userId]?.takeIf { it.isActive }
         override suspend fun getSessionByUserId(userId: String): UserSessionEntity? = sessions[userId]
         override fun getAllSessionsFlow(): Flow<List<UserSessionEntity>> = _flow.map { sessions.values.toList() }
         override suspend fun insertOrUpdateSession(session: UserSessionEntity) {
@@ -149,6 +151,8 @@ class BiometricSecurityAcceptanceTest {
         override fun getAllLogs(): Flow<List<AuditSecurityLog>> = flow
         override suspend fun getAllLogsList(): List<AuditSecurityLog> = logs.toList()
         override fun getRecentLogs(limit: Int): Flow<List<AuditSecurityLog>> = flow.map { it.take(limit) }
+        override fun getAllLogsByUser(userId: String): Flow<List<AuditSecurityLog>> = flow.map { list -> list.filter { it.userId == userId || it.userId.isEmpty() } }
+        override fun getRecentLogsByUser(userId: String, limit: Int): Flow<List<AuditSecurityLog>> = flow.map { list -> list.filter { it.userId == userId || it.userId.isEmpty() }.take(limit) }
     }
 
     class MockUnavailableBiometricDataSource(context: Context, cryptoManager: KeystoreCryptoManager) :
