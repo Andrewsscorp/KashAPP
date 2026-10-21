@@ -138,4 +138,63 @@ class ColombianBankNotificationParserTest {
         assertEquals(32000.0, lulo.amount, 0.001)
         assertEquals("STARBUCKS", lulo.merchantOrCounterparty)
     }
+
+    @Test
+    fun testAc07_nequiBreBNotificationExactUserCase() {
+        // Caso exacto reportado por el usuario: $5 por Bre-B en Nequi
+        val pkg = "com.nequi.MobileApp"
+        val title = "Te enviaron plata por Bre-B"
+        val text = "Te enviaron $5. Entra a tu app y revisa tu saldo."
+
+        val parsed = parser.parse(pkg, title, text)
+        assertNotNull("La notificación de Bre-B de Nequi debe ser capturada", parsed)
+        assertEquals("INCOME", parsed!!.transactionType)
+        assertEquals(5.0, parsed.amount, 0.001)
+        assertEquals("Transferencia Bre-B", parsed.merchantOrCounterparty)
+        assertEquals(SupportedColombianBank.NEQUI, parsed.detectedBank)
+    }
+
+    @Test
+    fun testAc08_nequiTeEnviaronWithSender() {
+        val pkg = "com.nequi.MobileApp"
+        val title = "Nequi"
+        val text = "Te enviaron $50.000 de CARLOS PEREZ. Entra a tu app"
+
+        val parsed = parser.parse(pkg, title, text)
+        assertNotNull(parsed)
+        assertEquals("INCOME", parsed!!.transactionType)
+        assertEquals(50000.0, parsed.amount, 0.001)
+        assertEquals("CARLOS PEREZ", parsed.merchantOrCounterparty)
+    }
+
+    @Test
+    fun testAc09_bancolombiaBreBNotification() {
+        val pkg = "com.todo1.mobile"
+        val title = "Bancolombia"
+        val text = "Bancolombia le informa: Te enviaron $20.000 por Bre-B"
+
+        val parsed = parser.parse(pkg, title, text)
+        assertNotNull(parsed)
+        assertEquals("INCOME", parsed!!.transactionType)
+        assertEquals(20000.0, parsed.amount, 0.001)
+        assertEquals("Transferencia Bre-B Bancolombia", parsed.merchantOrCounterparty)
+    }
+
+    @Test
+    fun testAc10_nuAndDaviPlataBreB() {
+        // Nu Bre-B
+        val nu = parser.parse("com.nu.production", "Nu", "Te enviaron $15.000 por Bre-B")
+        assertNotNull(nu)
+        assertEquals("INCOME", nu!!.transactionType)
+        assertEquals(15000.0, nu.amount, 0.001)
+        assertEquals("Transferencia Bre-B Cuenta Nu", nu.merchantOrCounterparty)
+
+        // DaviPlata Bre-B
+        val dp = parser.parse("com.davivienda.daviplataapp", "DaviPlata", "Te enviaron $30.000 por Bre-B")
+        assertNotNull(dp)
+        assertEquals("INCOME", dp!!.transactionType)
+        assertEquals(30000.0, dp.amount, 0.001)
+        assertEquals("Transferencia Bre-B DaviPlata", dp.merchantOrCounterparty)
+    }
 }
+

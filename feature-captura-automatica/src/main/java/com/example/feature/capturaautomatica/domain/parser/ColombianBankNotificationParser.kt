@@ -79,18 +79,21 @@ class ColombianBankNotificationParser {
             }
         }
 
-        // C. Recepción de transferencia / Pago de nómina / Abono:
+        // C. Recepción de transferencia / Pago de nómina / Abono / Bre-B:
         // "Bancolombia le informa Recepcion de transferencia por $350.000,00 en su cuenta *9012"
         // "Bancolombia le informa Pago de nomina por $2.500.000,00 en su cuenta *9012"
+        // "Bancolombia le informa: Te enviaron $50.000 por Bre-B"
         val ingresoRegex = Regex(
-            """(?iu)(?:recepci[oóOÓ]n\s+de\s+transferencia|pago\s+de\s+n[oóOÓ]mina|abono|consignaci[oóOÓ]n)\s+por\s+\$?\s*([0-9.,]+)(?:.*?cuenta\s+\*?(\d{4}))?"""
+            """(?iu)(?:recepci[oóOÓ]n\s+de\s+transferencia|pago\s+de\s+n[oóOÓ]mina|abono|consignaci[oóOÓ]n|te\s+enviaron|recibiste)\s+(?:por\s+)?\$?\s*([0-9]+(?:[.,][0-9]+)*)(?:.*?cuenta\s+\*?(\d{4}))?"""
         )
         val ingresoMatch = ingresoRegex.find(text)
         if (ingresoMatch != null) {
             val amount = parseAmount(ingresoMatch.groupValues[1])
             val digits = ingresoMatch.groupValues.getOrNull(2)?.takeIf { it.isNotBlank() } ?: extractLastFourDigits(text)
             if (amount > 0.0) {
-                return buildResult(pkg, bank, "INCOME", amount, "Transferencia Recibida Bancolombia", digits, postTime)
+                val isBreB = text.contains("Bre-B", ignoreCase = true)
+                val sender = if (isBreB) "Transferencia Bre-B Bancolombia" else "Transferencia Recibida Bancolombia"
+                return buildResult(pkg, bank, "INCOME", amount, sender, digits, postTime)
             }
         }
 
@@ -137,12 +140,33 @@ class ColombianBankNotificationParser {
             }
         }
 
-        // C. Recepción de plata: "Recibiste $250.000,00 de ANDRES GOMEZ en tu Nequi"
+        // C. Recepción de plata tradicional: "Recibiste $250.000,00 de ANDRES GOMEZ en tu Nequi"
         val reciboRegex = Regex("""(?iu)recibiste\s+\$?\s*([0-9.,]+)\s+de\s+(.+?)(?:\s+en\s+tu\s+nequi|\.|$)""")
         val reciboMatch = reciboRegex.find(text)
         if (reciboMatch != null) {
             val amount = parseAmount(reciboMatch.groupValues[1])
             val sender = cleanMerchantName(reciboMatch.groupValues[2])
+            if (amount > 0.0) {
+                return buildResult(pkg, bank, "INCOME", amount, sender, null, postTime)
+            }
+        }
+
+        // D. Recepción de plata vía Bre-B o "Te enviaron":
+        // "Te enviaron plata por Bre-B Te enviaron $5. Entra a tu app y revisa tu saldo."
+        // "Te enviaron $15.000 de CARLOS PEREZ"
+        // "Te enviaron $50.000. Entra a tu app"
+        val teEnviaronRegex = Regex(
+            """(?iu)(?:te\s+enviaron|te\s+pasaron|recibiste)\s+\$?\s*([0-9]+(?:[.,][0-9]+)*)(?:\s+de\s+([^.]+?))?(?:[.\s]+(?:entra\s+a\s+tu\s+app|revisa\s+tu\s+saldo|en\s+tu\s+nequi|por\s+bre-b|\.|$)|$)"""
+        )
+        val teEnviaronMatch = teEnviaronRegex.find(text)
+        if (teEnviaronMatch != null) {
+            val amount = parseAmount(teEnviaronMatch.groupValues[1])
+            val rawSender = teEnviaronMatch.groupValues.getOrNull(2)?.takeIf { it.isNotBlank() }
+            val sender = when {
+                !rawSender.isNullOrBlank() -> cleanMerchantName(rawSender)
+                text.contains("Bre-B", ignoreCase = true) -> "Transferencia Bre-B"
+                else -> "Transferencia Nequi"
+            }
             if (amount > 0.0) {
                 return buildResult(pkg, bank, "INCOME", amount, sender, null, postTime)
             }
@@ -184,14 +208,19 @@ class ColombianBankNotificationParser {
             }
         }
 
-        // Transferencia entrante:
-        val transEnt = Regex("""(?iu)recibiste\s+(?:una\s+)?transferencia\s+por\s+\$?\s*([0-9.,]+)(?:\s+de\s+(.+?))?(?:\.|$)""")
+        // Transferencia entrante (incluye Bre-B y "Te enviaron"):
+        val transEnt = Regex("""(?iu)(?:recibiste|te\s+enviaron)(?:\s+(?:una\s+)?transferencia)?(?:\s+por|\s+plata\s+por)?\s+\$?\s*([0-9]+(?:[.,][0-9]+)*)(?:\s+de\s+([^.]+?))?(?:\s+por\s+bre-b|\.|$)""")
         val transEntMatch = transEnt.find(text)
         if (transEntMatch != null) {
             val amount = parseAmount(transEntMatch.groupValues[1])
-            val sender = transEntMatch.groupValues.getOrNull(2)?.takeIf { it.isNotBlank() } ?: "Transferencia Recibida Nu"
+            val rawSender = transEntMatch.groupValues.getOrNull(2)?.takeIf { it.isNotBlank() }
+            val sender = when {
+                !rawSender.isNullOrBlank() -> cleanMerchantName(rawSender)
+                text.contains("Bre-B", ignoreCase = true) -> "Transferencia Bre-B Cuenta Nu"
+                else -> "Transferencia Recibida Nu"
+            }
             if (amount > 0.0) {
-                return buildResult(pkg, bank, "INCOME", amount, cleanMerchantName(sender), null, postTime)
+                return buildResult(pkg, bank, "INCOME", amount, sender, null, postTime)
             }
         }
 
@@ -226,13 +255,18 @@ class ColombianBankNotificationParser {
             }
         }
 
-        // "Le pasaron $50.000 a su DaviPlata"
-        val ingresoMatch = Regex("""(?iu)le\s+pasaron\s+\$?\s*([0-9.,]+)(?:\s+de\s+(.+?))?(?:\s+a\s+su\s+daviplata|\.|$)""").find(text)
+        // "Le pasaron $50.000 a su DaviPlata" o "Te enviaron $5" o "Recibiste $10.000 por Bre-B":
+        val ingresoMatch = Regex("""(?iu)(?:le\s+pasaron|te\s+enviaron|recibiste)\s+\$?\s*([0-9]+(?:[.,][0-9]+)*)(?:\s+de\s+(.+?))?(?:\s+a\s+su\s+daviplata|\s+en\s+tu\s+daviplata|\s+por\s+bre-b|\.|$)""").find(text)
         if (ingresoMatch != null) {
             val amount = parseAmount(ingresoMatch.groupValues[1])
-            val sender = ingresoMatch.groupValues.getOrNull(2)?.takeIf { it.isNotBlank() } ?: "Transferencia Recibida DaviPlata"
+            val rawSender = ingresoMatch.groupValues.getOrNull(2)?.takeIf { it.isNotBlank() }
+            val sender = when {
+                !rawSender.isNullOrBlank() -> cleanMerchantName(rawSender)
+                text.contains("Bre-B", ignoreCase = true) -> "Transferencia Bre-B DaviPlata"
+                else -> "Transferencia Recibida DaviPlata"
+            }
             if (amount > 0.0) {
-                return buildResult(pkg, bank, "INCOME", amount, cleanMerchantName(sender), null, postTime)
+                return buildResult(pkg, bank, "INCOME", amount, sender, null, postTime)
             }
         }
 
@@ -320,7 +354,12 @@ class ColombianBankNotificationParser {
      * Parsea montos monetarios flexibles colombianos (ej. "$125.400,00", "48.500,00", "$ 42,000", "50.000").
      */
     internal fun parseAmount(raw: String): Double {
-        val cleaned = raw.replace("$", "").replace("COP", "", ignoreCase = true).replace(" ", "").trim()
+        val cleaned = raw
+            .replace("$", "")
+            .replace("COP", "", ignoreCase = true)
+            .replace(" ", "")
+            .trim()
+            .trimEnd('.', ',')
         if (cleaned.isEmpty()) return 0.0
 
         val normalized = when {
