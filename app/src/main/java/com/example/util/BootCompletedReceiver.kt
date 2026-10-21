@@ -17,6 +17,7 @@ class BootCompletedReceiver : BroadcastReceiver() {
             intent.action == "android.intent.action.QUICKBOOT_POWERON"
         ) {
             Log.d("BootCompletedReceiver", "KashApp: Dispositivo reiniciado. Persistencia y servicios asegurados.")
+            com.example.feature.capturaautomatica.service.BankNotificationListenerService.ensureServiceRebind(context)
         }
     }
 }

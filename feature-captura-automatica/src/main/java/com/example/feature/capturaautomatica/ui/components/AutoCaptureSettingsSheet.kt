@@ -2,6 +2,7 @@ package com.example.feature.capturaautomatica.ui.components
 
 import android.content.Context
 import android.content.Intent
+import com.example.feature.capturaautomatica.service.BankNotificationListenerService
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -83,6 +84,13 @@ fun AutoCaptureSettingsSheet(
     }
     val isListenerServiceEnabled = remember {
         AutoCaptureNotificationHelper.isNotificationListenerServiceEnabled(context)
+    }
+    val isIgnoringBatteryOptimizations = remember {
+        AutoCaptureNotificationHelper.isIgnoringBatteryOptimizations(context)
+    }
+
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        BankNotificationListenerService.ensureServiceRebind(context)
     }
 
     ModalBottomSheet(
@@ -167,7 +175,7 @@ fun AutoCaptureSettingsSheet(
                                 color = Color.White
                             )
                         )
-                        val allReady = isNotifPermissionGranted && isListenerServiceEnabled
+                        val allReady = isNotifPermissionGranted && isListenerServiceEnabled && isIgnoringBatteryOptimizations
                         Surface(
                             shape = RoundedCornerShape(8.dp),
                             color = if (allReady) Color(0xFF065F46) else Color(0xFF78350F),
@@ -321,6 +329,83 @@ fun AutoCaptureSettingsSheet(
                                     border = BorderStroke(1.dp, Color(0xFF38BDF8))
                                 ) {
                                     Text("Conceder", fontSize = 11.sp, color = Color(0xFF38BDF8), fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Permiso 3: Batería Sin Restricciones (App Cerrada / Segundo Plano)
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFF0A1B30),
+                        border = BorderStroke(0.5.dp, Color(0xFF1E3A66)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = if (isIgnoringBatteryOptimizations) Icons.Default.CheckCircle else Icons.Default.Warning,
+                                    contentDescription = null,
+                                    tint = if (isIgnoringBatteryOptimizations) Color(0xFF10B981) else Color(0xFFF59E0B),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = "Lectura con App Cerrada",
+                                        style = MaterialTheme.typography.labelLarge.copy(
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = Color.White
+                                        )
+                                    )
+                                    Text(
+                                        text = if (isIgnoringBatteryOptimizations) "Activo • Sin restricciones de batería" else "Optimizado • Android puede suspender el lector al salir",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            color = if (isIgnoringBatteryOptimizations) Color(0xFF94A3B8) else Color(0xFFFDE68A)
+                                        )
+                                    )
+                                }
+                            }
+                            if (!isIgnoringBatteryOptimizations) {
+                                OutlinedButton(
+                                    onClick = {
+                                        try {
+                                            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                                Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                                    data = Uri.parse("package:${context.packageName}")
+                                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                                }
+                                            } else {
+                                                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                                    data = Uri.fromParts("package", context.packageName, null)
+                                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                                }
+                                            }
+                                            context.startActivity(intent)
+                                        } catch (e: Exception) {
+                                            val fallback = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                                data = Uri.fromParts("package", context.packageName, null)
+                                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                            }
+                                            context.startActivity(fallback)
+                                        }
+                                    },
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(1.dp, Color(0xFFF59E0B))
+                                ) {
+                                    Text("Ajustar", fontSize = 11.sp, color = Color(0xFFF59E0B), fontWeight = FontWeight.Bold)
                                 }
                             }
                         }

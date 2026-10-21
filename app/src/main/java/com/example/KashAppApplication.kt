@@ -34,9 +34,10 @@ class KashAppApplication : Application() {
             Log.w("KashAppApplication", "FirebaseAppCheck guard notice: ${t.message}")
         }
 
-        // 2. Pre-calentar contenedor de dependencias y bóveda SQLCipher v32
+        // 2. Pre-calentar contenedor de dependencias, repositorio de captura automática y re-enlace del servicio
         try {
-            appContainer
+            appContainer.autoCaptureRepository
+            com.example.feature.capturaautomatica.service.BankNotificationListenerService.ensureServiceRebind(this)
         } catch (t: Throwable) {
             Log.e("KashAppApplication", "Fatal error initializing AppContainer: ${t.message}", t)
         }

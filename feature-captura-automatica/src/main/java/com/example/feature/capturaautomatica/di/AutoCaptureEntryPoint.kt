@@ -2,11 +2,13 @@ package com.example.feature.capturaautomatica.di
 
 import android.content.Context
 import android.util.Log
+import com.example.feature.capturaautomatica.data.repository.AutoCaptureRepositoryImpl
 import com.example.feature.capturaautomatica.domain.repository.AutoCaptureRepository
 
 /**
- * Entry point for decoupling Android system components (NotificationListenerService,
- * BroadcastReceiver, TileService) from the Application DI container.
+ * Entry point para desacoplar componentes del sistema Android (NotificationListenerService,
+ * BroadcastReceiver, TileService) del ciclo de vida de la UI, garantizando funcionamiento
+ * incluso si la aplicación se encuentra totalmente CERRADA.
  */
 object AutoCaptureEntryPoint {
     private const val TAG = "AutoCaptureEntryPoint"
@@ -30,7 +32,7 @@ object AutoCaptureEntryPoint {
         if (existing != null) return existing
         if (context == null) return null
 
-        // Fallback: Attempt reflection on Application.appContainer
+        // Fallback 1: Intento por reflexión en Application.appContainer
         try {
             val app = context.applicationContext
             val getAppContainerMethod = app.javaClass.getMethod("getAppContainer")
@@ -46,17 +48,37 @@ object AutoCaptureEntryPoint {
         } catch (e: Throwable) {
             Log.w(TAG, "Reflection fallback to get AutoCaptureRepository failed: ${e.message}")
         }
+
+        // Fallback 2: Instanciación directa con RoomLocalDb (Garantía crítica ante app cerrada/muerta)
+        try {
+            val db = com.example.data.local.RoomLocalDb.getDatabase(context.applicationContext)
+            val fallbackRepo = AutoCaptureRepositoryImpl(
+                autoCaptureDao = db.autoCaptureDao(),
+                financialDao = db.financialDao(),
+                merchantDao = db.merchantDao(),
+                auditSecurityLogDao = db.auditSecurityLogDao(),
+                accountProvider = { uid -> db.financialDao().getAccounts(uid) },
+                categoryProvider = { emptyList() }
+            )
+            repository = fallbackRepo
+            Log.i(TAG, "AutoCaptureRepository creado exitosamente mediante fallback directo a RoomLocalDb")
+            return fallbackRepo
+        } catch (e: Throwable) {
+            Log.e(TAG, "Fallback 2 to create AutoCaptureRepository failed: ${e.message}", e)
+        }
+
         return null
     }
 
-    suspend fun getActiveUserId(context: Context? = null): String? {
+    suspend fun getActiveUserId(context: Context? = null): String {
         val provider = activeUserIdProvider
         if (provider != null) {
-            return provider.invoke()
+            val id = provider.invoke()
+            if (!id.isNullOrBlank()) return id
         }
-        if (context == null) return null
+        if (context == null) return "user_default"
 
-        // Fallback: Attempt reflection on Application.appContainer.authRepository.observeCurrentUserFlow() or similar
+        // Fallback 1: Intento por reflexión en Application.appContainer
         try {
             val app = context.applicationContext
             val getAppContainerMethod = app.javaClass.getMethod("getAppContainer")
@@ -67,13 +89,25 @@ object AutoCaptureEntryPoint {
                 if (securityDb != null) {
                     val getUserSessionDaoMethod = securityDb.javaClass.getMethod("userSessionDao")
                     val userSessionDao = getUserSessionDaoMethod.invoke(securityDb) as? com.example.data.local.dao.UserSessionDao
-                    val session = userSessionDao?.getActiveSession()
-                    return session?.userId
+                    val session = userSessionDao?.getActiveSession() ?: userSessionDao?.getLastSession()
+                    val id = session?.userId
+                    if (!id.isNullOrBlank()) return id
                 }
             }
         } catch (e: Throwable) {
             Log.w(TAG, "Reflection fallback to get active user ID failed: ${e.message}")
         }
-        return null
+
+        // Fallback 2: Acceso directo a RoomLocalDb
+        try {
+            val db = com.example.data.local.RoomLocalDb.getDatabase(context.applicationContext)
+            val session = db.userSessionDao().getActiveSession() ?: db.userSessionDao().getLastSession()
+            val id = session?.userId
+            if (!id.isNullOrBlank()) return id
+        } catch (e: Throwable) {
+            Log.w(TAG, "Direct DB fallback to get active user ID failed: ${e.message}")
+        }
+
+        return "user_default"
     }
 }

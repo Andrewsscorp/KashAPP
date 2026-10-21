@@ -330,6 +330,8 @@ class AppContainer(private val context: Context) {
         com.example.feature.capturaautomatica.di.AutoCaptureEntryPoint.setRepository(repo)
         com.example.feature.capturaautomatica.di.AutoCaptureEntryPoint.setActiveUserIdProvider {
             securityDatabase.userSessionDao().getActiveSession()?.userId
+                ?: securityDatabase.userSessionDao().getLastSession()?.userId
+                ?: "user_default"
         }
         repo
     }
