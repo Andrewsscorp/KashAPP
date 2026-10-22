@@ -331,9 +331,9 @@ class DashboardViewModel(
                 val cashFlow = computeCashFlowEntries(periodTransactions)
 
                 // 8. Recent Transactions
-                val recentDomainTx = transactions.take(10).map { tx ->
+                val recentDomainTx = transactions.take(15).map { tx ->
                     Transaction(
-                        id = try { UUID.fromString(tx.id.removePrefix("tx_")) } catch (_: Exception) { UUID.randomUUID() },
+                        id = try { UUID.fromString(tx.id.removePrefix("tx_")) } catch (_: Exception) { UUID.nameUUIDFromBytes(tx.id.toByteArray()) },
                         mccIcon = "payments",
                         concept = tx.description ?: tx.categoryName,
                         amount = BigDecimal.valueOf(tx.amount).setScale(2, RoundingMode.HALF_EVEN),
@@ -344,7 +344,8 @@ class DashboardViewModel(
                         },
                         dateFormatted = tx.date,
                         accountName = tx.accountName,
-                        categoryName = tx.categoryName
+                        categoryName = tx.categoryName,
+                        rawId = tx.id
                     )
                 }.toImmutableList()
 
@@ -521,6 +522,13 @@ class DashboardViewModel(
             is DashboardEvent.ToggleAccountAllowNegative -> {
                 viewModelScope.launch {
                     financialRepository?.updateAccountAllowNegative(event.accountId, event.allowNegative)
+                }
+            }
+            is DashboardEvent.DeleteTransaction -> {
+                viewModelScope.launch {
+                    val repo = financialRepository ?: return@launch
+                    val result = repo.reverseAndDeleteTransaction(event.rawTxId, userId)
+                    event.onResult?.invoke(result)
                 }
             }
         }

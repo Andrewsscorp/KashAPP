@@ -2769,6 +2769,75 @@ class FinancialRepositoryImpl(
         deletedAccountIds.clear()
         Log.i("FinancialRepository", "Memoria de cuentas eliminadas limpiada exitosamente.")
     }
+
+    override suspend fun reverseAndDeleteTransaction(
+        transactionId: String,
+        userId: String
+    ): com.example.domain.repository.DeleteTransactionResult = withContext(ioDispatcher) {
+        try {
+            val targetTx = financialDao.getTransactionByIdAndUser(transactionId, userId)
+                ?: return@withContext com.example.domain.repository.DeleteTransactionResult.NotFoundOrUnauthorized(
+                    "El movimiento no existe o no pertenece al usuario autenticado."
+                )
+
+            // Business rule checks (CDT / Investment funding protection)
+            if (targetTx.id.startsWith("tx_cdt_out_") || targetTx.id.startsWith("tx_inv_")) {
+                val cdts = financialDao.getAllAccountCdts()
+                val matchingCdt = cdts.find { it.accountId == targetTx.accountId }
+                if (matchingCdt != null) {
+                    return@withContext com.example.domain.repository.DeleteTransactionResult.BlockedByBusinessRule(
+                        "No se puede eliminar el movimiento de apertura de un CDT activo. Cancela o liquida el CDT desde el módulo de Inversiones."
+                    )
+                }
+            }
+
+            // Execute atomic Room reversal
+            val deletedIds = financialDao.executeAtomicTransactionReversal(transactionId, userId)
+            if (deletedIds.isEmpty()) {
+                return@withContext com.example.domain.repository.DeleteTransactionResult.NotFoundOrUnauthorized(
+                    "El movimiento ya no existe o fue eliminado concurrentemente."
+                )
+            }
+
+            // Outbox operations for offline-first synchronization
+            deletedIds.forEach { deletedId ->
+                try {
+                    outboxDao?.insertOperation(
+                        com.example.data.local.entity.OutboxOperationEntity(
+                            id = "out_${UUID.randomUUID()}",
+                            userId = userId,
+                            entityType = "TRANSACTION",
+                            entityId = deletedId,
+                            operation = "DELETE",
+                            payloadJson = "{}",
+                            idempotencyKey = "out_del_${deletedId}_${System.currentTimeMillis()}",
+                            createdAt = System.currentTimeMillis()
+                        )
+                    )
+                } catch (e: Exception) {
+                    Log.w("FinancialRepository", "Error al encolar Outbox DELETE para $deletedId: ${e.message}")
+                }
+            }
+
+            try {
+                auditLogDao.insertLog(
+                    AuditSecurityLog(
+                        eventType = "TRANSACTION_REVERSED_AND_DELETED",
+                        authMethod = "SESSION",
+                        details = "Movimiento $transactionId eliminado con reversión atómica para usuario $userId (eliminados: ${deletedIds.joinToString()})"
+                    )
+                )
+            } catch (_: Exception) {}
+
+            com.example.domain.repository.DeleteTransactionResult.Success(
+                deletedTransactionIds = deletedIds,
+                affectedAccountIds = listOf(targetTx.accountId)
+            )
+        } catch (e: Exception) {
+            Log.e("FinancialRepository", "Error revirtiendo transacción $transactionId: ${e.message}", e)
+            com.example.domain.repository.DeleteTransactionResult.Error(e)
+        }
+    }
 }
 
 /**

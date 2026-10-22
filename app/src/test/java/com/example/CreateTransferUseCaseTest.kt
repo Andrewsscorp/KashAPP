@@ -516,6 +516,13 @@ class FakeFinancialRepository : FinancialRepository {
 
     override fun getTransactionsByAccount(accountId: String): Flow<List<TransactionEntity>> = flowOf(emptyList())
 
+    override suspend fun reverseAndDeleteTransaction(
+        transactionId: String,
+        userId: String
+    ): com.example.domain.repository.DeleteTransactionResult {
+        return com.example.domain.repository.DeleteTransactionResult.Success(listOf(transactionId), emptyList())
+    }
+
     override fun getTags(): Flow<List<com.example.data.local.entity.TagEntity>> = flowOf(emptyList())
     override suspend fun insertTag(name: String, colorHex: String): com.example.data.local.entity.TagEntity =
         com.example.data.local.entity.TagEntity(id = "tag_1", name = name, colorHex = colorHex)

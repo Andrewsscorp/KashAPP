@@ -117,7 +117,8 @@ data class Transaction(
     val type: TransactionType,
     val dateFormatted: String,
     val accountName: String,
-    val categoryName: String
+    val categoryName: String,
+    val rawId: String = ""
 )
 
 @Immutable
@@ -235,4 +236,8 @@ sealed interface DashboardEvent {
     data object OpenSettingsClick : DashboardEvent
     data object CloseSettingsClick : DashboardEvent
     data class ToggleAccountAllowNegative(val accountId: String, val allowNegative: Boolean) : DashboardEvent
+    data class DeleteTransaction(
+        val rawTxId: String,
+        val onResult: ((com.example.domain.repository.DeleteTransactionResult) -> Unit)? = null
+    ) : DashboardEvent
 }

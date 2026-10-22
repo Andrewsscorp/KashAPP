@@ -41,6 +41,18 @@ interface FinancialDao {
     @Query("SELECT * FROM transactions WHERE id = :transactionId LIMIT 1")
     suspend fun getTransactionById(transactionId: String): TransactionEntity?
 
+    @Query("SELECT * FROM transactions WHERE id = :transactionId AND userId = :userId AND :userId != '' LIMIT 1")
+    suspend fun getTransactionByIdAndUser(transactionId: String, userId: String): TransactionEntity?
+
+    @Query("DELETE FROM transactions WHERE id = :transactionId AND userId = :userId AND :userId != ''")
+    suspend fun deleteTransactionById(transactionId: String, userId: String): Int
+
+    @Query("SELECT * FROM transactions WHERE transferGroupId = :transferGroupId AND userId = :userId AND :userId != ''")
+    suspend fun getTransactionsByTransferGroup(transferGroupId: String, userId: String): List<TransactionEntity>
+
+    @Query("DELETE FROM transfer_groups WHERE id = :transferGroupId")
+    suspend fun deleteTransferGroupById(transferGroupId: String): Int
+
     @Query("SELECT * FROM accounts WHERE userId = :userId AND :userId != '' ORDER BY isFavorite DESC, balance DESC")
     fun getAccountsFlow(userId: String): Flow<List<AccountEntity>>
 
@@ -409,6 +421,89 @@ interface FinancialDao {
         ) <= 1) { "La cuenta destino de tarjeta no es consistente." }
     }
 
+    /**
+     * ACID Atomic Transaction Reversal & Deletion (HALL-P3 / AUDIT-PUNTO-3):
+     * Completely reverses the financial impact across accounts, credit cards, budget envelopes,
+     * and goal savings in an atomic database commit, then removes the transaction record(s).
+     */
+    @Transaction
+    suspend fun executeAtomicTransactionReversal(
+        transactionId: String,
+        userId: String
+    ): List<String> {
+        val targetTx = getTransactionByIdAndUser(transactionId, userId) ?: return emptyList()
+
+        // 1. Transfer Transactions (TRANSFER_OUT / TRANSFER_IN)
+        if (!targetTx.transferGroupId.isNullOrBlank() || targetTx.type == "TRANSFER_OUT" || targetTx.type == "TRANSFER_IN") {
+            val groupId = targetTx.transferGroupId
+            val linkedTxs = if (!groupId.isNullOrBlank()) {
+                getTransactionsByTransferGroup(groupId, userId)
+            } else {
+                listOf(targetTx)
+            }
+            val outTx = linkedTxs.find { it.type == "TRANSFER_OUT" }
+            val inTx = linkedTxs.find { it.type == "TRANSFER_IN" }
+
+            if (outTx != null) {
+                // Revert outgoing: restore balance to origin account and restore credit quota if it was a credit card advance
+                addAccountBalance(outTx.accountId, outTx.amount)
+                updateCardQuotaOnPayment(outTx.accountId, outTx.amount)
+            }
+            if (inTx != null) {
+                // Revert incoming: deduct balance from destination account and restore used quota if it was a credit card payment
+                deductAccountBalance(inTx.accountId, inTx.amount)
+                updateCardQuotaOnExpense(inTx.accountId, inTx.amount)
+            }
+            linkedTxs.forEach { deleteTransactionById(it.id, userId) }
+            if (!groupId.isNullOrBlank()) {
+                deleteTransferGroupById(groupId)
+            }
+            return linkedTxs.map { it.id }
+        }
+
+        // 2. Goal Contribution (tx_goal_ / cat_savings_goals)
+        if (targetTx.id.startsWith("tx_goal_") || targetTx.categoryId == "cat_savings_goals") {
+            addAccountBalance(targetTx.accountId, targetTx.amount)
+            val userGoals = getGoals(userId)
+            val matchingGoal = userGoals.find { targetTx.description?.contains(it.name) == true }
+                ?: userGoals.find { it.targetAccountId == targetTx.accountId }
+            if (matchingGoal != null) {
+                reverseGoalContribution(matchingGoal.id, targetTx.amount)
+                if (matchingGoal.virtualPocketEnabled) {
+                    unfreezeAccountVirtualPocket(matchingGoal.targetAccountId, targetTx.amount)
+                }
+            }
+            deleteTransactionById(targetTx.id, userId)
+            return listOf(targetTx.id)
+        }
+
+        // 3. Standard Expense (EXPENSE)
+        if (targetTx.type == "EXPENSE") {
+            addAccountBalance(targetTx.accountId, targetTx.amount)
+            updateCardQuotaOnPayment(targetTx.accountId, targetTx.amount)
+            reverseBudgetItemsSpentForExpense(
+                userId = userId,
+                categoryId = targetTx.categoryId,
+                categoryName = targetTx.categoryName,
+                expenseDate = targetTx.date,
+                amount = targetTx.amount
+            )
+            deleteTransactionById(targetTx.id, userId)
+            return listOf(targetTx.id)
+        }
+
+        // 4. Standard Income (INCOME)
+        if (targetTx.type == "INCOME") {
+            deductAccountBalance(targetTx.accountId, targetTx.amount)
+            updateCardQuotaOnExpense(targetTx.accountId, targetTx.amount)
+            deleteTransactionById(targetTx.id, userId)
+            return listOf(targetTx.id)
+        }
+
+        deleteTransactionById(targetTx.id, userId)
+        return listOf(targetTx.id)
+    }
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPayrollConfig(config: com.example.data.local.entity.AccountPayrollConfigEntity)
 
@@ -570,6 +665,15 @@ interface FinancialDao {
     @Query("SELECT * FROM financial_goals WHERE id = :id LIMIT 1")
     suspend fun getGoalById(id: String): com.example.data.local.entity.FinancialGoalEntity?
 
+    @Query("SELECT * FROM financial_goals WHERE userId = :userId AND :userId != ''")
+    suspend fun getGoals(userId: String): List<com.example.data.local.entity.FinancialGoalEntity>
+
+    @Query("UPDATE accounts SET availableBalance = availableBalance + :unfreezeAmount, holdBalance = CASE WHEN (holdBalance - :unfreezeAmount) < 0.0 THEN 0.0 ELSE (holdBalance - :unfreezeAmount) END WHERE id = :accountId")
+    suspend fun unfreezeAccountVirtualPocket(accountId: String, unfreezeAmount: Double): Int
+
+    @Query("UPDATE financial_goals SET savedAmount = CASE WHEN (savedAmount - :amount) < 0.0 THEN 0.0 ELSE (savedAmount - :amount) END, isActive = CASE WHEN (savedAmount - :amount) < targetAmount THEN 1 ELSE isActive END WHERE id = :goalId")
+    suspend fun reverseGoalContribution(goalId: String, amount: Double): Int
+
     @Query("UPDATE accounts SET availableBalance = CASE WHEN availableBalance - :freezeAmount < 0 THEN 0.0 ELSE availableBalance - :freezeAmount END, holdBalance = holdBalance + :freezeAmount WHERE id = :accountId")
     suspend fun freezeAccountVirtualPocket(accountId: String, freezeAmount: Double): Int
 
@@ -689,6 +793,15 @@ interface FinancialDao {
 
     @Query("UPDATE budget_items SET spentAmount = spentAmount + :amount WHERE (categoryId = :categoryId OR (categoryName IS NOT NULL AND categoryName != '' AND LOWER(categoryName) = LOWER(:categoryName))) AND budgetId IN (SELECT id FROM budgets WHERE userId = :userId AND :userId != '' AND isActive = 1 AND substr(:expenseDate, 1, 10) >= startDate AND substr(:expenseDate, 1, 10) <= endDate)")
     suspend fun updateBudgetItemsSpentForExpense(
+        userId: String,
+        categoryId: String,
+        categoryName: String,
+        expenseDate: String,
+        amount: Double
+    )
+
+    @Query("UPDATE budget_items SET spentAmount = CASE WHEN (spentAmount - :amount) < 0.0 THEN 0.0 ELSE (spentAmount - :amount) END WHERE (categoryId = :categoryId OR (categoryName IS NOT NULL AND categoryName != '' AND LOWER(categoryName) = LOWER(:categoryName))) AND budgetId IN (SELECT id FROM budgets WHERE userId = :userId AND :userId != '' AND isActive = 1 AND substr(:expenseDate, 1, 10) >= startDate AND substr(:expenseDate, 1, 10) <= endDate)")
+    suspend fun reverseBudgetItemsSpentForExpense(
         userId: String,
         categoryId: String,
         categoryName: String,

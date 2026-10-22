@@ -1130,9 +1130,40 @@ fun DashboardScreen(
         TransactionDetailsBottomSheet(
             transaction = selectedTxForModal,
             onDismiss = { selectedTxIdForModal = null },
-            onDelete = {
-                selectedTxIdForModal = null
-                viewModel.onEvent(DashboardEvent.Refresh)
+            onDelete = { rawTxId ->
+                viewModel.onEvent(DashboardEvent.DeleteTransaction(rawTxId) { result ->
+                    selectedTxIdForModal = null
+                    when (result) {
+                        is com.example.domain.repository.DeleteTransactionResult.Success -> {
+                            android.widget.Toast.makeText(
+                                dashContext,
+                                "Movimiento eliminado y saldo revertido exitosamente.",
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        is com.example.domain.repository.DeleteTransactionResult.BlockedByBusinessRule -> {
+                            android.widget.Toast.makeText(
+                                dashContext,
+                                "Operación bloqueada: ${result.reason}",
+                                android.widget.Toast.LENGTH_LONG
+                            ).show()
+                        }
+                        is com.example.domain.repository.DeleteTransactionResult.NotFoundOrUnauthorized -> {
+                            android.widget.Toast.makeText(
+                                dashContext,
+                                result.message,
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        is com.example.domain.repository.DeleteTransactionResult.Error -> {
+                            android.widget.Toast.makeText(
+                                dashContext,
+                                "Error al eliminar: ${result.cause.localizedMessage}",
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                })
             }
         )
     }

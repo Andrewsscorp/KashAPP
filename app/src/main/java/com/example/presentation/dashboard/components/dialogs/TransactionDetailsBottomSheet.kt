@@ -20,16 +20,23 @@ import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,6 +52,8 @@ import com.example.ui.theme.KashBlue
 import com.example.ui.theme.KashCyan
 import com.example.ui.theme.KashNavy
 import com.example.ui.theme.KashSuccess
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,7 +64,7 @@ fun TransactionDetailsBottomSheet(
     onDelete: (String) -> Unit = {}
 ) {
     val dto = TransactionItemDto(
-        id = transaction.id.toString(),
+        id = transaction.rawId.ifBlank { transaction.id.toString() },
         description = transaction.concept,
         amount = transaction.amount.toDouble(),
         dateFormatted = transaction.dateFormatted,
@@ -78,6 +87,52 @@ fun TransactionDetailsBottomSheet(
     onDelete: (String) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
+    var showConfirmDialog by remember { mutableStateOf(false) }
+    var isDeleting by remember { mutableStateOf(false) }
+
+    if (showConfirmDialog) {
+        val symbols = DecimalFormatSymbols(Locale("es", "CO")).apply {
+            groupingSeparator = '.'
+            decimalSeparator = ','
+        }
+        val formattedAmount = "$ " + DecimalFormat("#,##0", symbols).format(transaction.amount)
+        val impactMsg = if (transaction.isIncome) {
+            "¿Deseas eliminar este ingreso de $formattedAmount?\n\nAl eliminarlo, se descontará automáticamente del saldo de la cuenta ${transaction.account}."
+        } else {
+            "¿Deseas eliminar este gasto de $formattedAmount?\n\nAl eliminarlo, el importe se restituirá automáticamente al saldo de la cuenta ${transaction.account} y se descontará del gasto acumulado de tu presupuesto."
+        }
+
+        AlertDialog(
+            onDismissRequest = { if (!isDeleting) showConfirmDialog = false },
+            title = {
+                Text("Confirmar eliminación", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            },
+            text = {
+                Text(impactMsg, fontSize = 13.sp, color = Color(0xFF334155))
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        isDeleting = true
+                        showConfirmDialog = false
+                        onDelete(transaction.id)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Eliminar y Revertir", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showConfirmDialog = false },
+                    enabled = !isDeleting
+                ) {
+                    Text("Cancelar", color = Color(0xFF64748B))
+                }
+            }
+        )
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -209,22 +264,34 @@ fun TransactionDetailsBottomSheet(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OutlinedButton(
-                    onClick = { onDelete(transaction.id) },
+                    onClick = { showConfirmDialog = true },
+                    enabled = !isDeleting,
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFEF4444)),
-                    border = BorderStroke(1.dp, Color(0xFFEF4444)),
+                    border = BorderStroke(1.dp, if (isDeleting) Color(0xFFCBD5E1) else Color(0xFFEF4444)),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp)
                         .testTag("delete_transaction_button")
                 ) {
-                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar", modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(text = "Eliminar", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    if (isDeleting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = Color(0xFFEF4444),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(text = "Revirtiendo...", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    } else {
+                        Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar", modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(text = "Eliminar", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
 
                 Button(
                     onClick = onDismiss,
+                    enabled = !isDeleting,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF007BFF),
                         contentColor = Color.White

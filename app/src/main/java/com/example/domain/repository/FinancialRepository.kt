@@ -298,4 +298,16 @@ interface FinancialRepository {
     suspend fun backupFullPortfolioToCloud(userId: String): Result<Boolean> = Result.success(false)
     suspend fun getCloudBackupMetadata(userId: String): Map<String, Any>? = null
     fun clearMemoryCaches() {}
+
+    /**
+     * Reverses and deletes a transaction with ACID atomic double-entry guarantees.
+     */
+    suspend fun reverseAndDeleteTransaction(transactionId: String, userId: String): DeleteTransactionResult
+}
+
+sealed class DeleteTransactionResult {
+    data class Success(val deletedTransactionIds: List<String>, val affectedAccountIds: List<String>) : DeleteTransactionResult()
+    data class BlockedByBusinessRule(val reason: String) : DeleteTransactionResult()
+    data class NotFoundOrUnauthorized(val message: String) : DeleteTransactionResult()
+    data class Error(val cause: Throwable) : DeleteTransactionResult()
 }
