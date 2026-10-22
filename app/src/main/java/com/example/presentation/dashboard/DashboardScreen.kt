@@ -364,16 +364,6 @@ fun DashboardScreen(
                     onClickReview = { showAutoCaptureInbox = true }
                 )
 
-                // ==========================================
-                // RADAR TRIBUTARIO DIAN & IMPUESTOS INTERNACIONALES
-                // ==========================================
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    com.example.feature.impuestosdian.ui.DianTaxDashboardBanner(
-                        report = null,
-                        onClickOpenRadar = { showDianTaxRadarModule = true }
-                    )
-                }
-
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                     // PARTE 2: TU POSICIÓN — Así está tu dinero (2x2 Grid con apertura a análisis completo)
                     TuPosicionGrid(
