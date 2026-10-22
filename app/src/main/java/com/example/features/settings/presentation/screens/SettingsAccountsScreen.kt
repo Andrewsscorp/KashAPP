@@ -24,7 +24,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -103,7 +103,7 @@ fun SettingsAccountsSubScreen(
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Switch(
+                IosStyleSwitch(
                     checked = userPreferences.excludeAllAccountsFromDashboard,
                     onCheckedChange = { checked ->
                         coroutineScope.launch {
@@ -235,7 +235,7 @@ fun SettingsAccountsSubScreen(
                                             color = Color(0xFF64748B)
                                         )
                                     }
-                                    Switch(
+                                    IosStyleSwitch(
                                         checked = acc.hasOverdraft,
                                         onCheckedChange = { isChecked ->
                                             coroutineScope.launch {
@@ -288,7 +288,7 @@ fun SettingsAccountsSubScreen(
                                             color = Color(0xFF64748B)
                                         )
                                     }
-                                    Switch(
+                                    IosStyleSwitch(
                                         checked = isIndividualIncluded && !userPreferences.excludeAllAccountsFromDashboard,
                                         enabled = !userPreferences.excludeAllAccountsFromDashboard,
                                         onCheckedChange = { isChecked ->

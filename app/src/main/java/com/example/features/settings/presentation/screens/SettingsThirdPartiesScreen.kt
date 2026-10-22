@@ -85,6 +85,7 @@ import com.example.presentation.thirdparty.components.ThirdPartyFormModalSheet
 import com.example.presentation.thirdparty.components.resolveThirdPartyIcon
 import com.example.presentation.thirdparty.model.ThirdPartyCategoryFilter
 import com.example.presentation.thirdparty.model.ThirdPartyFormState
+import com.example.core.ui.components.IosStyleConfirmDialog
 import com.example.ui.theme.KashBlue
 import com.example.ui.theme.KashNavy
 
@@ -418,49 +419,27 @@ fun SettingsThirdPartiesSubScreen(
         )
     }
 
-    // Dialog for Contact Permission Required / Denied
+    // Dialog for Contact Permission Required / Denied (Estilo iPhone / iOS)
     if (showPermissionDeniedDialog) {
-        AlertDialog(
-            onDismissRequest = { showPermissionDeniedDialog = false },
-            containerColor = Color.White,
-            shape = RoundedCornerShape(20.dp),
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.ContactPhone, contentDescription = null, tint = Color(0xFF0284C7))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Permiso de Contactos Requerido", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = KashNavy)
-                }
+        IosStyleConfirmDialog(
+            title = "Permiso de Contactos Requerido",
+            message = "Para seleccionar e importar el nombre, teléfono y correo electrónico de tus contactos directamente al directorio de terceros sin escribirlos manualmente, autoriza el permiso de lectura de contactos.",
+            confirmText = "Abrir Ajustes",
+            dismissText = "Cancelar",
+            onConfirm = {
+                showPermissionDeniedDialog = false
+                try {
+                    val intent = Intent(
+                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.fromParts("package", context.packageName, null)
+                    )
+                    context.startActivity(intent)
+                } catch (_: Exception) {}
             },
-            text = {
-                Text(
-                    text = "Para seleccionar e importar el nombre, teléfono y correo electrónico de tus contactos directamente al directorio de terceros sin escribirlos manualmente, autoriza el permiso de lectura de contactos.",
-                    fontSize = 13.sp,
-                    color = Color(0xFF475569)
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showPermissionDeniedDialog = false
-                        try {
-                            val intent = Intent(
-                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                Uri.fromParts("package", context.packageName, null)
-                            )
-                            context.startActivity(intent)
-                        } catch (_: Exception) {}
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Text("Abrir Ajustes", color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPermissionDeniedDialog = false }) {
-                    Text("Cancelar", color = Color(0xFF64748B))
-                }
-            }
+            onDismiss = { showPermissionDeniedDialog = false },
+            icon = Icons.Default.ContactPhone,
+            iconTint = Color(0xFF0284C7),
+            iconBackground = Color(0xFFE0F2FE)
         )
     }
 }

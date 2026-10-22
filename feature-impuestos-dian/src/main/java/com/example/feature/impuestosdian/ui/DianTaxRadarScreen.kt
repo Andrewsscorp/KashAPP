@@ -42,7 +42,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -1013,7 +1013,7 @@ private fun AccountGmfRow(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Exenta", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = BlueRoyalDark)
                 Spacer(modifier = Modifier.width(6.dp))
-                Switch(
+                IosStyleSwitch(
                     checked = status.isMarkedTaxExempt350Uvt,
                     onCheckedChange = onToggleExempt,
                     colors = SwitchDefaults.colors(

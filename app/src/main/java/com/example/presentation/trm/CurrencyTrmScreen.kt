@@ -62,10 +62,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
+import com.example.core.ui.components.IosStyleSnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -136,7 +136,7 @@ fun CurrencyTrmScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { IosStyleSnackbarHost(snackbarHostState) },
         containerColor = Color(0xFFF8FAFC),
         modifier = modifier.fillMaxSize()
     ) { paddingValues ->
@@ -907,7 +907,7 @@ fun CurrencyTrmScreen(
                                             fontWeight = FontWeight.Bold,
                                             color = KashNavy
                                         )
-                                        Switch(
+                                        IosStyleSwitch(
                                             checked = activeRate.isActive,
                                             onCheckedChange = { viewModel.toggleManualRateActive(activeRate.id, it) },
                                             colors = SwitchDefaults.colors(
@@ -1084,7 +1084,7 @@ fun CurrencyTrmScreen(
                                 Text("Referencia TRM colombiana para el par USD/COP", fontSize = 11.sp, color = Color(0xFF64748B))
                             }
                         }
-                        Switch(
+                        IosStyleSwitch(
                             checked = uiState.isOfficialTrmActive,
                             onCheckedChange = { viewModel.toggleOfficialTrm(it) },
                             colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = KashBlue)

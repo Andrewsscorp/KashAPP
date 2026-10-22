@@ -44,7 +44,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -695,7 +695,7 @@ fun FixedAssetsMaintenanceTab(
                                 color = if (isCapitalizable) Color(0xFF10B981) else textSecondary
                             )
                         }
-                        Switch(
+                        IosStyleSwitch(
                             checked = isCapitalizable,
                             onCheckedChange = { isCapitalizable = it },
                             colors = SwitchDefaults.colors(

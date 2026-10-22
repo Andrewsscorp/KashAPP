@@ -70,10 +70,10 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
+import com.example.core.ui.components.IosStyleSnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -468,7 +468,7 @@ fun AddCreditCardScreen(
                 }
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { IosStyleSnackbarHost(snackbarHostState) },
         containerColor = Color(0xFFF8FAFC)
     ) { innerPadding ->
         Box(
@@ -1188,7 +1188,7 @@ fun AddCreditCardScreen(
                                 Text("Alimentar Tarjeta de Deudas en Dashboard", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
                                 Text("Refleja el cupo usado como pasivo en tu patrimonio neto.", fontSize = 11.sp, color = Color(0xFF64748B))
                             }
-                            Switch(
+                            IosStyleSwitch(
                                 checked = state.includeInNetWorth,
                                 onCheckedChange = { viewModel.onIncludeInNetWorthChanged(it) },
                                 colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = KashBlue)
@@ -1207,7 +1207,7 @@ fun AddCreditCardScreen(
                                 Text("Recordatorios de fecha de pago", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
                                 Text("Notificaciones automáticas antes del día límite de pago.", fontSize = 11.sp, color = Color(0xFF64748B))
                             }
-                            Switch(
+                            IosStyleSwitch(
                                 checked = state.remindersEnabled,
                                 onCheckedChange = { viewModel.onRemindersEnabledChanged(it) },
                                 colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = KashBlue)

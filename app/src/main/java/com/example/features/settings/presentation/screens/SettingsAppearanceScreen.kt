@@ -15,7 +15,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -85,7 +85,7 @@ fun SettingsAppearanceSubScreen(
                         Text("Modo Privacidad", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = KashNavy)
                         Text("Ocultar saldos con asteriscos (••••) en todo el tablero", fontSize = 12.sp, color = Color(0xFF64748B))
                     }
-                    Switch(
+                    IosStyleSwitch(
                         checked = privacyMode,
                         onCheckedChange = { onTogglePrivacyMode() },
                         colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = KashBlue)

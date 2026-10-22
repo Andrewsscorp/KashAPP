@@ -51,7 +51,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
+import com.example.core.ui.components.IosStyleSnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -381,7 +381,7 @@ fun BudgetsScreen(
                 }
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { IosStyleSnackbarHost(snackbarHostState) },
         containerColor = bgDark,
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->

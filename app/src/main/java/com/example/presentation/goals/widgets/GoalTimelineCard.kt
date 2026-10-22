@@ -33,7 +33,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -179,7 +179,7 @@ fun GoalTimelineCard(
                             }
                         }
 
-                        Switch(
+                        IosStyleSwitch(
                             checked = state.hasDeadline,
                             onCheckedChange = { onHasDeadlineChanged(it) },
                             colors = SwitchDefaults.colors(

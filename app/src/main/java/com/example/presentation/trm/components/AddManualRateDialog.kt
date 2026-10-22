@@ -27,7 +27,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -338,7 +338,7 @@ fun AddManualRateDialog(
                         Text("Activar de inmediato", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = KashNavy)
                         Text("Reemplaza la tasa de Frankfurter", fontSize = 11.sp, color = Color(0xFF64748B))
                     }
-                    Switch(
+                    IosStyleSwitch(
                         checked = isActive,
                         onCheckedChange = { isActive = it },
                         colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = KashBlue)

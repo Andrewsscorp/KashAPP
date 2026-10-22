@@ -50,7 +50,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
+import com.example.core.ui.components.IosStyleSnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -204,7 +204,7 @@ fun CreateCdtScreen(
             .imePadding()
             .testTag("create_cdt_screen"),
         containerColor = Color(0xFFF8FAFC),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { IosStyleSnackbarHost(snackbarHostState) },
         topBar = {
             // Screen Header: Back button, Title + Subtitle (with typo fixed), Cancel button
             Row(

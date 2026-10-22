@@ -42,7 +42,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -192,7 +192,7 @@ fun ExpenseRecurrenceOptions(
                         )
                     }
 
-                    Switch(
+                    IosStyleSwitch(
                         checked = isRecurring,
                         onCheckedChange = { onRecurringChange(it) },
                         colors = SwitchDefaults.colors(
@@ -448,7 +448,7 @@ fun ExpenseRecurrenceOptions(
                             )
                         }
 
-                        Switch(
+                        IosStyleSwitch(
                             checked = isSavedAsFrequent,
                             onCheckedChange = onFrequentChange,
                             colors = SwitchDefaults.colors(

@@ -33,7 +33,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -530,7 +530,7 @@ fun TransferAccountPickerModal(
                                         )
                                     }
 
-                                    Switch(
+                                    IosStyleSwitch(
                                         checked = acc.hasOverdraft,
                                         onCheckedChange = { isChecked ->
                                             onToggleAllowNegative?.invoke(acc.id, isChecked)

@@ -29,7 +29,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -311,7 +311,7 @@ fun CdtMaturityActionCard(
                                     color = KashNavy
                                 )
                             }
-                            Switch(
+                            IosStyleSwitch(
                                 checked = allowsEarlyWithdrawal,
                                 onCheckedChange = onEarlyWithdrawalChanged,
                                 colors = SwitchDefaults.colors(

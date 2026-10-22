@@ -64,10 +64,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
+import com.example.core.ui.components.IosStyleSnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -277,7 +277,7 @@ fun UpcomingPaymentsScreen(
                     .testTag("fab_add_scheduled_payment")
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { IosStyleSnackbarHost(snackbarHostState) },
         containerColor = bgDark,
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
@@ -1102,7 +1102,7 @@ private fun NotificationConfigDialog(
                                 fontSize = 10.5.sp
                             )
                         }
-                        Switch(
+                        IosStyleSwitch(
                             checked = enabled,
                             onCheckedChange = { isChecked ->
                                 if (isChecked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasPermission) {
@@ -1177,7 +1177,7 @@ private fun NotificationConfigDialog(
                             Text("💳 Tarjetas de Crédito", color = Color.White, fontSize = 12.sp)
                             Text("Fechas límite de pago y montos mínimos", color = Color(0xFF94A3B8), fontSize = 11.sp)
                         }
-                        Switch(
+                        IosStyleSwitch(
                             checked = notifyCreditCards,
                             onCheckedChange = { notifyCreditCards = it },
                             colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF8B5CF6))
@@ -1194,7 +1194,7 @@ private fun NotificationConfigDialog(
                             Text("🏦 Préstamos & Deudas Bancarias", color = Color.White, fontSize = 12.sp)
                             Text("Cuotas fijas y amortizaciones periódicas", color = Color(0xFF94A3B8), fontSize = 11.sp)
                         }
-                        Switch(
+                        IosStyleSwitch(
                             checked = notifyLoansDebts,
                             onCheckedChange = { notifyLoansDebts = it },
                             colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF0284C7))
@@ -1211,7 +1211,7 @@ private fun NotificationConfigDialog(
                             Text("💡 Servicios, Arriendos & Suscripciones", color = Color.White, fontSize = 12.sp)
                             Text("Facturas mensuales y pagos fijos", color = Color(0xFF94A3B8), fontSize = 11.sp)
                         }
-                        Switch(
+                        IosStyleSwitch(
                             checked = notifyServices,
                             onCheckedChange = { notifyServices = it },
                             colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF10B981))
@@ -1230,7 +1230,7 @@ private fun NotificationConfigDialog(
                             Text("🚨 Alerta el día de vencimiento", color = Color.White, fontSize = 12.sp)
                             Text("Aviso prioritario en la fecha exacta de pago", color = Color(0xFF94A3B8), fontSize = 11.sp)
                         }
-                        Switch(
+                        IosStyleSwitch(
                             checked = onDueDate,
                             onCheckedChange = { onDueDate = it },
                             colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF0284C7))
@@ -1246,7 +1246,7 @@ private fun NotificationConfigDialog(
                             Text("⚠️ Alerta diaria si está en mora", color = Color.White, fontSize = 12.sp)
                             Text("Notificar a diario hasta marcar como pagado", color = Color(0xFF94A3B8), fontSize = 11.sp)
                         }
-                        Switch(
+                        IosStyleSwitch(
                             checked = dailyIfOverdue,
                             onCheckedChange = { dailyIfOverdue = it },
                             colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFFEF4444))

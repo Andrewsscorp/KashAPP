@@ -25,7 +25,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -118,7 +118,7 @@ fun CdtAlertsCard(
                         color = Color(0xFF334155),
                         fontWeight = FontWeight.Medium
                     )
-                    Switch(
+                    IosStyleSwitch(
                         checked = hasAlert,
                         onCheckedChange = onHasAlertChanged,
                         colors = SwitchDefaults.colors(

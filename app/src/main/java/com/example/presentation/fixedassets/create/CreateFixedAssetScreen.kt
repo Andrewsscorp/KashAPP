@@ -51,7 +51,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -555,7 +555,7 @@ fun CreateFixedAssetScreen(
                             }
                         }
 
-                        Switch(
+                        IosStyleSwitch(
                             checked = formState.noAffectDashboard,
                             onCheckedChange = { checked ->
                                 formState = formState.copy(
@@ -660,7 +660,7 @@ fun CreateFixedAssetScreen(
                             }
                         }
 
-                        Switch(
+                        IosStyleSwitch(
                             checked = formState.noAffectInventory,
                             onCheckedChange = { formState = formState.copy(noAffectInventory = it) },
                             colors = SwitchDefaults.colors(
@@ -738,7 +738,7 @@ fun CreateFixedAssetScreen(
                             )
                         }
 
-                        Switch(
+                        IosStyleSwitch(
                             checked = formState.hasDepreciation,
                             onCheckedChange = { formState = formState.copy(hasDepreciation = it) },
                             colors = SwitchDefaults.colors(
@@ -1087,7 +1087,7 @@ fun CreateFixedAssetScreen(
                                             color = textSecondary
                                         )
                                     }
-                                    Switch(
+                                    IosStyleSwitch(
                                         checked = autoDepreciateMonthEnd,
                                         onCheckedChange = { autoDepreciateMonthEnd = it },
                                         colors = SwitchDefaults.colors(

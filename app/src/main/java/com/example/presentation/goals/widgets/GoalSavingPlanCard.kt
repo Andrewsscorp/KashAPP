@@ -33,7 +33,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -262,7 +262,7 @@ fun GoalSavingPlanCard(
                             )
                         }
 
-                        Switch(
+                        IosStyleSwitch(
                             checked = state.autoContribute,
                             onCheckedChange = { onAutoContributeChanged(it) },
                             colors = SwitchDefaults.colors(
@@ -322,7 +322,7 @@ fun GoalSavingPlanCard(
                             }
                         }
 
-                        Switch(
+                        IosStyleSwitch(
                             checked = state.virtualPocketEnabled,
                             onCheckedChange = { onVirtualPocketChanged(it) },
                             colors = SwitchDefaults.colors(

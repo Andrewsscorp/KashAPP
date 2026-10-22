@@ -46,7 +46,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -805,7 +805,7 @@ fun SettingsProfileScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Activar 2FA obligatorio", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF0F172A))
-                        Switch(
+                        IosStyleSwitch(
                             checked = is2faActive,
                             onCheckedChange = { is2faActive = it },
                             colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = KashBlue)

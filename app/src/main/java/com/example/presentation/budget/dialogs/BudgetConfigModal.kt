@@ -36,7 +36,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -442,7 +442,7 @@ fun BudgetConfigModal(
                         Text("Alerta al llegar al $warningThreshold% del sobre", fontSize = 12.sp, color = textPrimary)
                         Text("Notifica preventivamente antes de sobregirarse", fontSize = 11.sp, color = textSecondary)
                     }
-                    Switch(
+                    IosStyleSwitch(
                         checked = notifyOnThreshold,
                         onCheckedChange = { notifyOnThreshold = it },
                         colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = primaryBlue)
@@ -460,7 +460,7 @@ fun BudgetConfigModal(
                         Text("Alerta de sobregiro (100%+)", fontSize = 12.sp, color = textPrimary)
                         Text("Alerta crítica si una categoría supera el monto asignado", fontSize = 11.sp, color = textSecondary)
                     }
-                    Switch(
+                    IosStyleSwitch(
                         checked = notifyOnOverdraft,
                         onCheckedChange = { notifyOnOverdraft = it },
                         colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFFEF4444))
@@ -478,7 +478,7 @@ fun BudgetConfigModal(
                         Text("Alerta de Ritmo de Gasto (Burn Rate)", fontSize = 12.sp, color = textPrimary)
                         Text("Advierte si la proyección diaria gastará todo antes de fin de mes", fontSize = 11.sp, color = textSecondary)
                     }
-                    Switch(
+                    IosStyleSwitch(
                         checked = notifyOnBurnRateRisk,
                         onCheckedChange = { notifyOnBurnRateRisk = it },
                         colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFFF59E0B))

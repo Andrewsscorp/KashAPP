@@ -72,7 +72,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -529,7 +529,7 @@ fun CreateIncomeScreen(
                             Text(text = "Ingreso recurrente", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
                             Text(text = "Se repetirá periódicamente según tu preferencia", fontSize = 11.sp, color = Color(0xFF94A3B8))
                         }
-                        Switch(
+                        IosStyleSwitch(
                             checked = formState.isRecurring,
                             onCheckedChange = { formState = formState.copy(isRecurring = it) },
                             colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF10B981))
@@ -574,7 +574,7 @@ fun CreateIncomeScreen(
                                     Text(text = "Guardar como ingreso frecuente", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
                                     Text(text = "Salvar para reusar con 1 toque", fontSize = 11.sp, color = Color(0xFF64748B))
                                 }
-                                Switch(
+                                IosStyleSwitch(
                                     checked = formState.isSavedAsFrequent,
                                     onCheckedChange = { formState = formState.copy(isSavedAsFrequent = it) },
                                     colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF10B981))

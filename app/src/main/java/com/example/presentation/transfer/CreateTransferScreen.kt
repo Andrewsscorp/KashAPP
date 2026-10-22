@@ -67,7 +67,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -675,7 +675,7 @@ fun CreateTransferScreen(
                                     Text(text = "Guardar como plantilla frecuente", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
                                     Text(text = "Aparecerá en tus accesos directos", fontSize = 11.sp, color = Color(0xFF64748B))
                                 }
-                                Switch(
+                                IosStyleSwitch(
                                     checked = formState.saveAsTemplate,
                                     onCheckedChange = { formState = formState.copy(saveAsTemplate = it) },
                                     colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF0284C7))

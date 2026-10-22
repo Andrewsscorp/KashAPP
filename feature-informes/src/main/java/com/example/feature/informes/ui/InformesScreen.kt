@@ -1,5 +1,7 @@
 package com.example.feature.informes.ui
 
+import com.example.core.ui.components.IosStyleSnackbarHost
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -167,7 +169,7 @@ fun InformesScreen(
                 }
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { IosStyleSnackbarHost(snackbarHostState) },
         containerColor = Color(0xFF0B132B),
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->

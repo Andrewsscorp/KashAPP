@@ -21,7 +21,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -81,7 +81,7 @@ fun SettingsNotificationsScreen(
                         Text("Alertas de Presupuesto por Sobres", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = KashNavy)
                         Text("Avisar al superar el 80% del límite de la categoría", fontSize = 12.sp, color = Color(0xFF64748B))
                     }
-                    Switch(
+                    IosStyleSwitch(
                         checked = budgetAlerts,
                         onCheckedChange = {
                             onToggleBudgetAlerts(it)
@@ -102,7 +102,7 @@ fun SettingsNotificationsScreen(
                         Text("Fechas de Corte y Pago de Tarjetas", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = KashNavy)
                         Text("Notificar 3 días antes de la fecha límite", fontSize = 12.sp, color = Color(0xFF64748B))
                     }
-                    Switch(
+                    IosStyleSwitch(
                         checked = isCardAlertOn,
                         onCheckedChange = {
                             isCardAlertOn = it
@@ -124,7 +124,7 @@ fun SettingsNotificationsScreen(
                         Text("Alertas de Protección Contra Sobregiro", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = KashNavy)
                         Text("Avisar de inmediato si una cuenta bloquea un gasto por saldo insuficiente", fontSize = 12.sp, color = Color(0xFF64748B))
                     }
-                    Switch(
+                    IosStyleSwitch(
                         checked = isOverdraftAlertOn,
                         onCheckedChange = { isOverdraftAlertOn = it },
                         colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = KashBlue)
@@ -142,7 +142,7 @@ fun SettingsNotificationsScreen(
                         Text("Resumen Financiero Semanal", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = KashNavy)
                         Text("Balance consolidado cada lunes a las 8:00 AM", fontSize = 12.sp, color = Color(0xFF64748B))
                     }
-                    Switch(
+                    IosStyleSwitch(
                         checked = isWeeklyOn,
                         onCheckedChange = { isWeeklyOn = it },
                         colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = KashBlue)

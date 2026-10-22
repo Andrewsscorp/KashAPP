@@ -61,7 +61,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -453,7 +453,7 @@ fun BankAccountsManagementScreen(
                                     )
                                 }
 
-                                Switch(
+                                IosStyleSwitch(
                                     checked = !userPreferences.excludeAllAccountsFromDashboard,
                                     onCheckedChange = { active ->
                                         coroutineScope.launch {
@@ -1317,7 +1317,7 @@ private fun EditAccountModal(
                         Text("Permitir Sobregiro", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                         Text("Permite balance negativo en transacciones", fontSize = 11.sp, color = Color(0xFF94A3B8))
                     }
-                    Switch(
+                    IosStyleSwitch(
                         checked = hasOverdraft,
                         onCheckedChange = { hasOverdraft = it },
                         colors = SwitchDefaults.colors(
@@ -1344,7 +1344,7 @@ private fun EditAccountModal(
                             color = if (!isExcludedFromDashboard) Color(0xFF34D399) else Color(0xFFFBBF24)
                         )
                     }
-                    Switch(
+                    IosStyleSwitch(
                         checked = !isExcludedFromDashboard,
                         onCheckedChange = { isExcludedFromDashboard = !it },
                         colors = SwitchDefaults.colors(

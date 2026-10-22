@@ -49,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.core.ui.components.IosStyleConfirmDialog
 import com.example.features.settings.presentation.SettingsUiState
 import com.example.features.settings.presentation.SettingsViewModel
 import com.example.ui.theme.KashBlue
@@ -260,27 +261,18 @@ fun SettingsBackupScreen(
         }
     }
 
-    // Confirmation dialog for Cloud Restore
+    // Confirmation dialog for Cloud Restore (Estilo iPhone / iOS)
     if (uiState.showRestoreConfirmationDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel?.showRestoreConfirmation(false) },
-            title = { Text("Restaurar desde la Nube", fontWeight = FontWeight.Bold, color = KashNavy) },
-            text = {
-                Text("¿Deseas restaurar tu portafolio financiero desde la copia de seguridad cifrada en la nube? Tus cuentas y transacciones locales se sincronizarán con la información más reciente de Firestore.")
-            },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel?.executeCloudRestore() },
-                    colors = ButtonDefaults.buttonColors(containerColor = KashBlue)
-                ) {
-                    Text("Confirmar y Restaurar")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel?.showRestoreConfirmation(false) }) {
-                    Text("Cancelar", color = Color(0xFF64748B))
-                }
-            }
+        IosStyleConfirmDialog(
+            title = "Restaurar desde la Nube",
+            message = "¿Deseas restaurar tu portafolio financiero desde la copia de seguridad cifrada en la nube? Tus cuentas y transacciones locales se sincronizarán con la información más reciente de Firestore.",
+            confirmText = "Restaurar",
+            dismissText = "Cancelar",
+            onConfirm = { viewModel?.executeCloudRestore() },
+            onDismiss = { viewModel?.showRestoreConfirmation(false) },
+            icon = Icons.Default.CloudDownload,
+            iconTint = KashBlue,
+            iconBackground = Color(0xFFE0F2FE)
         )
     }
 }

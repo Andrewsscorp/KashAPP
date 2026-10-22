@@ -29,7 +29,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -159,7 +159,7 @@ fun InvestmentNetWorthCard(
                             )
                         }
 
-                        Switch(
+                        IosStyleSwitch(
                             checked = state.includeInNetWorth,
                             onCheckedChange = onIncludeInNetWorthChanged,
                             colors = SwitchDefaults.colors(

@@ -23,7 +23,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -144,7 +144,7 @@ fun TransferGmfBanner(
                             color = Color(0xFF94A3B8)
                         )
                     }
-                    Switch(
+                    IosStyleSwitch(
                         checked = applyGmf,
                         onCheckedChange = onToggleGmf,
                         colors = SwitchDefaults.colors(

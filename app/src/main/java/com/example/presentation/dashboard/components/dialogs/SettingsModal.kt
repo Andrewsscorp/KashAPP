@@ -56,7 +56,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -394,7 +394,7 @@ fun SettingsModal(
                                     )
                                 }
                             }
-                            Switch(
+                            IosStyleSwitch(
                                 checked = isPrivacyModeActive,
                                 onCheckedChange = { onTogglePrivacyMode() },
                                 colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = KashBlue),
@@ -491,7 +491,7 @@ fun SettingsModal(
                                     )
                                 }
                             }
-                            Switch(
+                            IosStyleSwitch(
                                 checked = biometricLockEnabled,
                                 onCheckedChange = onToggleBiometricLock,
                                 colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = KashBlue),
@@ -747,7 +747,7 @@ private fun NotificationToggleRow(
                 color = Color(0xFF64748B)
             )
         }
-        Switch(
+        IosStyleSwitch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = KashBlue),

@@ -16,7 +16,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -104,7 +104,7 @@ fun DashboardModuleToggleRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(title, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = KashNavy, modifier = Modifier.weight(1f))
-        Switch(
+        IosStyleSwitch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = KashBlue)

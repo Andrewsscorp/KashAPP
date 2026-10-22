@@ -85,10 +85,10 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
+import com.example.core.ui.components.IosStyleSnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -722,7 +722,7 @@ fun CreateAccountScreen(
                 }
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { IosStyleSnackbarHost(snackbarHostState) },
         containerColor = Color(0xFFF8FAFC)
     ) { innerPadding ->
         Box(
@@ -1321,7 +1321,7 @@ fun CreateAccountScreen(
                                 Text("Genera Intereses / Rendimientos", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF0F172A))
                                 Text("Aplica tasa E.A. sobre el saldo", fontSize = 11.sp, color = Color(0xFF64748B))
                             }
-                            Switch(
+                            IosStyleSwitch(
                                 checked = generatesInterest,
                                 onCheckedChange = { generatesInterest = it },
                                 colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF10B981))
@@ -1353,7 +1353,7 @@ fun CreateAccountScreen(
                                     Text("Línea de Sobregiro", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF0F172A))
                                     Text("Cupo extra autorizado por el banco", fontSize = 11.sp, color = Color(0xFF64748B))
                                 }
-                                Switch(
+                                IosStyleSwitch(
                                     checked = hasOverdraft,
                                     onCheckedChange = { hasOverdraft = it },
                                     colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF0284C7))
@@ -1432,7 +1432,7 @@ fun CreateAccountScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text("Exenta de 4x1000", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color(0xFF0F172A))
-                                Switch(checked = exemptionTax4x1000, onCheckedChange = { exemptionTax4x1000 = it })
+                                IosStyleSwitch(checked = exemptionTax4x1000, onCheckedChange = { exemptionTax4x1000 = it })
                             }
                         }
                     }

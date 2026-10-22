@@ -21,7 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -152,7 +152,7 @@ fun ImprovementMovementForm(
                             }
                         }
 
-                        Switch(
+                        IosStyleSwitch(
                             checked = allowOverrideByCapitalization,
                             onCheckedChange = { allowOverrideByCapitalization = it },
                             colors = SwitchDefaults.colors(

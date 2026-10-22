@@ -32,7 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -104,7 +104,7 @@ fun SettingsSecurityScreen(
                         Text("Bloqueo Biométrico", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = KashNavy)
                         Text("Solicitar huella o reconocimiento facial al abrir la app", fontSize = 12.sp, color = Color(0xFF64748B))
                     }
-                    Switch(
+                    IosStyleSwitch(
                         checked = biometricsEnabled,
                         onCheckedChange = {
                             onToggleBiometrics(it)
@@ -134,7 +134,7 @@ fun SettingsSecurityScreen(
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Switch(
+                    IosStyleSwitch(
                         checked = allowScreenshots,
                         onCheckedChange = { allowed ->
                             onToggleAllowScreenshots(allowed)

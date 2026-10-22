@@ -33,7 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -170,7 +170,7 @@ fun InvestmentYieldCard(
                             )
                         }
 
-                        Switch(
+                        IosStyleSwitch(
                             checked = state.generatesYield,
                             onCheckedChange = onGeneratesYieldChanged,
                             colors = SwitchDefaults.colors(

@@ -35,7 +35,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -52,6 +52,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.core.ui.components.IosStyleConfirmDialog
 import com.example.ui.theme.KashBlue
 import com.example.ui.theme.KashNavy
 
@@ -168,59 +169,21 @@ fun SettingsFixedAssetsSubScreen(
         )
     }
 
-    // Dialog: Regla Masiva de Inventarios
+    // Dialog: Regla Masiva de Inventarios (Estilo iPhone / iOS)
     if (showMassApplyInventoryDialog) {
-        AlertDialog(
-            onDismissRequest = { showMassApplyInventoryDialog = false },
-            containerColor = Color(0xFFF0FDF4),
-            icon = {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFDCFCE7)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Inventory2,
-                        contentDescription = null,
-                        tint = Color(0xFF16A34A),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+        IosStyleConfirmDialog(
+            title = "Regla Masiva de Inventarios",
+            message = "¿Deseas aplicar la regla 'No afecta inventarios' a todos los activos fijos registrados en el sistema?",
+            confirmText = "Aplicar a Todos",
+            dismissText = "Cancelar",
+            onConfirm = {
+                showMassApplyInventoryDialog = false
+                onApplyNoAffectInventoryToAll(true)
             },
-            title = {
-                Text(
-                    text = "Regla Masiva de Inventarios",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 17.sp,
-                    color = Color(0xFF166534)
-                )
-            },
-            text = {
-                Text(
-                    text = "¿Deseas aplicar la regla 'No afecta inventarios' a todos los activos fijos registrados en el sistema?",
-                    fontSize = 13.sp,
-                    color = Color(0xFF14532D)
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showMassApplyInventoryDialog = false
-                        onApplyNoAffectInventoryToAll(true)
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Aplicar a Todos", color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showMassApplyInventoryDialog = false }) {
-                    Text("Cancelar", color = Color(0xFF64748B))
-                }
-            }
+            onDismiss = { showMassApplyInventoryDialog = false },
+            icon = Icons.Default.Inventory2,
+            iconTint = Color(0xFF16A34A),
+            iconBackground = Color(0xFFDCFCE7)
         )
     }
 
@@ -279,7 +242,7 @@ fun SettingsFixedAssetsSubScreen(
                             lineHeight = 15.sp
                         )
                     }
-                    Switch(
+                    IosStyleSwitch(
                         checked = excludeAllFixedAssetsFromDashboard,
                         onCheckedChange = { onToggleExcludeAllFixedAssetsFromDashboard(it) },
                         colors = SwitchDefaults.colors(
@@ -310,7 +273,7 @@ fun SettingsFixedAssetsSubScreen(
                             lineHeight = 15.sp
                         )
                     }
-                    Switch(
+                    IosStyleSwitch(
                         checked = autoNoAffectDashboardForAssets,
                         onCheckedChange = { onToggleAutoNoAffectDashboard(it) },
                         colors = SwitchDefaults.colors(
@@ -393,7 +356,7 @@ fun SettingsFixedAssetsSubScreen(
                             lineHeight = 15.sp
                         )
                     }
-                    Switch(
+                    IosStyleSwitch(
                         checked = autoNoAffectInventoryForAssets,
                         onCheckedChange = { onToggleAutoNoAffectInventory(it) },
                         colors = SwitchDefaults.colors(

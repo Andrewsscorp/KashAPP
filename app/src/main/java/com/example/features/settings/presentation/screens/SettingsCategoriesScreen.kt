@@ -192,6 +192,8 @@ fun SettingsCategoriesSubScreen(
     if (showAddCategoryDialog) {
         AlertDialog(
             onDismissRequest = { showAddCategoryDialog = false },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(24.dp),
             title = { Text("Nueva Categoría de ${if (selectedTab == "EXPENSE") "Gasto" else "Ingreso"}", fontWeight = FontWeight.Bold, color = KashNavy) },
             text = {
                 OutlinedTextField(

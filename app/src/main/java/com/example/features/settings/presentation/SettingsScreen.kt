@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -33,11 +34,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
+import com.example.core.ui.components.IosStyleSnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.example.core.ui.components.IosStyleConfirmDialog
+import com.example.core.ui.components.IosStyleSnackbarHost
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -117,7 +120,7 @@ fun SettingsScreen(
             .navigationBarsPadding()
             .imePadding()
             .testTag("kashapp_settings_screen"),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { IosStyleSnackbarHost(snackbarHostState) },
         containerColor = Color(0xFFF8FAFC),
         topBar = {
             if (uiState.currentSubRoute != SettingsSubRoute.AUDITORIA) {
@@ -353,120 +356,36 @@ fun SettingsScreen(
     }
 }
 
-    // Modal: Logout Confirmation Dialog
+    // Modal: Logout Confirmation Dialog (Estilo iPhone / iOS)
     if (uiState.showLogoutConfirmationDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.showLogoutDialog(false) },
-            title = {
-                Text(
-                    text = "¿Cerrar sesión de KashApp?",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 17.sp,
-                    color = KashNavy
-                )
-            },
-            text = {
-                Text(
-                    text = "Tus datos locales están cifrados con Room ACID y protegidos. Para ingresar nuevamente deberás autenticarte.",
-                    fontSize = 13.sp,
-                    color = Color(0xFF64748B)
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.executeLogout(onLogoutSuccess) },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Cerrar sesión", color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.showLogoutDialog(false) }) {
-                    Text("Cancelar", color = Color(0xFF64748B), fontWeight = FontWeight.SemiBold)
-                }
-            },
-            containerColor = Color.White,
-            shape = RoundedCornerShape(20.dp)
+        IosStyleConfirmDialog(
+            title = "¿Cerrar sesión de KashApp?",
+            message = "Tus datos locales están cifrados con Room ACID y protegidos. Para ingresar nuevamente deberás autenticarte.",
+            confirmText = "Cerrar sesión",
+            dismissText = "Cancelar",
+            onConfirm = { viewModel.executeLogout(onLogoutSuccess) },
+            onDismiss = { viewModel.showLogoutDialog(false) },
+            icon = Icons.AutoMirrored.Filled.Logout,
+            iconTint = Color(0xFFEF4444),
+            iconBackground = Color(0xFFFEF2F2),
+            isDestructive = true
         )
     }
 
-    // Modal: Google Play Standard Account Deletion Dialog
+    // Modal: Google Play Standard Account Deletion Dialog (Estilo iPhone / iOS)
     if (uiState.showDeleteAccountConfirmationDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                if (!uiState.isDeletingAccount) viewModel.showDeleteAccountDialog(false)
-            },
-            icon = {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFFEE2E2)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.DeleteForever,
-                        contentDescription = "Eliminar cuenta",
-                        tint = Color(0xFFDC2626),
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-            },
-            title = {
-                Text(
-                    text = "¿Eliminar cuenta definitivamente?",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = Color(0xFFDC2626)
-                )
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "Conforme a los estándares de Google Play y privacidad de datos, esta acción es permanente e irreversible.",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = KashNavy
-                    )
-                    Text(
-                        text = "Al confirmar:\n• Se eliminarán tus datos financieros en la nube de Firebase.\n• Se borrarán tus cuentas, presupuestos y movimientos de este dispositivo.\n• Tu cuenta de autenticación será eliminada permanentemente.",
-                        fontSize = 12.sp,
-                        color = Color(0xFF64748B),
-                        lineHeight = 18.sp
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.executeDeleteAccount(onAccountDeletedSuccess) },
-                    enabled = !uiState.isDeletingAccount,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    if (uiState.isDeletingAccount) {
-                        CircularProgressIndicator(
-                            color = Color.White,
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Eliminando cuenta...", color = Color.White)
-                    } else {
-                        Text("Eliminar definitivamente", color = Color.White, fontWeight = FontWeight.Bold)
-                    }
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { viewModel.showDeleteAccountDialog(false) },
-                    enabled = !uiState.isDeletingAccount
-                ) {
-                    Text("Cancelar", color = Color(0xFF64748B), fontWeight = FontWeight.SemiBold)
-                }
-            },
-            containerColor = Color.White,
-            shape = RoundedCornerShape(20.dp)
+        IosStyleConfirmDialog(
+            title = "¿Eliminar cuenta definitivamente?",
+            message = "Conforme a los estándares de Google Play y privacidad de datos, esta acción es permanente e irreversible.\n\n• Se eliminarán tus datos en Firebase.\n• Se borrarán tus cuentas y movimientos locales.\n• Tu cuenta será eliminada permanentemente.",
+            confirmText = "Eliminar cuenta",
+            dismissText = "Cancelar",
+            onConfirm = { viewModel.executeDeleteAccount(onAccountDeletedSuccess) },
+            onDismiss = { if (!uiState.isDeletingAccount) viewModel.showDeleteAccountDialog(false) },
+            icon = Icons.Default.DeleteForever,
+            iconTint = Color(0xFFDC2626),
+            iconBackground = Color(0xFFFEE2E2),
+            isDestructive = true,
+            isLoading = uiState.isDeletingAccount
         )
     }
 }

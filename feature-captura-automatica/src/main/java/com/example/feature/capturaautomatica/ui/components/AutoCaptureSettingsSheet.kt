@@ -44,7 +44,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -446,7 +446,7 @@ fun AutoCaptureSettingsSheet(
                             )
                         }
                         Spacer(modifier = Modifier.width(12.dp))
-                        Switch(
+                        IosStyleSwitch(
                             checked = isEnabled,
                             onCheckedChange = { isEnabled = it },
                             colors = SwitchDefaults.colors(

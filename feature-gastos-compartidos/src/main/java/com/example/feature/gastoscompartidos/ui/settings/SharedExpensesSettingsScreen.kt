@@ -32,7 +32,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -269,7 +269,7 @@ fun SharedExpensesSettingsScreen(
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
-                                Switch(
+                                IosStyleSwitch(
                                     checked = config.allowManualConsecutiveOverride,
                                     onCheckedChange = { onUpdateConfig(config.copy(allowManualConsecutiveOverride = it)) },
                                     colors = SwitchDefaults.colors(
@@ -340,7 +340,7 @@ fun SharedExpensesSettingsScreen(
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
-                                Switch(
+                                IosStyleSwitch(
                                     checked = config.maskUserAccountBalancesOnTicket,
                                     onCheckedChange = { onUpdateConfig(config.copy(maskUserAccountBalancesOnTicket = it)) },
                                     colors = SwitchDefaults.colors(
