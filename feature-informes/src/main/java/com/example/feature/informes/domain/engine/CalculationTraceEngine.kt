@@ -56,21 +56,25 @@ class CalculationTraceEngine {
                 mathematicalOperation = "$%,.0f (Activos) − $%,.0f (Pasivos) = $%,.0f COP".format(
                     summary.totalAssets, summary.totalLiabilities, summary.netWorth
                 ),
-                dataSources = listOf(
-                    DataSourceItem("accounts", "Activos Líquidos", "Cuentas bancarias de ahorro y corriente en Bancolombia, Davivienda y Nequi", 3, summary.totalAssets * 0.2),
-                    DataSourceItem("fixed_assets", "Activos Tangibles", "Vehículos, inmuebles y equipos de cómputo valuados según NIIF", summary.assetCount, summary.totalAssets * 0.55),
-                    DataSourceItem("investments", "Inversiones", "CDTs y fondos bursátiles indexados", 3, summary.totalAssets * 0.25),
-                    DataSourceItem("account_credit_cards", "Pasivos Revolventes", "Cupo utilizado y saldos pendientes en tarjetas de crédito", 2, summary.totalLiabilities * 0.4),
-                    DataSourceItem("loans_and_obligations", "Pasivos Bancarios", "Créditos amortizables y leasing a largo plazo", 2, summary.totalLiabilities * 0.6)
-                ),
+                dataSources = buildList {
+                    balanceSheet.currentAssets.forEach { item ->
+                        add(DataSourceItem("accounts / current_assets", item.title, item.subtitle ?: "", 1, item.amount))
+                    }
+                    balanceSheet.nonCurrentAssets.forEach { item ->
+                        add(DataSourceItem("non_current_assets", item.title, item.subtitle ?: "", summary.assetCount.coerceAtLeast(1), item.amount))
+                    }
+                    balanceSheet.currentLiabilities.forEach { item ->
+                        add(DataSourceItem("current_liabilities", item.title, item.subtitle ?: "", summary.pendingDebtsCount.coerceAtLeast(1), item.amount))
+                    }
+                },
                 stepByStepExplanation = listOf(
-                    "Paso 1: Se extrajeron los saldos de apertura y cierre de todas las cuentas y billeteras bancarias activas.",
-                    "Paso 2: Se sumaron las valorizaciones de mercado y costo amortizado de activos fijos e inversiones.",
-                    "Paso 3: Se consolidaron las deudas pendientes en tarjetas de crédito y préstamos financieros a corto y largo plazo.",
-                    "Paso 4: Se restó el pasivo total consolidado del activo total bruto para obtener el patrimonio neto real."
+                    "Paso 1: Se consolidaron los activos corrientes reales ($%,.0f COP).".format(balanceSheet.totalCurrentAssets),
+                    "Paso 2: Se sumaron los activos no corrientes e inversiones a valor en libros NIC 16 ($%,.0f COP).".format(balanceSheet.totalNonCurrentAssets),
+                    "Paso 3: Se dedujeron las obligaciones y pasivos reales sin duplicidad ($%,.0f COP).".format(balanceSheet.totalLiabilities),
+                    "Paso 4: Se obtuvo el patrimonio neto residual ($%,.0f COP).".format(summary.netWorth)
                 ),
                 accountingStandardNote = "Norma Internacional de Información Financiera (NIIF / NIC 1 - Presentación de Estados Financieros). El patrimonio neto representa la parte residual de los activos una vez deducidos todos los pasivos.",
-                auditConfidenceStatus = "✓ 100% Conciliado con libros contables y extractos bancarios del período."
+                auditConfidenceStatus = "✓ 100% Conciliado con saldos reales del período."
             )
 
             "TOTAL_ASSETS" -> CalculationTraceDetail(
@@ -82,18 +86,16 @@ class CalculationTraceEngine {
                 mathematicalOperation = "$%,.0f (Corrientes) + $%,.0f (No Corrientes) = $%,.0f COP".format(
                     balanceSheet.totalCurrentAssets, balanceSheet.totalNonCurrentAssets, summary.totalAssets
                 ),
-                dataSources = listOf(
-                    DataSourceItem("accounts", "Disponibilidad", "Caja menor, cuentas de ahorro y corrientes", 4, balanceSheet.totalCurrentAssets),
-                    DataSourceItem("fixed_assets", "Propiedad y Equipo", "Vehículos, tecnología y bienes raíces", 3, balanceSheet.totalNonCurrentAssets * 0.75),
-                    DataSourceItem("investments", "Portafolio LP", "CDTs a 360 días y fondos indexados", 3, balanceSheet.totalNonCurrentAssets * 0.25)
-                ),
+                dataSources = (balanceSheet.currentAssets + balanceSheet.nonCurrentAssets).map { item ->
+                    DataSourceItem("balance_sheet_assets", item.title, item.subtitle ?: "", 1, item.amount)
+                },
                 stepByStepExplanation = listOf(
                     "Paso 1: Conciliación de saldos en efectivo y cuentas bancarias a la vista ($%,.0f COP).".format(balanceSheet.totalCurrentAssets),
-                    "Paso 2: Valoración de activos tangibles a valor de mercado menos depreciación acumulada ($%,.0f COP).".format(balanceSheet.totalNonCurrentAssets),
-                    "Paso 3: Suma aritmética de las dos categorías para determinar el activo bruto total."
+                    "Paso 2: Valoración de activos tangibles e inversiones no corrientes ($%,.0f COP).".format(balanceSheet.totalNonCurrentAssets),
+                    "Paso 3: Suma aritmética de las dos categorías para determinar el activo bruto total ($%,.0f COP).".format(summary.totalAssets)
                 ),
                 accountingStandardNote = "NIIF para PYMES Sección 4 / NIC 16 (Propiedades, Planta y Equipo).",
-                auditConfidenceStatus = "✓ Verificado con inventario de activos fijos y extractos bancarios."
+                auditConfidenceStatus = "✓ Verificado con inventario de activos fijos y saldos de cuentas."
             )
 
             "TOTAL_LIABILITIES" -> CalculationTraceDetail(
@@ -105,18 +107,16 @@ class CalculationTraceEngine {
                 mathematicalOperation = "$%,.0f (Corto Plazo) + $%,.0f (Largo Plazo) = $%,.0f COP".format(
                     balanceSheet.totalCurrentLiabilities, balanceSheet.totalNonCurrentLiabilities, summary.totalLiabilities
                 ),
-                dataSources = listOf(
-                    DataSourceItem("account_credit_cards", "Tarjetas", "Cupos utilizados al cierre del ciclo", 2, balanceSheet.totalCurrentLiabilities * 0.55),
-                    DataSourceItem("transactions", "Obligaciones CP", "Gastos y cuentas por pagar pendientes", 6, balanceSheet.totalCurrentLiabilities * 0.45),
-                    DataSourceItem("debts", "Créditos LP", "Préstamo bancario vehicular / hipotecario", 2, balanceSheet.totalNonCurrentLiabilities)
-                ),
+                dataSources = (balanceSheet.currentLiabilities + balanceSheet.nonCurrentLiabilities).map { item ->
+                    DataSourceItem("balance_sheet_liabilities", item.title, item.subtitle ?: "", 1, item.amount)
+                },
                 stepByStepExplanation = listOf(
-                    "Paso 1: Suma de la utilización de tarjetas de crédito según último extracto emitido.",
-                    "Paso 2: Incorporación de saldos insolutos de préstamos personales y créditos estructurados.",
-                    "Paso 3: Clasificación contable en pasivos corrientes (vencimiento < 12 meses) y pasivos no corrientes (vencimiento > 12 meses)."
+                    "Paso 1: Suma de la utilización real de tarjetas de crédito activas.",
+                    "Paso 2: Incorporación de sobregiros bancarios en cuentas no revolventes (sin doble conteo).",
+                    "Paso 3: Clasificación contable en pasivos corrientes ($%,.0f COP) y no corrientes ($%,.0f COP).".format(balanceSheet.totalCurrentLiabilities, balanceSheet.totalNonCurrentLiabilities)
                 ),
                 accountingStandardNote = "NIC 37 y NIC 1. Los pasivos reflejan obligaciones legalmente exigibles a la fecha de corte.",
-                auditConfidenceStatus = "✓ Conciliado con certificados bancarios y pasarelas de pago."
+                auditConfidenceStatus = "✓ Conciliado sin duplicidad de saldos de tarjetas de crédito."
             )
 
             "PERIOD_RESULT" -> CalculationTraceDetail(

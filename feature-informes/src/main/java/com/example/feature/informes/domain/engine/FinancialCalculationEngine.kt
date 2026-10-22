@@ -13,6 +13,22 @@ import kotlin.math.roundToInt
 
 class FinancialCalculationEngine {
 
+    fun isOpeningOrCapitalAllocation(tx: TransactionEntity): Boolean {
+        val id = tx.id
+        val cat = tx.categoryId.lowercase()
+        val type = tx.type.uppercase()
+        return cat == "cat_initial_balance" ||
+               cat == "cat_opening_balance" ||
+               id.startsWith("tx_init_") ||
+               id.startsWith("tx_cc_init_") ||
+               id.startsWith("tx_cdt_init_") ||
+               id.startsWith("tx_cdt_out_") ||
+               id.startsWith("tx_inv_") ||
+               type == "TRANSFER_OUT" ||
+               type == "TRANSFER_IN" ||
+               !tx.transferGroupId.isNullOrBlank()
+    }
+
     fun computeSummary(
         accounts: List<AccountEntity>,
         transactions: List<TransactionEntity>,
@@ -25,8 +41,12 @@ class FinancialCalculationEngine {
         // Real Assets calculation directly from database entities + NIIF Shared Receivables (CxC)
         val bankAndCash = accounts.filter { (it.balance ?: 0.0) > 0 }
             .sumOf { it.balance ?: 0.0 }
-        val fixedAssetsTotal = assets.filter { it.status == "ACTIVE" }
-            .sumOf { it.currentMarketValue }
+        // Valuation under NIC 16: (acquisitionValue - accumulatedDepreciation).coerceAtLeast(residualValue)
+        val fixedAssetsTotal = assets.filter {
+            it.deletedAt == null && it.includeInNetWorth && it.status in setOf("ACTIVE", "EN_USO", "DISPONIBLE", "EN_MANTENIMIENTO")
+        }.sumOf {
+            (it.acquisitionValue - it.accumulatedDepreciation).coerceAtLeast(it.residualValue)
+        }
         val investmentsTotal = investments
             .sumOf { it.currentValue }
         val sharedReceivablesTotal = sharedSnapshot?.activeAccountsReceivableNiif ?: 0.0
@@ -35,39 +55,56 @@ class FinancialCalculationEngine {
         val assetCount = assets.size + accounts.size + investments.size + (if (sharedReceivablesTotal > 0) 1 else 0)
 
         // Real Liabilities calculation directly from database entities + NIIF Shared Payables (CxP)
+        // Exclusion of credit cards from negativeAccountBalances prevents 2x double counting of credit card liabilities!
         val cardDebts = creditCards.sumOf { it.quotaUsed }
-        val negativeAccountBalances = accounts.filter { (it.balance ?: 0.0) < 0 }
-            .sumOf { abs(it.balance ?: 0.0) }
+        val negativeAccountBalances = accounts.filter {
+            !it.type.equals("CREDIT_CARD", ignoreCase = true) && (it.balance ?: 0.0) < 0
+        }.sumOf { abs(it.balance ?: 0.0) }
         val sharedPayablesTotal = sharedSnapshot?.activeAccountsPayableNiif ?: 0.0
         val totalLiabilities = cardDebts + negativeAccountBalances + sharedPayablesTotal
         val pendingDebtsCount = creditCards.count { it.quotaUsed > 0 } +
-            accounts.count { (it.balance ?: 0.0) < 0 } +
+            accounts.count { !it.type.equals("CREDIT_CARD", ignoreCase = true) && (it.balance ?: 0.0) < 0 } +
             (sharedSnapshot?.openPayableTicketsCount ?: 0)
 
         val netWorth = totalAssets - totalLiabilities
         val netWorthVariationPct = 0.0
 
-        // Real Filter transactions for period
+        // Real Filter transactions for period excluding opening balances and capital transfers from PyG
         val periodTransactions = filterTransactionsByDate(transactions, filter.startDate, filter.endDate)
-        val rawIncome = periodTransactions.filter { it.type.equals("INCOME", ignoreCase = true) }
+        val operatingTransactions = periodTransactions.filter { !isOpeningOrCapitalAllocation(it) }
+
+        val totalIncome = operatingTransactions.filter { it.type.equals("INCOME", ignoreCase = true) }
             .sumOf { it.amount }
-        val totalIncome = rawIncome
 
         // PyG Recognized Expense uses accountingRecognizedExpenseAmount (NIIF Devengo) when present
-        val totalExpenses = SharedAccountingStatementIntegrator.computeRecognizedPnlExpenses(periodTransactions)
+        val totalExpenses = SharedAccountingStatementIntegrator.computeRecognizedPnlExpenses(operatingTransactions)
 
         val periodResult = totalIncome - totalExpenses
 
         // Cash flow entries based on actual cash inflows & real cash outflows (tx.amount)
         val cashFlowInflows = totalIncome + (sharedSnapshot?.periodReimbursementsCollectedCash ?: 0.0)
-        val cashFlowOutflows = SharedAccountingStatementIntegrator.computeRealCashOutflows(periodTransactions)
+        val cashFlowOutflows = SharedAccountingStatementIntegrator.computeRealCashOutflows(operatingTransactions)
         val netCashFlow = cashFlowInflows - cashFlowOutflows
 
-        // Financial evolution points from actual transactions
+        // Financial evolution points from actual transactions grouped dynamically by month
+        val monthFormatter = DateTimeFormatter.ofPattern("MMM", java.util.Locale("es", "CO"))
         val evolutionPoints = if (transactions.isNotEmpty()) {
-            val months = listOf("May", "Jun", "Jul", "Ago", "Sep", "Oct")
-            months.map { monthLabel ->
-                FinancialEvolutionPoint(monthLabel, totalIncome, totalExpenses, periodResult)
+            val endYm = java.time.YearMonth.from(filter.endDate)
+            (5 downTo 0).map { monthsAgo ->
+                val ym = endYm.minusMonths(monthsAgo.toLong())
+                val monthLabel = ym.format(monthFormatter).replaceFirstChar { it.uppercase() }
+                val txsInMonth = transactions.filter { tx ->
+                    try {
+                        val d = LocalDate.parse(tx.date.take(10))
+                        java.time.YearMonth.from(d) == ym
+                    } catch (_: Exception) {
+                        false
+                    }
+                }
+                val opTxs = txsInMonth.filter { !isOpeningOrCapitalAllocation(it) }
+                val mIncome = opTxs.filter { it.type.equals("INCOME", ignoreCase = true) }.sumOf { it.amount }
+                val mExpenses = SharedAccountingStatementIntegrator.computeRecognizedPnlExpenses(opTxs)
+                FinancialEvolutionPoint(monthLabel, mIncome, mExpenses, mIncome - mExpenses)
             }
         } else {
             listOf(FinancialEvolutionPoint("Actual", totalIncome, totalExpenses, periodResult))
@@ -105,7 +142,7 @@ class FinancialCalculationEngine {
             listOf(DistributionCategoryItem("L0", "Sin pasivos registrados", 0.0, 0.0, "#10B981", 0, "PASIVO"))
         }
 
-        val incomeDistributions = periodTransactions
+        val incomeDistributions = operatingTransactions
             .filter { it.type.equals("INCOME", ignoreCase = true) }
             .groupBy { it.categoryName.ifBlank { "Ingresos del período" } }
             .entries
@@ -124,7 +161,7 @@ class FinancialCalculationEngine {
                 listOf(DistributionCategoryItem("I0", "Sin ingresos registrados", 0.0, 0.0, "#64748B", 0, "INGRESO"))
             }
 
-        val expenseDistributions = periodTransactions
+        val expenseDistributions = operatingTransactions
             .filter { it.type.equals("EXPENSE", ignoreCase = true) }
             .groupBy { it.categoryName.ifBlank { "Gastos del período" } }
             .entries
@@ -179,7 +216,7 @@ class FinancialCalculationEngine {
     ): BalanceSheetData {
         // Real Current Assets from database accounts
         val cashAccounts = accounts.filter { it.type.equals("CASH", ignoreCase = true) }
-        val bankAccounts = accounts.filter { !it.type.equals("CASH", ignoreCase = true) }
+        val bankAccounts = accounts.filter { !it.type.equals("CASH", ignoreCase = true) && !it.type.equals("CREDIT_CARD", ignoreCase = true) }
 
         val cashAmount = cashAccounts.filter { (it.balance ?: 0.0) > 0 }.sumOf { it.balance ?: 0.0 }
         val banksAmount = bankAccounts.filter { (it.balance ?: 0.0) > 0 }.sumOf { it.balance ?: 0.0 }
@@ -205,13 +242,19 @@ class FinancialCalculationEngine {
         }
         val totalCurrentAssets = currentAssetsList.sumOf { it.amount }
 
-        // Real Non-Current Assets from fixed assets and long-term investments
-        val fixedAssetsAmount = assets.filter { it.status == "ACTIVE" }.sumOf { it.currentMarketValue }
+        // Real Non-Current Assets from fixed assets (NIC 16) and long-term investments
+        val activeAssetStatus = setOf("ACTIVE", "EN_USO", "DISPONIBLE", "EN_MANTENIMIENTO")
+        val fixedAssetsAmount = assets
+            .filter { it.status.uppercase() in activeAssetStatus }
+            .sumOf { asset ->
+                val bookVal = (asset.acquisitionValue - asset.accumulatedDepreciation).coerceAtLeast(asset.residualValue)
+                if (asset.currentMarketValue > 0) asset.currentMarketValue else bookVal
+            }
         val longTermInvestmentsAmount = investments.filter { !it.typeId.equals("RENTA_FIJA", ignoreCase = true) && !it.name.contains("CDT", ignoreCase = true) }.sumOf { it.currentValue }
 
         val nonCurrentAssetsList = buildList {
             if (fixedAssetsAmount > 0) {
-                add(FinancialLineItem("nca1", "Activos Fijos Tangibles", "Vehículos, propiedades y equipos registrados", "Propiedad", fixedAssetsAmount, if (summary.totalAssets > 0) (fixedAssetsAmount / summary.totalAssets) * 100 else 0.0))
+                add(FinancialLineItem("nca1", "Activos Fijos Tangibles", "Vehículos, propiedades y equipos registrados (NIC 16)", "Propiedad", fixedAssetsAmount, if (summary.totalAssets > 0) (fixedAssetsAmount / summary.totalAssets) * 100 else 0.0))
             }
             if (longTermInvestmentsAmount > 0) {
                 add(FinancialLineItem("nca2", "Inversiones a largo plazo", "Acciones y fondos de inversión", "Inversión LP", longTermInvestmentsAmount, if (summary.totalAssets > 0) (longTermInvestmentsAmount / summary.totalAssets) * 100 else 0.0))
@@ -222,9 +265,11 @@ class FinancialCalculationEngine {
         val totalNonCurrentAssets = nonCurrentAssetsList.sumOf { it.amount }
         val grandTotalAssets = totalCurrentAssets + totalNonCurrentAssets
 
-        // Real Current Liabilities from credit cards and negative account balances
+        // Real Current Liabilities from credit cards and negative account balances (excluding credit card accounts to prevent 200% double-counting)
         val cardsAmount = creditCards.sumOf { it.quotaUsed }
-        val overdraftAmount = accounts.filter { (it.balance ?: 0.0) < 0 }.sumOf { abs(it.balance ?: 0.0) }
+        val overdraftAmount = accounts
+            .filter { !it.type.equals("CREDIT_CARD", ignoreCase = true) && (it.balance ?: 0.0) < 0 }
+            .sumOf { abs(it.balance ?: 0.0) }
 
         val currentLiabilitiesList = buildList {
             if (cardsAmount > 0) {
@@ -246,13 +291,13 @@ class FinancialCalculationEngine {
         // Real Equity Items (Patrimonio = Activos - Pasivos)
         val grandTotalEquity = grandTotalAssets - grandTotalLiabilities
         val liabilitiesPlusEquity = grandTotalLiabilities + grandTotalEquity
-        val isBalanced = true
-        val initialEquity = grandTotalEquity
+        val diff = grandTotalAssets - liabilitiesPlusEquity
+        val isBalanced = abs(diff) < 0.01
+        val periodResult = summary.periodResult
+        val initialEquity = grandTotalEquity - periodResult
         val contributions = 0.0
         val retainedEarnings = 0.0
-        val periodResult = summary.periodResult
         val adjustments = 0.0
-        val diff = 0.0
 
         val baseSheet = BalanceSheetData(
             currentAssets = currentAssetsList,
@@ -339,12 +384,40 @@ class FinancialCalculationEngine {
         )
     }
 
-    fun computeCashFlow(summary: FinancialSummaryData): CashFlowStatementData {
-        val initialBalance = summary.totalAssets - summary.periodResult
+    fun computeCashFlow(
+        summary: FinancialSummaryData,
+        accounts: List<AccountEntity> = emptyList(),
+        periodTransactions: List<TransactionEntity> = emptyList()
+    ): CashFlowStatementData {
+        val liquidTypes = setOf("CASH", "SAVINGS", "CHECKING", "WALLET", "PAYROLL")
+        val liquidAccounts = accounts.filter { it.type.uppercase() in liquidTypes }
+        val currentLiquidBalance = if (liquidAccounts.isNotEmpty()) {
+            liquidAccounts.filter { (it.balance ?: 0.0) > 0 }.sumOf { it.balance ?: 0.0 }
+        } else {
+            summary.totalAssets
+        }
+
         val totalInflows = summary.cashFlowInflows
         val totalOutflows = summary.cashFlowOutflows
         val netCashFlow = totalInflows - totalOutflows
-        val finalBalance = initialBalance + netCashFlow
+        val finalBalance = currentLiquidBalance
+        val initialBalance = finalBalance - netCashFlow
+
+        val internalTransfers = periodTransactions.filter {
+            it.type.equals("TRANSFER_OUT", true) ||
+            it.type.equals("TRANSFER_IN", true) ||
+            !it.transferGroupId.isNullOrBlank()
+        }
+        val internalCount = internalTransfers.size
+        val internalVolume = if (internalTransfers.isNotEmpty()) {
+            if (internalTransfers.any { it.type.equals("TRANSFER_IN", true) }) {
+                internalTransfers.sumOf { it.amount } / 2.0
+            } else {
+                internalTransfers.sumOf { it.amount }
+            }
+        } else {
+            0.0
+        }
 
         val inflows = summary.incomeDistributions.filter { it.amount > 0 }.map { dist ->
             CashFlowEntryItem(
@@ -374,36 +447,41 @@ class FinancialCalculationEngine {
             totalOutflows = totalOutflows,
             netCashFlow = netCashFlow,
             finalBalance = finalBalance,
-            internalTransfersExcludedCount = 0,
-            internalTransfersExcludedVolume = 0.0
+            internalTransfersExcludedCount = internalCount,
+            internalTransfersExcludedVolume = internalVolume
         )
     }
 
-    fun computeEquityStatement(summary: FinancialSummaryData, balanceSheet: BalanceSheetData): EquityStatementData {
-        val initialEquity = balanceSheet.totalEquity - summary.periodResult
+    fun computeEquityStatement(
+        summary: FinancialSummaryData,
+        balanceSheet: BalanceSheetData,
+        periodTransactions: List<TransactionEntity> = emptyList()
+    ): EquityStatementData {
+        val capitalContributions = periodTransactions
+            .filter { isOpeningOrCapitalAllocation(it) && it.type.equals("INCOME", true) }
+            .sumOf { it.amount }
         val periodResult = summary.periodResult
-        val contributions = 0.0
-        val withdrawals = 0.0
-        val valuationGains = 0.0
-        val revaluations = 0.0
-        val otherAdjustments = 0.0
-
         val finalEquity = balanceSheet.totalEquity
+        val initialEquity = finalEquity - periodResult - capitalContributions
         val netGrowthPct = if (initialEquity > 0) ((finalEquity - initialEquity) / initialEquity) * 100 else 0.0
 
-        val changeRows = listOf(
-            EquityChangeRow("Patrimonio inicial estimado", initialEquity, true, "Balance antes del período"),
-            EquityChangeRow("Resultado neto del ejercicio", periodResult, periodResult >= 0, "Ingresos menos gastos del período")
-        )
+        val changeRows = buildList {
+            add(EquityChangeRow("Patrimonio inicial estimado", initialEquity, initialEquity >= 0, "Balance antes del período"))
+            if (capitalContributions > 0) {
+                add(EquityChangeRow("Aportes de capital / saldos iniciales", capitalContributions, true, "Aportes de apertura y capitalización"))
+            }
+            add(EquityChangeRow("Resultado neto del ejercicio", periodResult, periodResult >= 0, "Ingresos menos gastos operacionales"))
+            add(EquityChangeRow("Patrimonio neto final", finalEquity, finalEquity >= 0, "Total patrimonio según Balance General"))
+        }
 
         return EquityStatementData(
             initialEquity = initialEquity,
             periodResult = periodResult,
-            capitalContributions = contributions,
-            withdrawals = withdrawals,
-            valuationGainsOrLosses = valuationGains,
-            assetRevaluations = revaluations,
-            otherAdjustments = otherAdjustments,
+            capitalContributions = capitalContributions,
+            withdrawals = 0.0,
+            valuationGainsOrLosses = 0.0,
+            assetRevaluations = 0.0,
+            otherAdjustments = 0.0,
             finalEquity = finalEquity,
             changeRows = changeRows,
             netEquityGrowthPct = (netGrowthPct * 10).roundToInt() / 10.0
@@ -415,25 +493,33 @@ class FinancialCalculationEngine {
         assets: List<FixedAssetEntity>,
         investments: List<InvestmentEntity>,
         creditCards: List<AccountCreditCardEntity>,
-        incomeStatement: IncomeStatementData
+        incomeStatement: IncomeStatementData,
+        periodTransactions: List<TransactionEntity> = emptyList()
     ): SpecializedReportsBundle {
         val accountReports = accounts.map { acc ->
-            val bal = acc.balance ?: 0.0
+            val accTx = periodTransactions.filter { it.accountId == acc.id }
+            val inflows = accTx.filter { it.type.equals("INCOME", true) || it.type.equals("TRANSFER_IN", true) }.sumOf { it.amount }
+            val outflows = accTx.filter { it.type.equals("EXPENSE", true) || it.type.equals("TRANSFER_OUT", true) }.sumOf { it.amount }
+            val curBal = acc.balance ?: 0.0
+            val initBal = curBal - inflows + outflows
             AccountReportItem(
                 id = acc.id,
                 name = acc.name,
-                bankName = acc.bankName ?: "Banco",
-                initialBalance = bal,
-                totalInflows = 0.0,
-                totalOutflows = 0.0,
-                currentBalance = bal,
-                transactionCount = 0,
+                bankName = acc.bankName ?: "Entidad Financiera",
+                initialBalance = initBal,
+                totalInflows = inflows,
+                totalOutflows = outflows,
+                currentBalance = curBal,
+                transactionCount = accTx.size,
                 currency = acc.currency
             )
         }
 
         val cardReports = creditCards.map { card ->
             val util = if (card.quotaTotal > 0) (card.quotaUsed / card.quotaTotal) * 100 else 0.0
+            val cardTx = periodTransactions.filter { it.accountId == card.accountId }
+            val expenses = cardTx.filter { it.type.equals("EXPENSE", true) }.sumOf { it.amount }
+            val payments = cardTx.filter { it.type.equals("INCOME", true) || it.type.equals("TRANSFER_IN", true) }.sumOf { it.amount }
             CreditCardReportItem(
                 accountId = card.accountId,
                 cardName = "Tarjeta ${card.franchise} ${card.category}",
@@ -442,8 +528,8 @@ class FinancialCalculationEngine {
                 quotaUsed = card.quotaUsed,
                 quotaAvailable = card.quotaAvailable,
                 utilizationPct = (util * 10).roundToInt() / 10.0,
-                currentPeriodExpenses = card.quotaUsed,
-                currentPeriodPayments = 0.0,
+                currentPeriodExpenses = if (expenses > 0) expenses else card.quotaUsed,
+                currentPeriodPayments = payments,
                 interestEstimate = card.quotaUsed * 0.021,
                 pendingBalance = card.quotaUsed,
                 cutOffDay = card.cutOffDay,
@@ -466,7 +552,7 @@ class FinancialCalculationEngine {
                     status = "Al día"
                 ))
             }
-            accounts.filter { (it.balance ?: 0.0) < 0 }.forEach { acc ->
+            accounts.filter { !it.type.equals("CREDIT_CARD", true) && (it.balance ?: 0.0) < 0 }.forEach { acc ->
                 val overdraft = abs(acc.balance ?: 0.0)
                 add(DebtReportItem(
                     id = acc.id,
@@ -484,14 +570,15 @@ class FinancialCalculationEngine {
         }
 
         val assetReports = assets.map { a ->
+            val bookVal = (a.acquisitionValue - a.accumulatedDepreciation).coerceAtLeast(a.residualValue)
             AssetReportItem(
                 id = a.id,
                 assetCode = a.serialNumber ?: "ACT-${a.id.take(4)}",
                 name = a.name,
                 categoryName = a.category,
                 acquisitionCost = a.acquisitionValue,
-                currentMarketValue = a.currentMarketValue,
-                bookValue = a.currentMarketValue - a.accumulatedDepreciation,
+                currentMarketValue = if (a.currentMarketValue > 0) a.currentMarketValue else bookVal,
+                bookValue = bookVal,
                 accumulatedDepreciation = a.accumulatedDepreciation,
                 periodDepreciation = 0.0,
                 maintenanceExpense = 0.0,
@@ -533,31 +620,69 @@ class FinancialCalculationEngine {
         summary: FinancialSummaryData,
         balanceSheet: BalanceSheetData
     ): FinancialAnalysisData {
-        // Liquidity ratio: Current assets / Current liabilities
-        val currentAssets = balanceSheet.totalCurrentAssets.coerceAtLeast(1.0)
-        val currentLiabilities = balanceSheet.totalCurrentLiabilities.coerceAtLeast(1.0)
-        val liquidityRatio = currentAssets / currentLiabilities
+        val hasCurrentLiabilities = balanceSheet.totalCurrentLiabilities > 0.01
+        val liquidityRatio = if (hasCurrentLiabilities) {
+            balanceSheet.totalCurrentAssets / balanceSheet.totalCurrentLiabilities
+        } else {
+            if (balanceSheet.totalCurrentAssets > 0) 99.9 else 1.0
+        }
 
-        // Acid test: (Current assets - illiquid/inventory/other) / Current liabilities
-        val acidTest = (currentAssets - 800_000.0) / currentLiabilities
+        val liquidCurrentAssets = balanceSheet.currentAssets
+            .filter { it.id.startsWith("ca1") || it.id.startsWith("ca2") }
+            .sumOf { it.amount }
 
-        // Debt level: Total liabilities / Total assets
+        val acidTest = if (hasCurrentLiabilities) {
+            liquidCurrentAssets / balanceSheet.totalCurrentLiabilities
+        } else {
+            if (liquidCurrentAssets > 0) 99.9 else 1.0
+        }
+
         val totalAssets = balanceSheet.totalAssets.coerceAtLeast(1.0)
-        val debtRatioPct = (balanceSheet.totalLiabilities / totalAssets) * 100
+        val debtRatioPct = (balanceSheet.totalLiabilities / totalAssets) * 100.0
 
-        // Net margin: Net result / Total income
         val totalIncome = summary.totalIncome.coerceAtLeast(1.0)
-        val netMarginPct = (summary.periodResult / totalIncome) * 100
+        val netMarginPct = (summary.periodResult / totalIncome) * 100.0
 
-        // ROA: Net result / Total assets
-        val roaPct = (summary.periodResult / totalAssets) * 100
+        val roaPct = (summary.periodResult / totalAssets) * 100.0
 
-        // ROE: Net result / Total equity
         val totalEquity = balanceSheet.totalEquity.coerceAtLeast(1.0)
-        val roePct = (summary.periodResult / totalEquity) * 100
+        val roePct = (summary.periodResult / totalEquity) * 100.0
 
-        // Savings rate
-        val savingsRatePct = if (totalIncome > 0) ((summary.periodResult / totalIncome) * 100) else 0.0
+        val savingsRatePct = if (summary.totalIncome > 0) ((summary.periodResult / summary.totalIncome) * 100.0) else 0.0
+
+        var healthScore = 0
+        healthScore += when {
+            !hasCurrentLiabilities && balanceSheet.totalCurrentAssets > 0 -> 25
+            liquidityRatio >= 1.5 -> 25
+            liquidityRatio >= 1.0 -> 18
+            liquidityRatio >= 0.7 -> 10
+            else -> 5
+        }
+        healthScore += when {
+            debtRatioPct <= 20.0 -> 25
+            debtRatioPct <= 35.0 -> 20
+            debtRatioPct <= 50.0 -> 12
+            else -> 5
+        }
+        healthScore += when {
+            savingsRatePct >= 25.0 -> 25
+            savingsRatePct >= 15.0 -> 20
+            savingsRatePct >= 5.0 -> 14
+            savingsRatePct >= 0.0 -> 8
+            else -> 2
+        }
+        healthScore += when {
+            balanceSheet.totalAssets > balanceSheet.totalLiabilities && balanceSheet.totalEquity > 0 -> 25
+            balanceSheet.totalEquity > 0 -> 15
+            else -> 5
+        }
+
+        val healthLabel = when {
+            healthScore >= 85 -> "Excelente Salud Financiera (A+)"
+            healthScore >= 70 -> "Buena Salud Financiera (A)"
+            healthScore >= 50 -> "Salud Financiera Moderada (B)"
+            else -> "Atención Requerida (C)"
+        }
 
         val ratios = listOf(
             FinancialRatioItem(
@@ -565,11 +690,11 @@ class FinancialCalculationEngine {
                 name = "Razón Corriente (Liquidez)",
                 category = "Liquidez",
                 rawValue = liquidityRatio,
-                formattedValue = "%.2f x".format(liquidityRatio),
+                formattedValue = if (!hasCurrentLiabilities) "Sin pasivos CP (Óptimo)" else "%.2f x".format(liquidityRatio),
                 benchmark = "> 1.50 x",
-                status = if (liquidityRatio >= 1.5) RatioHealthStatus.EXCELLENT else if (liquidityRatio >= 1.0) RatioHealthStatus.HEALTHY else RatioHealthStatus.WARNING,
+                status = if (!hasCurrentLiabilities || liquidityRatio >= 1.5) RatioHealthStatus.EXCELLENT else if (liquidityRatio >= 1.0) RatioHealthStatus.HEALTHY else RatioHealthStatus.WARNING,
                 formula = "Activo Corriente / Pasivo Corriente",
-                interpretation = "Dispones de $%.2f pesos en activos líquidos por cada peso de deuda a corto plazo.".format(liquidityRatio),
+                interpretation = if (!hasCurrentLiabilities) "No presentas deudas u obligaciones exigibles a corto plazo. Toda tu liquidez ($%,.0f COP) está libre de gravámenes.".format(balanceSheet.totalCurrentAssets) else "Dispones de $%.2f pesos en activos líquidos por cada peso de deuda a corto plazo.".format(liquidityRatio),
                 recommendation = "Excelente colchón de solvencia. Mantén fondos en cuentas remuneradas o de alta disponibilidad."
             ),
             FinancialRatioItem(
@@ -577,11 +702,11 @@ class FinancialCalculationEngine {
                 name = "Prueba Ácida",
                 category = "Liquidez",
                 rawValue = acidTest,
-                formattedValue = "%.2f x".format(acidTest),
+                formattedValue = if (!hasCurrentLiabilities) "Sin pasivos CP (Óptimo)" else "%.2f x".format(acidTest),
                 benchmark = "> 1.00 x",
-                status = if (acidTest >= 1.2) RatioHealthStatus.EXCELLENT else if (acidTest >= 0.9) RatioHealthStatus.HEALTHY else RatioHealthStatus.WARNING,
-                formula = "(Activo Corriente − Otros Activos) / Pasivo Corriente",
-                interpretation = "Capacidad inmediata de pago sin depender de liquidar activos secundarios.",
+                status = if (!hasCurrentLiabilities || acidTest >= 1.2) RatioHealthStatus.EXCELLENT else if (acidTest >= 0.9) RatioHealthStatus.HEALTHY else RatioHealthStatus.WARNING,
+                formula = "Activos Inmediatamente Disponibles / Pasivo Corriente",
+                interpretation = if (!hasCurrentLiabilities) "Cuentas con $%,.0f COP en efectivo y bancos sin compromisos exigibles inmediatos.".format(liquidCurrentAssets) else "Capacidad inmediata de pago sin depender de liquidar activos secundarios o inversiones.",
                 recommendation = "Tu respaldo inmediato cubre con holgura todas las obligaciones a 30 días."
             ),
             FinancialRatioItem(
@@ -634,32 +759,56 @@ class FinancialCalculationEngine {
             )
         )
 
-        val alerts = listOf(
-            SmartFinancialAlert(
-                id = "alt1",
-                title = "Liquidez y Solvencia en Rango Verde",
-                description = "La razón corriente de %.2f supera el umbral seguro de 1.50x. Cuentas con respaldo suficiente para imprevistos.".format(liquidityRatio),
-                severity = AlertSeverityLevel.INFO,
-                actionableRecommendation = "Considera mover excedentes de caja a un CDT o fondo fiduciario con tasa superior a la inflación.",
-                indicatorImpact = "Razón Corriente: %.2f x".format(liquidityRatio)
-            ),
-            SmartFinancialAlert(
-                id = "alt2",
-                title = "Optimización de Cupo en Tarjetas",
-                description = "La utilización agregada de tarjetas se encuentra en 24.5%, por debajo del límite de riesgo del 30%.",
-                severity = AlertSeverityLevel.INFO,
-                actionableRecommendation = "Realiza pagos antes de la fecha de corte para reportar un score crediticio superior ante centrales.",
-                indicatorImpact = "Utilización: 24.5%"
-            ),
-            SmartFinancialAlert(
-                id = "alt3",
-                title = "Monitoreo de Gastos Hormiga",
-                description = "Los gastos en categorías variables sumaron $1.850.000 COP, con un leve incremento en entretenimiento.",
-                severity = AlertSeverityLevel.WARNING,
-                actionableRecommendation = "Establece un sobre de presupuesto semanal para ocio y compras no esenciales.",
-                indicatorImpact = "Presupuesto Variable: 32% del gasto"
-            )
-        )
+        val alerts = buildList {
+            if (!hasCurrentLiabilities) {
+                add(SmartFinancialAlert(
+                    id = "alt_no_debt",
+                    title = "Solvencia Plena sin Deuda a Corto Plazo",
+                    description = "No registras pasivos corrientes ni obligaciones de tarjeta de crédito pendientes para el período.",
+                    severity = AlertSeverityLevel.INFO,
+                    actionableRecommendation = "Excelente salud crediticia. Puedes canalizar tus flujos libres a instrumentos de inversión productiva.",
+                    indicatorImpact = "Pasivo Corriente: $0 COP"
+                ))
+            } else {
+                add(SmartFinancialAlert(
+                    id = "alt1",
+                    title = "Liquidez y Solvencia en Rango Seguro",
+                    description = "La razón corriente de %.2f supera el umbral de 1.50x. Cuentas con respaldo para imprevistos.".format(liquidityRatio),
+                    severity = AlertSeverityLevel.INFO,
+                    actionableRecommendation = "Considera mover excedentes de caja a un CDT o fondo fiduciario con tasa superior a la inflación.",
+                    indicatorImpact = "Razón Corriente: %.2f x".format(liquidityRatio)
+                ))
+            }
+            if (debtRatioPct > 40.0) {
+                add(SmartFinancialAlert(
+                    id = "alt_debt_high",
+                    title = "Apalancamiento Superior al Umbral Recomendado",
+                    description = "Tu nivel de endeudamiento se sitúa en %.1f%% de los activos totales.".format(debtRatioPct),
+                    severity = AlertSeverityLevel.WARNING,
+                    actionableRecommendation = "Prioriza amortizar pasivos de mayor costo de interés para reducir el servicio de la deuda.",
+                    indicatorImpact = "Endeudamiento: %.1f%%".format(debtRatioPct)
+                ))
+            } else {
+                add(SmartFinancialAlert(
+                    id = "alt2",
+                    title = "Nivel de Endeudamiento Saludable",
+                    description = "Tus pasivos representan el %.1f%% de tus activos, dentro del límite prudencial (< 40%%).".format(debtRatioPct),
+                    severity = AlertSeverityLevel.INFO,
+                    actionableRecommendation = "Mantén la disciplina de pago para reportar un score crediticio superior.",
+                    indicatorImpact = "Endeudamiento: %.1f%%".format(debtRatioPct)
+                ))
+            }
+            if (summary.periodResult < 0) {
+                add(SmartFinancialAlert(
+                    id = "alt_deficit",
+                    title = "Déficit Operativo en el Período",
+                    description = "Los gastos superaron a los ingresos en $%,.0f COP durante este período.".format(abs(summary.periodResult)),
+                    severity = AlertSeverityLevel.WARNING,
+                    actionableRecommendation = "Revisa gastos discrecionales y ajusta el presupuesto del mes próximo.",
+                    indicatorImpact = "Déficit: $%,.0f COP".format(abs(summary.periodResult))
+                ))
+            }
+        }
 
         val projections = listOf(
             FutureProjectionPoint(
@@ -670,47 +819,47 @@ class FinancialCalculationEngine {
                 projectedExpenses = summary.totalExpenses * 0.98,
                 projectedSavings = summary.periodResult * 1.05,
                 confidencePct = 94,
-                isPositiveTrend = true,
-                narrativeSummary = "Crecimiento proyectado estable con ahorro proyectado de $4.6M COP."
+                isPositiveTrend = summary.periodResult >= 0,
+                narrativeSummary = "Proyección mensual basada en el flujo operativo neto actual ($%,.0f COP).".format(summary.periodResult)
             ),
             FutureProjectionPoint(
                 horizonMonths = 3,
                 horizonLabel = "En 3 Meses",
-                projectedNetWorth = summary.netWorth + (summary.periodResult * 3.1),
-                projectedIncome = summary.totalIncome * 3.05,
-                projectedExpenses = summary.totalExpenses * 2.95,
-                projectedSavings = summary.periodResult * 3.2,
+                projectedNetWorth = summary.netWorth + (summary.periodResult * 3.0),
+                projectedIncome = summary.totalIncome * 3.0,
+                projectedExpenses = summary.totalExpenses * 3.0,
+                projectedSavings = summary.periodResult * 3.0,
                 confidencePct = 88,
-                isPositiveTrend = true,
+                isPositiveTrend = summary.periodResult >= 0,
                 narrativeSummary = "Consolidación de metas de ahorro a corto plazo y amortización de deudas."
             ),
             FutureProjectionPoint(
                 horizonMonths = 6,
                 horizonLabel = "En 6 Meses",
-                projectedNetWorth = summary.netWorth + (summary.periodResult * 6.3),
-                projectedIncome = summary.totalIncome * 6.15,
-                projectedExpenses = summary.totalExpenses * 5.85,
-                projectedSavings = summary.periodResult * 6.6,
+                projectedNetWorth = summary.netWorth + (summary.periodResult * 6.0),
+                projectedIncome = summary.totalIncome * 6.0,
+                projectedExpenses = summary.totalExpenses * 6.0,
+                projectedSavings = summary.periodResult * 6.0,
                 confidencePct = 80,
-                isPositiveTrend = true,
-                narrativeSummary = "Expansión patrimonial con rendimientos compuestos de inversiones activas."
+                isPositiveTrend = summary.periodResult >= 0,
+                narrativeSummary = "Expansión patrimonial proyectada manteniendo el ritmo operativo actual."
             ),
             FutureProjectionPoint(
                 horizonMonths = 12,
                 horizonLabel = "En 1 Año",
-                projectedNetWorth = summary.netWorth + (summary.periodResult * 13.0),
-                projectedIncome = summary.totalIncome * 12.4,
-                projectedExpenses = summary.totalExpenses * 11.5,
-                projectedSavings = summary.periodResult * 13.8,
+                projectedNetWorth = summary.netWorth + (summary.periodResult * 12.0),
+                projectedIncome = summary.totalIncome * 12.0,
+                projectedExpenses = summary.totalExpenses * 12.0,
+                projectedSavings = summary.periodResult * 12.0,
                 confidencePct = 72,
-                isPositiveTrend = true,
-                narrativeSummary = "Superación estimada de la meta patrimonial anual con desapalancamiento progresivo."
+                isPositiveTrend = summary.periodResult >= 0,
+                narrativeSummary = "Proyección anualizada de patrimonio neto según el resultado operativo vigente."
             )
         )
 
         return FinancialAnalysisData(
-            overallHealthScore = 88,
-            overallHealthLabel = "Excelente Salud Financiera (A+)",
+            overallHealthScore = healthScore,
+            overallHealthLabel = healthLabel,
             ratios = ratios,
             smartAlerts = alerts,
             projections = projections,
@@ -724,7 +873,7 @@ class FinancialCalculationEngine {
         )
     }
 
-    private fun filterTransactionsByDate(
+    internal fun filterTransactionsByDate(
         transactions: List<TransactionEntity>,
         startDate: LocalDate,
         endDate: LocalDate

@@ -110,4 +110,159 @@ class FinancialReportsEngineTest {
         assertTrue(balance.currentAssets.any { it.id == "ca2" })
         assertTrue(balance.currentAssets.any { it.id == "ca1" })
     }
+
+    @Test
+    fun testCreditCardLiabilityNoDoubleCounting() {
+        val filter = FinancialPeriodFilter()
+        val accounts = listOf(
+            com.example.data.local.entity.AccountEntity(
+                id = "acc_savings",
+                userId = "user_test",
+                name = "Ahorros Principal",
+                balance = 10_000_000.0,
+                type = "SAVINGS"
+            ),
+            com.example.data.local.entity.AccountEntity(
+                id = "acc_cc_1",
+                userId = "user_test",
+                name = "Tarjeta Visa",
+                balance = -2_500_000.0,
+                type = "CREDIT_CARD"
+            )
+        )
+        val cards = listOf(
+            com.example.data.local.entity.AccountCreditCardEntity(
+                id = "cc_1",
+                accountId = "acc_cc_1",
+                quotaTotal = 10_000_000.0,
+                quotaAvailable = 7_500_000.0,
+                quotaUsed = 2_500_000.0
+            )
+        )
+
+        val summary = engine.computeSummary(accounts, emptyList(), emptyList(), emptyList(), cards, filter)
+        val balance = engine.computeBalanceSheet(summary, accounts, emptyList(), emptyList(), cards)
+
+        assertEquals(10_000_000.0, summary.totalAssets, 0.01)
+        assertEquals("No debe duplicar el pasivo de TC", 2_500_000.0, summary.totalLiabilities, 0.01)
+        assertEquals(7_500_000.0, summary.netWorth, 0.01)
+        assertEquals(2_500_000.0, balance.totalLiabilities, 0.01)
+        assertEquals(7_500_000.0, balance.totalEquity, 0.01)
+        assertTrue(balance.isBalanced)
+    }
+
+    @Test
+    fun testOpeningBalanceExcludedFromIncomeStatementAndCountedAsCapital() {
+        val todayStr = java.time.LocalDate.now().toString()
+        val filter = FinancialPeriodFilter()
+        val accounts = listOf(
+            com.example.data.local.entity.AccountEntity(
+                id = "acc_1",
+                userId = "user_test",
+                name = "Cuenta Ahorros",
+                balance = 12_500_000.0,
+                type = "SAVINGS"
+            )
+        )
+        val transactions = listOf(
+            com.example.data.local.entity.TransactionEntity(
+                id = "tx_init_acc_1",
+                userId = "user_test",
+                accountId = "acc_1",
+                accountName = "Cuenta Ahorros",
+                categoryId = "cat_initial_balance",
+                categoryName = "Saldo Inicial",
+                amount = 10_000_000.0,
+                currency = "COP",
+                type = "INCOME",
+                date = todayStr,
+                description = "Apertura de cuenta",
+                receiptUrl = null,
+                idempotencyKey = "idem_init_1"
+            ),
+            com.example.data.local.entity.TransactionEntity(
+                id = "tx_sal_1",
+                userId = "user_test",
+                accountId = "acc_1",
+                accountName = "Cuenta Ahorros",
+                categoryId = "cat_salary",
+                categoryName = "Salario",
+                amount = 4_000_000.0,
+                currency = "COP",
+                type = "INCOME",
+                date = todayStr,
+                description = "Pago nómina",
+                receiptUrl = null,
+                idempotencyKey = "idem_sal_1"
+            ),
+            com.example.data.local.entity.TransactionEntity(
+                id = "tx_exp_1",
+                userId = "user_test",
+                accountId = "acc_1",
+                accountName = "Cuenta Ahorros",
+                categoryId = "cat_food",
+                categoryName = "Mercado",
+                amount = 1_500_000.0,
+                currency = "COP",
+                type = "EXPENSE",
+                date = todayStr,
+                description = "Supermercado",
+                receiptUrl = null,
+                idempotencyKey = "idem_exp_1"
+            )
+        )
+
+        val summary = engine.computeSummary(accounts, transactions, emptyList(), emptyList(), emptyList(), filter)
+        val balance = engine.computeBalanceSheet(summary, accounts, emptyList(), emptyList(), emptyList())
+        val equity = engine.computeEquityStatement(summary, balance, transactions)
+
+        assertEquals("Ingresos operativos no deben incluir saldo inicial", 4_000_000.0, summary.totalIncome, 0.01)
+        assertEquals(1_500_000.0, summary.totalExpenses, 0.01)
+        assertEquals(2_500_000.0, summary.periodResult, 0.01)
+        assertEquals("El saldo inicial debe ir a aportes de capital", 10_000_000.0, equity.capitalContributions, 0.01)
+    }
+
+    @Test
+    fun testPredictiveEngineUsesRealCategoriesWithoutMockData() {
+        val predictiveEngine = com.example.feature.informes.domain.engine.PredictiveExpenseEngine()
+        val accounts = listOf(
+            com.example.data.local.entity.AccountEntity(
+                id = "acc_1",
+                userId = "user_test",
+                name = "Cuenta Ahorros",
+                balance = 6_000_000.0,
+                type = "SAVINGS"
+            )
+        )
+        val transactions = listOf(
+            com.example.data.local.entity.TransactionEntity(
+                id = "tx_e1",
+                userId = "user_test",
+                accountId = "acc_1",
+                accountName = "Cuenta Ahorros",
+                categoryId = "cat_1",
+                categoryName = "Alimentación Real",
+                amount = 1_000_000.0,
+                currency = "COP",
+                type = "EXPENSE",
+                date = java.time.LocalDate.now().toString(),
+                description = "Compra",
+                receiptUrl = null,
+                idempotencyKey = "idem_e1"
+            )
+        )
+
+        val proj = predictiveEngine.computeAdvancedProjections(
+            accounts = accounts,
+            transactions = transactions,
+            currentNetWorth = 6_000_000.0,
+            currentIncome = 3_000_000.0,
+            currentExpenses = 1_000_000.0
+        )
+
+        assertEquals(1, proj.projectedCategories.size)
+        assertEquals("Alimentación Real", proj.projectedCategories.first().categoryName)
+        val baseScenario = proj.multiHorizonScenarios.first()
+        assertEquals(6_000_000.0 + (2_000_000.0 * 12.0), baseScenario.projectedFinalNetWorth, 0.01)
+    }
 }

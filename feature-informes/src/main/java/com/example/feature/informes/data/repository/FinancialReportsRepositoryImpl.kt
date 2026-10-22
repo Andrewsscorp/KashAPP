@@ -13,6 +13,7 @@ import com.example.feature.informes.domain.model.*
 import com.example.feature.informes.domain.repository.FinancialReportsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.File
 
@@ -130,8 +131,13 @@ class FinancialReportsRepositoryImpl(
         userId: String,
         filter: FinancialPeriodFilter
     ): Flow<CashFlowStatementData> {
-        return observeSummary(userId, filter).map { summary ->
-            calculationEngine.computeCashFlow(summary)
+        return combine(
+            observeSummary(userId, filter),
+            financialDao.getAccountsFlow(userId),
+            financialDao.getTransactionsFlow(userId)
+        ) { summary, accounts, transactions ->
+            val periodTx = calculationEngine.filterTransactionsByDate(transactions, filter.startDate, filter.endDate)
+            calculationEngine.computeCashFlow(summary, accounts, periodTx)
         }
     }
 
@@ -141,9 +147,11 @@ class FinancialReportsRepositoryImpl(
     ): Flow<EquityStatementData> {
         return combine(
             observeSummary(userId, filter),
-            observeBalanceSheet(userId, filter)
-        ) { summary, balanceSheet ->
-            calculationEngine.computeEquityStatement(summary, balanceSheet)
+            observeBalanceSheet(userId, filter),
+            financialDao.getTransactionsFlow(userId)
+        ) { summary, balanceSheet, transactions ->
+            val periodTx = calculationEngine.filterTransactionsByDate(transactions, filter.startDate, filter.endDate)
+            calculationEngine.computeEquityStatement(summary, balanceSheet, periodTx)
         }
     }
 
@@ -151,19 +159,24 @@ class FinancialReportsRepositoryImpl(
         userId: String,
         filter: FinancialPeriodFilter
     ): Flow<SpecializedReportsBundle> {
-        return combine(
+        val baseFlow = combine(
             financialDao.getAccountsFlow(userId),
             fixedAssetDao.observeAssets(userId),
             financialDao.getInvestmentsFlow(userId),
             financialDao.getAccountCreditCardsByUserFlow(userId),
             observeIncomeStatement(userId, filter)
         ) { accounts, assets, investments, creditCards, incomeStatement ->
+            Quintuple(accounts, assets, investments, creditCards, incomeStatement)
+        }
+        return combine(baseFlow, financialDao.getTransactionsFlow(userId)) { q, transactions ->
+            val periodTx = calculationEngine.filterTransactionsByDate(transactions, filter.startDate, filter.endDate)
             calculationEngine.computeSpecializedReports(
-                accounts = accounts,
-                assets = assets,
-                investments = investments,
-                creditCards = creditCards,
-                incomeStatement = incomeStatement
+                accounts = q.first,
+                assets = q.second,
+                investments = q.third,
+                creditCards = q.fourth,
+                incomeStatement = q.fifth,
+                periodTransactions = periodTx
             )
         }
     }
@@ -189,9 +202,10 @@ class FinancialReportsRepositoryImpl(
             financialDao.getTransactionsFlow(userId),
             observeSummary(userId, filter)
         ) { accounts, transactions, summary ->
+            val periodTx = calculationEngine.filterTransactionsByDate(transactions, filter.startDate, filter.endDate)
             predictiveEngine.computeAdvancedProjections(
                 accounts = accounts,
-                transactions = transactions,
+                transactions = periodTx,
                 currentNetWorth = summary.netWorth,
                 currentIncome = summary.totalIncome,
                 currentExpenses = summary.totalExpenses
@@ -225,14 +239,16 @@ class FinancialReportsRepositoryImpl(
         val assets = fixedAssetDao.getAssets(userId)
         val investments = financialDao.getInvestments(userId)
         val creditCards = financialDao.getAccountCreditCardsByUser(userId)
+        val sharedSnapshot = observeSharedSnapshot(userId).first()
+        val periodTx = calculationEngine.filterTransactionsByDate(transactions, filter.startDate, filter.endDate)
 
-        val summary = calculationEngine.computeSummary(accounts, transactions, assets, investments, creditCards, filter)
-        val balanceSheet = calculationEngine.computeBalanceSheet(summary, accounts, assets, investments, creditCards)
+        val summary = calculationEngine.computeSummary(accounts, transactions, assets, investments, creditCards, filter, sharedSnapshot)
+        val balanceSheet = calculationEngine.computeBalanceSheet(summary, accounts, assets, investments, creditCards, sharedSnapshot)
         val incomeStatement = calculationEngine.computeIncomeStatement(summary)
-        val cashFlow = calculationEngine.computeCashFlow(summary)
+        val cashFlow = calculationEngine.computeCashFlow(summary, accounts, periodTx)
         val analysis = calculationEngine.computeFinancialAnalysis(summary, balanceSheet)
 
-        return traceEngine.getTraceForMetric(metricKey, summary, balanceSheet, incomeStatement, cashFlow, analysis)
+        return traceEngine.getTraceForMetric(metricKey, summary, balanceSheet, incomeStatement, cashFlow, analysis, sharedSnapshot)
     }
 
     override suspend fun exportReport(
@@ -245,13 +261,15 @@ class FinancialReportsRepositoryImpl(
         val assets = fixedAssetDao.getAssets(userId)
         val investments = financialDao.getInvestments(userId)
         val creditCards = financialDao.getAccountCreditCardsByUser(userId)
+        val sharedSnapshot = observeSharedSnapshot(userId).first()
+        val periodTx = calculationEngine.filterTransactionsByDate(transactions, filter.startDate, filter.endDate)
 
-        val summary = calculationEngine.computeSummary(accounts, transactions, assets, investments, creditCards, filter)
-        val balanceSheet = calculationEngine.computeBalanceSheet(summary, accounts, assets, investments, creditCards)
+        val summary = calculationEngine.computeSummary(accounts, transactions, assets, investments, creditCards, filter, sharedSnapshot)
+        val balanceSheet = calculationEngine.computeBalanceSheet(summary, accounts, assets, investments, creditCards, sharedSnapshot)
         val incomeStatement = calculationEngine.computeIncomeStatement(summary)
-        val cashFlow = calculationEngine.computeCashFlow(summary)
-        val equityStatement = calculationEngine.computeEquityStatement(summary, balanceSheet)
-        val specialized = calculationEngine.computeSpecializedReports(accounts, assets, investments, creditCards, incomeStatement)
+        val cashFlow = calculationEngine.computeCashFlow(summary, accounts, periodTx)
+        val equityStatement = calculationEngine.computeEquityStatement(summary, balanceSheet, periodTx)
+        val specialized = calculationEngine.computeSpecializedReports(accounts, assets, investments, creditCards, incomeStatement, periodTx)
         val analysis = calculationEngine.computeFinancialAnalysis(summary, balanceSheet)
 
         return if (config.format == ExportReportFormat.EXCEL_CSV) {
@@ -271,11 +289,13 @@ class FinancialReportsRepositoryImpl(
         val assets = fixedAssetDao.getAssets(userId)
         val investments = financialDao.getInvestments(userId)
         val creditCards = financialDao.getAccountCreditCardsByUser(userId)
+        val sharedSnapshot = observeSharedSnapshot(userId).first()
+        val periodTx = calculationEngine.filterTransactionsByDate(transactions, filter.startDate, filter.endDate)
 
-        val summary = calculationEngine.computeSummary(accounts, transactions, assets, investments, creditCards, filter)
-        val balanceSheet = calculationEngine.computeBalanceSheet(summary, accounts, assets, investments, creditCards)
+        val summary = calculationEngine.computeSummary(accounts, transactions, assets, investments, creditCards, filter, sharedSnapshot)
+        val balanceSheet = calculationEngine.computeBalanceSheet(summary, accounts, assets, investments, creditCards, sharedSnapshot)
         val incomeStatement = calculationEngine.computeIncomeStatement(summary)
-        val cashFlow = calculationEngine.computeCashFlow(summary)
+        val cashFlow = calculationEngine.computeCashFlow(summary, accounts, periodTx)
         val analysis = calculationEngine.computeFinancialAnalysis(summary, balanceSheet)
 
         return pdfGenerator.generateExecutivePdf(config, filter, summary, balanceSheet, incomeStatement, cashFlow, analysis)

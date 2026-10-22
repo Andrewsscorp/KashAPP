@@ -19,6 +19,7 @@ class InformesViewModel(
 
     private val _uiState = MutableStateFlow(InformesUiState(isLoading = true))
     val uiState: StateFlow<InformesUiState> = _uiState.asStateFlow()
+    private var dataCollectionJob: kotlinx.coroutines.Job? = null
 
     init {
         loadAllData()
@@ -205,7 +206,8 @@ class InformesViewModel(
 
     private fun loadAllData() {
         val currentFilter = _uiState.value.filter
-        viewModelScope.launch {
+        dataCollectionJob?.cancel()
+        dataCollectionJob = viewModelScope.launch {
             launch {
                 repository.observeSummary(userId, currentFilter).collectLatest { summary ->
                     _uiState.update { it.copy(summaryData = summary, isLoading = false) }
