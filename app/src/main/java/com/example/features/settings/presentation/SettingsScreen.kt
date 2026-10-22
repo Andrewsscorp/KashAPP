@@ -206,6 +206,8 @@ fun SettingsScreen(
                         SettingsSecurityScreen(
                             biometricsEnabled = uiState.preferences.biometricsEnabled,
                             onToggleBiometrics = { viewModel.toggleBiometrics(it) },
+                            allowScreenshots = uiState.preferences.allowScreenshots,
+                            onToggleAllowScreenshots = { viewModel.toggleAllowScreenshots(it) },
                             onShowMessage = { viewModel.showStatusMessage(it) },
                             onChangePin = { current, new -> viewModel.changePin(current, new) },
                             onBack = { viewModel.navigateBackToMain() }

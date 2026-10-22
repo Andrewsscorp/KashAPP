@@ -65,6 +65,8 @@ fun SettingsSecurityScreen(
     onToggleBiometrics: (Boolean) -> Unit,
     onShowMessage: (String) -> Unit,
     onBack: () -> Unit,
+    allowScreenshots: Boolean = false,
+    onToggleAllowScreenshots: (Boolean) -> Unit = {},
     onChangePin: (suspend (currentPin: String, newPin: String) -> Result<Unit>)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -107,6 +109,39 @@ fun SettingsSecurityScreen(
                         onCheckedChange = {
                             onToggleBiometrics(it)
                             onShowMessage(if (it) "Bloqueo biométrico activado" else "Bloqueo biométrico desactivado")
+                        },
+                        colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = KashBlue)
+                    )
+                }
+
+                HorizontalDivider(color = Color(0xFFF1F5F9))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Permitir Capturas de Pantalla", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = KashNavy)
+                        Text(
+                            text = if (allowScreenshots) {
+                                "Activado: Puedes tomar capturas y grabar pantalla en la app"
+                            } else {
+                                "Desactivado (Recomendado): Protege tus saldos bloqueando capturas y vistas previas"
+                            },
+                            fontSize = 12.sp,
+                            color = Color(0xFF64748B)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Switch(
+                        checked = allowScreenshots,
+                        onCheckedChange = { allowed ->
+                            onToggleAllowScreenshots(allowed)
+                            onShowMessage(
+                                if (allowed) "Capturas de pantalla habilitadas"
+                                else "Capturas de pantalla bloqueadas por seguridad"
+                            )
                         },
                         colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = KashBlue)
                     )

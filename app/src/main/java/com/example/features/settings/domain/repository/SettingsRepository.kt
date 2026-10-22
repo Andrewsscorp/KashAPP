@@ -12,6 +12,10 @@ interface SettingsRepository {
     suspend fun setLanguage(userId: String, language: String): Result<Unit>
     suspend fun setTheme(userId: String, theme: String): Result<Unit>
     suspend fun setBiometricsEnabled(userId: String, enabled: Boolean): Result<Unit>
+    suspend fun setAllowScreenshots(userId: String, allowed: Boolean): Result<Unit> {
+        val current = getPreferences(userId)
+        return updatePreferences(current.copy(allowScreenshots = allowed)).map { }
+    }
     suspend fun setBudgetAlertsEnabled(userId: String, enabled: Boolean): Result<Unit>
     suspend fun setPaymentRemindersEnabled(userId: String, enabled: Boolean): Result<Unit>
     suspend fun setExcludeAllAccountsFromDashboard(userId: String, excluded: Boolean): Result<Unit>

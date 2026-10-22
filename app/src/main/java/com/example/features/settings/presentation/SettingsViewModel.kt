@@ -191,6 +191,12 @@ class SettingsViewModel(
         }
     }
 
+    fun toggleAllowScreenshots(allowed: Boolean) {
+        viewModelScope.launch {
+            repository.setAllowScreenshots(userId, allowed)
+        }
+    }
+
     fun toggleBudgetAlerts(enabled: Boolean) {
         viewModelScope.launch {
             repository.setBudgetAlertsEnabled(userId, enabled)

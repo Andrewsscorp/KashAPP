@@ -80,6 +80,21 @@ class MainActivity : FragmentActivity() {
 
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
         val snackbarHostState = remember { SnackbarHostState() }
+        val activeUserId = uiState.authenticatedUser?.userId ?: "user_default"
+        val userPreferences by remember(activeUserId) {
+            appContainer.settingsRepository.observePreferences(activeUserId)
+        }.collectAsStateWithLifecycle(initialValue = com.example.features.settings.domain.model.UserPreferencesDomain(userId = activeUserId))
+
+        LaunchedEffect(userPreferences.allowScreenshots) {
+            if (userPreferences.allowScreenshots) {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+            } else {
+                window.setFlags(
+                    WindowManager.LayoutParams.FLAG_SECURE,
+                    WindowManager.LayoutParams.FLAG_SECURE
+                )
+            }
+        }
 
         LaunchedEffect(uiState.statusMessage) {
             uiState.statusMessage?.let { msg ->

@@ -11,6 +11,7 @@ data class UserPreferencesDomain(
     val fontSize: String = "MEDIUM",
     val dashboardLayout: List<String> = listOf("net_worth", "cash_flow", "budgets", "goals", "accounts"),
     val biometricsEnabled: Boolean = false,
+    val allowScreenshots: Boolean = false,
     val pushNotifications: Boolean = true,
     val budgetAlertsEnabled: Boolean = true,
     val paymentRemindersEnabled: Boolean = true,

@@ -41,6 +41,7 @@ class SettingsRepositoryImpl(
             theme = prefs.getString(k(uId, "theme"), prefs.getString("theme", "SYSTEM")) ?: "SYSTEM",
             fontSize = prefs.getString(k(uId, "font_size"), prefs.getString("font_size", "MEDIUM")) ?: "MEDIUM",
             biometricsEnabled = prefs.getBoolean(k(uId, "biometrics_enabled"), prefs.getBoolean("biometrics_enabled", false)),
+            allowScreenshots = prefs.getBoolean(k(uId, "allow_screenshots"), prefs.getBoolean("allow_screenshots", false)),
             pushNotifications = prefs.getBoolean(k(uId, "push_notifications"), prefs.getBoolean("push_notifications", true)),
             budgetAlertsEnabled = prefs.getBoolean(k(uId, "budget_alerts_enabled"), prefs.getBoolean("budget_alerts_enabled", true)),
             paymentRemindersEnabled = prefs.getBoolean(k(uId, "payment_reminders_enabled"), prefs.getBoolean("payment_reminders_enabled", true)),
@@ -80,6 +81,7 @@ class SettingsRepositoryImpl(
             .putString(k(uId, "theme"), updated.theme)
             .putString(k(uId, "font_size"), updated.fontSize)
             .putBoolean(k(uId, "biometrics_enabled"), updated.biometricsEnabled)
+            .putBoolean(k(uId, "allow_screenshots"), updated.allowScreenshots)
             .putBoolean(k(uId, "push_notifications"), updated.pushNotifications)
             .putBoolean(k(uId, "budget_alerts_enabled"), updated.budgetAlertsEnabled)
             .putBoolean(k(uId, "payment_reminders_enabled"), updated.paymentRemindersEnabled)
@@ -126,6 +128,21 @@ class SettingsRepositoryImpl(
     override suspend fun setBiometricsEnabled(userId: String, enabled: Boolean): Result<Unit> {
         val current = getPreferences(userId)
         return updatePreferences(current.copy(biometricsEnabled = enabled)).map { }
+    }
+
+    override suspend fun setAllowScreenshots(userId: String, allowed: Boolean): Result<Unit> {
+        val current = getPreferences(userId)
+        val res = updatePreferences(current.copy(allowScreenshots = allowed))
+        try {
+            auditSecurityLogDao?.insertLog(
+                com.example.data.local.entity.AuditSecurityLog(
+                    eventType = "CONFIG_SCREENSHOTS_POLICY",
+                    authMethod = "SETTINGS_SECURITY",
+                    details = "Ajuste de Capturas de Pantalla: ${if (allowed) "PERMITIDAS (FLAG_SECURE desactivado por el usuario)" else "BLOQUEADAS (FLAG_SECURE activo)"}"
+                )
+            )
+        } catch (_: Exception) {}
+        return res.map { }
     }
 
     override suspend fun setBudgetAlertsEnabled(userId: String, enabled: Boolean): Result<Unit> {
