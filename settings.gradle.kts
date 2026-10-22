@@ -34,4 +34,4 @@ include(":feature-informes")
 include(":feature-objetivos")
 include(":feature-gastos-compartidos")
 include(":feature-captura-automatica")
-
+include(":feature-impuestos-dian")

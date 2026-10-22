@@ -343,5 +343,21 @@ class AppContainer(private val context: Context) {
         }
         repo
     }
+
+    // =========================================================================
+    // MÓDULO DE IMPUESTOS DIAN E INTERNACIONAL (:feature-impuestos-dian)
+    // =========================================================================
+
+    val dianTaxRepository: com.example.feature.impuestosdian.data.repository.DianTaxRepositoryImpl by lazy {
+        com.example.feature.impuestosdian.data.repository.DianTaxRepositoryImpl(
+            context = context,
+            financialDao = financialDao,
+            fixedAssetDao = fixedAssetDao
+        )
+    }
+
+    val dianPreRentaPdfExporter: com.example.feature.impuestosdian.data.export.DianPreRentaPdfExporter by lazy {
+        com.example.feature.impuestosdian.data.export.DianPreRentaPdfExporter(context)
+    }
 }
 

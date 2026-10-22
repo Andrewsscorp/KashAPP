@@ -951,6 +951,29 @@ interface FinancialDao {
 
     @Query("UPDATE income_sources SET userId = :targetUserId WHERE (userId = 'user_default' OR userId = '') AND :targetUserId != ''")
     suspend fun migrateIncomeSourcesUserDefault(targetUserId: String): Int
+
+    // ==========================================
+    // TAX EXEMPTION (4x1000 GMF / ITF / INTERNATIONAL)
+    // ==========================================
+    @Query("UPDATE accounts SET isTaxExempt = :isTaxExempt WHERE id = :accountId AND userId = :userId AND :userId != ''")
+    suspend fun updateAccountTaxExemptStatus(accountId: String, userId: String, isTaxExempt: Boolean)
+
+    @Query("UPDATE accounts SET isTaxExempt = 0 WHERE userId = :userId AND :userId != ''")
+    suspend fun clearAllAccountsTaxExemptForUser(userId: String)
+
+    @Transaction
+    suspend fun updateAccountTaxExemptWithSingleRule(
+        accountId: String,
+        userId: String,
+        isTaxExempt: Boolean,
+        enforceSingleExempt: Boolean
+    ) {
+        if (userId.isBlank()) return
+        if (isTaxExempt && enforceSingleExempt) {
+            clearAllAccountsTaxExemptForUser(userId)
+        }
+        updateAccountTaxExemptStatus(accountId, userId, isTaxExempt)
+    }
 }
 
 

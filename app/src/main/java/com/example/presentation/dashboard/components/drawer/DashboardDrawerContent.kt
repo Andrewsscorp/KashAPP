@@ -83,6 +83,7 @@ fun DashboardDrawerContent(
     onOpenFixedAssets: (() -> Unit)? = null,
     onOpenReceiptScanner: (() -> Unit)? = null,
     onOpenInformes: (() -> Unit)? = null,
+    onOpenDianTaxRadar: (() -> Unit)? = null,
     onOpenThirdParties: (() -> Unit)? = null,
     onOpenUpcomingPayments: (() -> Unit)? = null,
     onOpenSharedExpenses: (() -> Unit)? = null,
@@ -512,6 +513,18 @@ fun DashboardDrawerContent(
                     onClick = {
                         onCloseDrawer()
                         onOpenInformes?.invoke()
+                    }
+                )
+
+                DrawerMenuItem(
+                    icon = Icons.Default.AccountBalance,
+                    label = "Impuestos DIAN & Global",
+                    badgeText = "UVT / 4x1000",
+                    iconColor = Color(0xFF38BDF8),
+                    isSelected = false,
+                    onClick = {
+                        onCloseDrawer()
+                        onOpenDianTaxRadar?.invoke()
                     }
                 )
 

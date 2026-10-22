@@ -333,7 +333,7 @@ fun CreateAccountScreen(
     var overdraftLimitInput by remember { mutableStateOf("") }
     var overdraftRateInput by remember { mutableStateOf("24.5") }
 
-    // 7. Payroll Specific Settings
+    // 7. Payroll Specific Settings & Tax Configuration Link
     var employerName by remember { mutableStateOf("") }
     var habitualConcept by remember { mutableStateOf("Nómina") }
     var rawExpectedIncome by remember { mutableStateOf("") }
@@ -346,6 +346,10 @@ fun CreateAccountScreen(
     var exemptionManagementFee by remember { mutableStateOf(true) }
     var exemptionTax4x1000 by remember { mutableStateOf(false) }
     var freeAtmWithdrawals by remember { mutableStateOf(true) }
+    val taxProfile by remember(userId) {
+        appContainer.dianTaxRepository.observeTaxConfiguration(userId)
+    }.collectAsStateWithLifecycle()
+    var showTaxConfigDialogInCreateAccount by remember { mutableStateOf(false) }
 
     // 8. Favoritos & Enrutamiento
     var isFavorite by remember { mutableStateOf(false) }
@@ -1436,6 +1440,19 @@ fun CreateAccountScreen(
             }
 
             // ==========================================
+            // 6B. VINCULACIÓN CON MÓDULO TRIBUTARIO (DIAN / INTERNACIONAL)
+            // ==========================================
+            item {
+                com.example.feature.impuestosdian.ui.AccountCreationTaxLinkCard(
+                    profile = taxProfile,
+                    accountType = selectedTypeCode,
+                    isTaxExempt = exemptionTax4x1000,
+                    onTaxExemptChange = { exemptionTax4x1000 = it },
+                    onOpenTaxConfig = { showTaxConfigDialogInCreateAccount = true }
+                )
+            }
+
+            // ==========================================
             // 7. PERSONALIZACIÓN DE COLOR & SOPORTE
             // ==========================================
             item {
@@ -1517,6 +1534,22 @@ fun CreateAccountScreen(
         }
     }
 }
+
+    // ==========================================
+    // MODAL: CONFIGURACIÓN TRIBUTARIA VINCULADA
+    // ==========================================
+    if (showTaxConfigDialogInCreateAccount) {
+        com.example.feature.impuestosdian.ui.TaxConfigurationDialog(
+            initialProfile = taxProfile,
+            onDismiss = { showTaxConfigDialogInCreateAccount = false },
+            onSave = { updated ->
+                showTaxConfigDialogInCreateAccount = false
+                coroutineScope.launch {
+                    appContainer.dianTaxRepository.updateTaxConfiguration(updated)
+                }
+            }
+        )
+    }
 
     // ==========================================
     // MODAL: UNIVERSAL CURRENCY PICKER (164 WORLD CURRENCIES + CREATION)

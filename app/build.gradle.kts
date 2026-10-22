@@ -83,6 +83,7 @@ dependencies {
   implementation(project(":feature-objetivos"))
   implementation(project(":feature-gastos-compartidos"))
   implementation(project(":feature-captura-automatica"))
+  implementation(project(":feature-impuestos-dian"))
   implementation(platform(libs.androidx.compose.bom))
   implementation(platform(libs.firebase.bom))
   // implementation(libs.accompanist.permissions)

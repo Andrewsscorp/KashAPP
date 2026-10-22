@@ -133,6 +133,7 @@ fun DashboardScreen(
     var showThirdPartiesModule by rememberSaveable { mutableStateOf(false) }
     var showReceiptScannerScreen by rememberSaveable { mutableStateOf(false) }
     var showInformesModule by rememberSaveable { mutableStateOf(false) }
+    var showDianTaxRadarModule by rememberSaveable { mutableStateOf(false) }
     var showObjetivosModule by rememberSaveable { mutableStateOf(false) }
     var showUpcomingPaymentsModule by rememberSaveable { mutableStateOf(false) }
     var showSharedExpensesModule by rememberSaveable { mutableStateOf(false) }
@@ -243,6 +244,9 @@ fun DashboardScreen(
                 },
                 onOpenInformes = {
                     showInformesModule = true
+                },
+                onOpenDianTaxRadar = {
+                    showDianTaxRadarModule = true
                 },
                 onOpenUpcomingPayments = {
                     showUpcomingPaymentsModule = true
@@ -359,6 +363,16 @@ fun DashboardScreen(
                     pendingCount = pendingAutoCapturesCount,
                     onClickReview = { showAutoCaptureInbox = true }
                 )
+
+                // ==========================================
+                // RADAR TRIBUTARIO DIAN & IMPUESTOS INTERNACIONALES
+                // ==========================================
+                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    com.example.feature.impuestosdian.ui.DianTaxDashboardBanner(
+                        report = null,
+                        onClickOpenRadar = { showDianTaxRadarModule = true }
+                    )
+                }
 
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                     // PARTE 2: TU POSICIÓN — Así está tu dinero (2x2 Grid con apertura a análisis completo)
@@ -883,6 +897,29 @@ fun DashboardScreen(
             viewModel = informesViewModel,
             onNavigateBack = {
                 showInformesModule = false
+                viewModel.onEvent(DashboardEvent.Refresh)
+            }
+        )
+    }
+
+    // Screen: Radar Tributario DIAN & Impuestos Internacionales (:feature-impuestos-dian)
+    if (showDianTaxRadarModule) {
+        val context = LocalContext.current
+        val appContainer = (context.applicationContext as KashAppApplication).appContainer
+        val dianTaxViewModel: com.example.feature.impuestosdian.ui.DianTaxViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+            factory = com.example.feature.impuestosdian.ui.DianTaxViewModel.Factory(
+                repository = appContainer.dianTaxRepository,
+                pdfExporter = appContainer.dianPreRentaPdfExporter,
+                userId = viewModel.userId.ifBlank { "user_default" }
+            )
+        )
+        androidx.activity.compose.BackHandler {
+            showDianTaxRadarModule = false
+        }
+        com.example.feature.impuestosdian.ui.DianTaxRadarInteractiveContainer(
+            viewModel = dianTaxViewModel,
+            onNavigateBack = {
+                showDianTaxRadarModule = false
                 viewModel.onEvent(DashboardEvent.Refresh)
             }
         )

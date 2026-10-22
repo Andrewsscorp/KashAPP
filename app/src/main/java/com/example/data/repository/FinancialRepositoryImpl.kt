@@ -663,6 +663,9 @@ class FinancialRepositoryImpl(
         } else null
 
         // Atomic ACID persistence
+        if (isTaxExempt) {
+            financialDao.clearAllAccountsTaxExemptForUser(userId)
+        }
         if (payrollConfig != null || type == "PAYROLL") {
             val finalPayrollConfig = (payrollConfig ?: com.example.data.local.entity.AccountPayrollConfigEntity(
                 id = "paycfg_${UUID.randomUUID()}",
