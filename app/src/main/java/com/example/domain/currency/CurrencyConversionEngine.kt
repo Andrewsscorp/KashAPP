@@ -14,6 +14,24 @@ import java.util.Locale
  * 2. Mathematically sound conversions avoiding NaN, infinite, or 1.0 false fallbacks.
  * 3. Proper formatting without double currency signs ("$$") and appropriate decimal places by currency.
  */
+/**
+ * Typed evaluation of monetary inputs distinguishing between empty, valid amounts, and format errors.
+ */
+sealed interface ParsedMonetaryInput {
+    data object Empty : ParsedMonetaryInput
+    data class Valid(val amount: Double) : ParsedMonetaryInput
+    data class Invalid(val reason: String) : ParsedMonetaryInput
+
+    val amountOrZero: Double
+        get() = when (this) {
+            is Valid -> amount
+            else -> 0.0
+        }
+
+    val isValidOrEmpty: Boolean
+        get() = this !is Invalid
+}
+
 object CurrencyConversionEngine {
 
     private val ZERO_DECIMAL_CURRENCIES = setOf(
@@ -21,84 +39,131 @@ object CurrencyConversionEngine {
     )
 
     /**
+     * Parses user input text cleanly into a typed [ParsedMonetaryInput].
+     * Distinguishes empty field ($0 by default), valid numbers, and syntax/format errors.
+     */
+    fun parseMonetaryInput(rawInput: String?, allowNegative: Boolean = false): ParsedMonetaryInput {
+        if (rawInput == null) return ParsedMonetaryInput.Empty
+        val trimmed = rawInput.trim()
+        if (trimmed.isEmpty()) return ParsedMonetaryInput.Empty
+
+        val clean = trimmed
+            .replace("$", "")
+            .replace("€", "")
+            .replace("£", "")
+            .replace("¥", "")
+            .replace(Regex("(?i)(COP|USD|EUR|GBP|MXN|ARS|BRL|CLP|PEN|CAD|CHF|JPY)"), "")
+            .replace(" ", "")
+            .replace("\u00A0", "")
+            .trim()
+
+        if (clean.isEmpty()) return ParsedMonetaryInput.Empty
+
+        val isNegative = clean.startsWith("-")
+        val numberPart = if (isNegative) clean.substring(1).trim() else clean
+
+        if (isNegative && !allowNegative) {
+            return ParsedMonetaryInput.Invalid("El saldo no puede ser negativo para este tipo de cuenta.")
+        }
+
+        if (numberPart.isEmpty()) {
+            return ParsedMonetaryInput.Invalid("Monto numérico incompleto.")
+        }
+
+        // Validate character set: must only contain digits, '.' and ','
+        if (!numberPart.all { it.isDigit() || it == '.' || it == ',' }) {
+            return ParsedMonetaryInput.Invalid("El formato numérico contiene caracteres no válidos.")
+        }
+
+        val dotCount = numberPart.count { it == '.' }
+        val commaCount = numberPart.count { it == ',' }
+
+        val amountVal: Double = try {
+            when {
+                // Both dot and comma present
+                dotCount > 0 && commaCount > 0 -> {
+                    val lastDot = numberPart.lastIndexOf('.')
+                    val lastComma = numberPart.lastIndexOf(',')
+                    if (lastComma > lastDot) {
+                        // European/Latin style: dots are thousands, comma is decimal (e.g. 1.500,50)
+                        if (commaCount > 1) {
+                            return ParsedMonetaryInput.Invalid("No puede haber más de una coma decimal.")
+                        }
+                        val normalized = numberPart.replace(".", "").replace(",", ".")
+                        normalized.toDoubleOrNull()
+                    } else {
+                        // US style: commas are thousands, dot is decimal (e.g. 1,500.50)
+                        if (dotCount > 1) {
+                            return ParsedMonetaryInput.Invalid("No puede haber más de un punto decimal.")
+                        }
+                        val normalized = numberPart.replace(",", "")
+                        normalized.toDoubleOrNull()
+                    }
+                }
+                // Only dots
+                dotCount > 0 -> {
+                    if (dotCount > 1) {
+                        val parts = numberPart.split(".")
+                        val middleAndLast = parts.subList(1, parts.size)
+                        if (middleAndLast.all { it.length == 3 }) {
+                            numberPart.replace(".", "").toDoubleOrNull()
+                        } else {
+                            return ParsedMonetaryInput.Invalid("Formato de separador de miles con puntos incorrecto.")
+                        }
+                    } else {
+                        val parts = numberPart.split(".")
+                        val afterDot = parts.getOrNull(1) ?: ""
+                        if (afterDot.length == 3 && numberPart.length > 4 && parts[0].length in 1..3) {
+                            numberPart.replace(".", "").toDoubleOrNull()
+                        } else {
+                            numberPart.toDoubleOrNull()
+                        }
+                    }
+                }
+                // Only commas
+                commaCount > 0 -> {
+                    if (commaCount > 1) {
+                        val parts = numberPart.split(",")
+                        val middleAndLast = parts.subList(1, parts.size)
+                        if (middleAndLast.all { it.length == 3 }) {
+                            numberPart.replace(",", "").toDoubleOrNull()
+                        } else {
+                            return ParsedMonetaryInput.Invalid("Formato de separador de miles con comas incorrecto.")
+                        }
+                    } else {
+                        val parts = numberPart.split(",")
+                        val afterComma = parts.getOrNull(1) ?: ""
+                        if (afterComma.length == 3 && numberPart.length > 4 && parts[0].length in 1..3) {
+                            numberPart.replace(",", "").toDoubleOrNull()
+                        } else {
+                            numberPart.replace(",", ".").toDoubleOrNull()
+                        }
+                    }
+                }
+                else -> numberPart.toDoubleOrNull()
+            }
+        } catch (_: Exception) {
+            null
+        } ?: return ParsedMonetaryInput.Invalid("No fue posible interpretar el valor numérico.")
+
+        if (amountVal.isNaN() || amountVal.isInfinite()) {
+            return ParsedMonetaryInput.Invalid("El monto ingresado es inválido o causa desbordamiento.")
+        }
+
+        val finalAmount = if (isNegative) -kotlin.math.abs(amountVal) else kotlin.math.abs(amountVal)
+        return ParsedMonetaryInput.Valid(finalAmount)
+    }
+
+    /**
      * Parses user input text cleanly into a valid Double regardless of whether
      * the user entered Colombian thousands dots ("1.500.000"), comma decimals ("1500,50"),
      * or standard US format ("1,500.50").
      */
     fun parseUserInputAmount(rawInput: String?): Double {
-        if (rawInput.isNullOrBlank()) return 0.0
-
-        val clean = rawInput
-            .replace("$", "")
-            .replace("€", "")
-            .replace("£", "")
-            .replace("¥", "")
-            .replace(" ", "")
-            .replace("\u00A0", "")
-            .trim()
-
-        if (clean.isEmpty()) return 0.0
-
-        val hasDot = clean.contains(".")
-        val hasComma = clean.contains(",")
-
-        return try {
-            when {
-                // Case 1: Has both dot and comma, e.g. "1.500,75" or "1,500.75"
-                hasDot && hasComma -> {
-                    val lastDot = clean.lastIndexOf('.')
-                    val lastComma = clean.lastIndexOf(',')
-                    if (lastComma > lastDot) {
-                        // Latin / European: dot is thousands, comma is decimal -> "1.500,75"
-                        val normalized = clean.replace(".", "").replace(",", ".")
-                        normalized.toDoubleOrNull() ?: 0.0
-                    } else {
-                        // US / UK: comma is thousands, dot is decimal -> "1,500.75"
-                        val normalized = clean.replace(",", "")
-                        normalized.toDoubleOrNull() ?: 0.0
-                    }
-                }
-
-                // Case 2: Only dots
-                hasDot -> {
-                    val dotCount = clean.count { it == '.' }
-                    if (dotCount > 1) {
-                        // Multiple dots, e.g. "1.000.000" -> all are thousands separators
-                        clean.replace(".", "").toDoubleOrNull() ?: 0.0
-                    } else {
-                        // Single dot: e.g. "1000.50" vs "1.000"
-                        val parts = clean.split(".")
-                        val afterDot = parts.getOrNull(1) ?: ""
-                        if (afterDot.length == 3 && clean.length > 4) {
-                            // Likely thousands separator in Colombia, e.g. "50.000" -> 50000
-                            clean.replace(".", "").toDoubleOrNull() ?: 0.0
-                        } else {
-                            // Standard decimal dot
-                            clean.toDoubleOrNull() ?: 0.0
-                        }
-                    }
-                }
-
-                // Case 3: Only commas, e.g. "1,50" (decimal) or "1,000,000" (thousands)
-                hasComma -> {
-                    val commaCount = clean.count { it == ',' }
-                    if (commaCount > 1) {
-                        clean.replace(",", "").toDoubleOrNull() ?: 0.0
-                    } else {
-                        val parts = clean.split(",")
-                        val afterComma = parts.getOrNull(1) ?: ""
-                        if (afterComma.length == 3 && clean.length > 4) {
-                            clean.replace(",", "").toDoubleOrNull() ?: 0.0
-                        } else {
-                            clean.replace(",", ".").toDoubleOrNull() ?: 0.0
-                        }
-                    }
-                }
-
-                else -> clean.toDoubleOrNull() ?: 0.0
-            }
-        } catch (_: Exception) {
-            0.0
+        return when (val res = parseMonetaryInput(rawInput, allowNegative = true)) {
+            is ParsedMonetaryInput.Valid -> res.amount
+            is ParsedMonetaryInput.Empty -> 0.0
+            is ParsedMonetaryInput.Invalid -> 0.0
         }
     }
 

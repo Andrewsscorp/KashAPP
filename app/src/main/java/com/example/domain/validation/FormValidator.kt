@@ -281,7 +281,7 @@ object FormValidator {
             errors.add("Tipo de cuenta no soportado ($cleanType).")
         }
 
-        if (initialBalance < 0.0 && cleanType != "CREDIT_CARD") {
+        if (initialBalance < 0.0 && cleanType != "CREDIT_CARD" && cleanType != "CHECKING") {
             errors.add("El saldo inicial no puede ser negativo.")
         }
 

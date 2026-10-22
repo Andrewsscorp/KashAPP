@@ -178,25 +178,30 @@ class FinancialCalculationEngine {
         sharedSnapshot: SharedAccountingStatementIntegrator.SharedAccountingSnapshot? = null
     ): BalanceSheetData {
         // Real Current Assets from database accounts
-        val cashAmount = accounts.filter { it.type.equals("CASH", ignoreCase = true) && (it.balance ?: 0.0) > 0 }
-            .sumOf { it.balance ?: 0.0 }
-        val banksAmount = accounts.filter { !it.type.equals("CASH", ignoreCase = true) && (it.balance ?: 0.0) > 0 }
-            .sumOf { it.balance ?: 0.0 }
+        val cashAccounts = accounts.filter { it.type.equals("CASH", ignoreCase = true) }
+        val bankAccounts = accounts.filter { !it.type.equals("CASH", ignoreCase = true) }
+
+        val cashAmount = cashAccounts.filter { (it.balance ?: 0.0) > 0 }.sumOf { it.balance ?: 0.0 }
+        val banksAmount = bankAccounts.filter { (it.balance ?: 0.0) > 0 }.sumOf { it.balance ?: 0.0 }
         val currentInvestmentsAmount = investments.filter { it.typeId.equals("RENTA_FIJA", ignoreCase = true) || it.name.contains("CDT", ignoreCase = true) }
             .sumOf { it.currentValue }
 
         val currentAssetsList = buildList {
             if (cashAmount > 0) {
                 add(FinancialLineItem("ca1", "Efectivo disponible", "Caja menor y efectivo físico", "Disponible", cashAmount, if (summary.totalAssets > 0) (cashAmount / summary.totalAssets) * 100 else 0.0))
+            } else if (cashAccounts.isNotEmpty()) {
+                add(FinancialLineItem("ca1", "Efectivo disponible", "Caja menor y efectivo físico", "Disponible", 0.0, 0.0))
             }
             if (banksAmount > 0) {
                 add(FinancialLineItem("ca2", "Bancos y Cuentas de Ahorro", "Saldos en entidades financieras", "Bancos", banksAmount, if (summary.totalAssets > 0) (banksAmount / summary.totalAssets) * 100 else 0.0))
+            } else if (bankAccounts.isNotEmpty()) {
+                add(FinancialLineItem("ca2", "Bancos y Cuentas de Ahorro", "Saldos en entidades financieras", "Bancos", 0.0, 0.0))
             }
             if (currentInvestmentsAmount > 0) {
                 add(FinancialLineItem("ca4", "Inversiones corrientes", "CDT y fondos de liquidez", "Inversiones CP", currentInvestmentsAmount, if (summary.totalAssets > 0) (currentInvestmentsAmount / summary.totalAssets) * 100 else 0.0))
             }
         }.ifEmpty {
-            listOf(FinancialLineItem("ca0", "Sin activos corrientes", "No hay cuentas con saldo positivo", "Disponible", 0.0, 0.0))
+            listOf(FinancialLineItem("ca0", "Sin activos corrientes", "No hay cuentas registradas", "Disponible", 0.0, 0.0))
         }
         val totalCurrentAssets = currentAssetsList.sumOf { it.amount }
 

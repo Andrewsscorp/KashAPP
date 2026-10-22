@@ -696,12 +696,12 @@ fun AccountMovementsBottomSheet(
     onDismiss: () -> Unit
 ) {
     val isCard = targetAccount.category.contains("Tarjeta", ignoreCase = true) || targetAccount.category.contains("Crédito", ignoreCase = true)
-    val totalAccountAmount = targetAccount.amount.toDouble().coerceAtLeast(1.0)
+    val totalAccountAmount = targetAccount.amount.toDouble()
 
     val accountMovements = remember(targetAccount, roomTransactions) {
         if (targetAccount.subPurchases.isNotEmpty()) {
             targetAccount.subPurchases.map { sub ->
-                val pct = if (totalAccountAmount > 0) (sub.currentBalance / totalAccountAmount) * 100.0 else 0.0
+                val pct = if (totalAccountAmount > 0.0) (sub.currentBalance / totalAccountAmount) * 100.0 else 0.0
                 AccountMovementDisplay(
                     id = sub.id,
                     title = sub.merchant,
@@ -716,7 +716,7 @@ fun AccountMovementsBottomSheet(
             val matchingTrans = roomTransactions.filter { it.accountId == targetAccount.id }
             if (matchingTrans.isNotEmpty()) {
                 matchingTrans.map { tx ->
-                    val pct = if (totalAccountAmount > 0) (kotlin.math.abs(tx.amount) / totalAccountAmount) * 100.0 else 0.0
+                    val pct = if (totalAccountAmount > 0.0) (kotlin.math.abs(tx.amount) / totalAccountAmount) * 100.0 else 0.0
                     AccountMovementDisplay(
                         id = tx.id,
                         title = (tx.description ?: "").ifBlank { tx.categoryName },
@@ -728,35 +728,7 @@ fun AccountMovementsBottomSheet(
                     )
                 }
             } else {
-                listOf(
-                    AccountMovementDisplay(
-                        id = "mov_1",
-                        title = if (isCard) "Compras diferidas consolidadas" else "Saldo base y depósitos",
-                        category = if (isCard) "Consumo" else "Fondos Disponibles",
-                        dateFormatted = "Este Mes",
-                        amount = totalAccountAmount * 0.65,
-                        percentageOfTotal = 65.0,
-                        details = if (isCard) "65% del total de deuda" else "65% del saldo disponible"
-                    ),
-                    AccountMovementDisplay(
-                        id = "mov_2",
-                        title = if (isCard) "Compras corrientes del periodo" else "Transferencias y rendimientos",
-                        category = if (isCard) "Alimentación y Gastos" else "Rendimientos / Nómina",
-                        dateFormatted = "Este Mes",
-                        amount = totalAccountAmount * 0.25,
-                        percentageOfTotal = 25.0,
-                        details = if (isCard) "25% del total de deuda" else "25% del saldo disponible"
-                    ),
-                    AccountMovementDisplay(
-                        id = "mov_3",
-                        title = if (isCard) "Intereses y comisiones diferidas" else "Reserva de liquidez",
-                        category = if (isCard) "Financiero" else "Ahorro programado",
-                        dateFormatted = "Este Mes",
-                        amount = totalAccountAmount * 0.10,
-                        percentageOfTotal = 10.0,
-                        details = if (isCard) "10% del total de deuda" else "10% del saldo disponible"
-                    )
-                )
+                emptyList()
             }
         }
     }
@@ -879,7 +851,22 @@ fun AccountMovementsBottomSheet(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                accountMovements.forEach { mov ->
+                if (accountMovements.isEmpty()) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFF8FAFC),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
+                    ) {
+                        Text(
+                            text = "No hay movimientos registrados para esta cuenta.",
+                            fontSize = 12.sp,
+                            color = Color(0xFF64748B),
+                            modifier = Modifier.padding(16.dp).fillMaxWidth()
+                        )
+                    }
+                } else {
+                    accountMovements.forEach { mov ->
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = Color(0xFFF8FAFC),
@@ -939,6 +926,7 @@ fun AccountMovementsBottomSheet(
                             }
                         }
                     }
+                }
                 }
             }
 

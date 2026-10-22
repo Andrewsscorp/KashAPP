@@ -149,8 +149,10 @@ private class AccountCurrencyDotVisualTransformation : VisualTransformation {
             return TransformedText(text, OffsetMapping.Identity)
         }
 
-        val hasDot = original.contains(".")
-        val parts = original.split(".")
+        val isNeg = original.startsWith("-")
+        val unsignedOriginal = if (isNeg) original.substring(1) else original
+        val hasDot = unsignedOriginal.contains(".")
+        val parts = unsignedOriginal.split(".")
         val intStr = parts[0]
         val decStr = if (parts.size > 1) parts[1] else null
 
@@ -160,9 +162,10 @@ private class AccountCurrencyDotVisualTransformation : VisualTransformation {
         val formatter = DecimalFormat("#,###", symbols)
         val formattedInt = if (intStr.isNotEmpty()) {
             val num = intStr.toLongOrNull() ?: 0L
-            formatter.format(num)
+            val formatted = formatter.format(num)
+            if (isNeg) "-$formatted" else formatted
         } else {
-            ""
+            if (isNeg) "-" else ""
         }
 
         val transformed = when {
@@ -175,16 +178,21 @@ private class AccountCurrencyDotVisualTransformation : VisualTransformation {
             override fun originalToTransformed(offset: Int): Int {
                 if (offset <= 0) return 0
                 val sub = original.take(offset)
-                val subParts = sub.split(".")
+                val subIsNeg = sub.startsWith("-")
+                val subUnsigned = if (subIsNeg) sub.substring(1) else sub
+                val subParts = subUnsigned.split(".")
                 val subInt = subParts[0]
                 val subDec = if (subParts.size > 1) subParts[1] else null
                 val formattedSubInt = if (subInt.isNotEmpty()) {
                     val n = subInt.toLongOrNull() ?: 0L
-                    formatter.format(n)
-                } else ""
+                    val formatted = formatter.format(n)
+                    if (subIsNeg) "-$formatted" else formatted
+                } else {
+                    if (subIsNeg) "-" else ""
+                }
                 val res = when {
                     subDec != null -> "$formattedSubInt,$subDec"
-                    sub.contains(".") -> "$formattedSubInt,"
+                    subUnsigned.contains(".") -> "$formattedSubInt,"
                     else -> formattedSubInt
                 }
                 return res.length.coerceAtMost(transformed.length)
@@ -193,7 +201,7 @@ private class AccountCurrencyDotVisualTransformation : VisualTransformation {
             override fun transformedToOriginal(offset: Int): Int {
                 if (offset <= 0) return 0
                 val sub = transformed.take(offset)
-                val digitsBefore = sub.count { it.isDigit() || it == ',' || it == '.' }
+                val digitsBefore = sub.count { it.isDigit() || it == ',' || it == '.' || it == '-' }
                 return digitsBefore.coerceAtMost(original.length)
             }
         }
@@ -282,11 +290,29 @@ fun CreateAccountScreen(
     var rawAvailableBalanceInput by remember { mutableStateOf("") }
     var rawHoldBalanceInput by remember { mutableStateOf("0") }
 
-    val parsedBalance = remember(rawBalanceInput) { com.example.domain.currency.CurrencyConversionEngine.parseUserInputAmount(rawBalanceInput) }
-    val parsedAvailableBalance = remember(rawAvailableBalanceInput, parsedBalance) {
-        if (rawAvailableBalanceInput.isBlank()) parsedBalance else com.example.domain.currency.CurrencyConversionEngine.parseUserInputAmount(rawAvailableBalanceInput)
+    val parsedBalanceResult = remember(rawBalanceInput, selectedTypeCode) {
+        com.example.domain.currency.CurrencyConversionEngine.parseMonetaryInput(
+            rawInput = rawBalanceInput,
+            allowNegative = (selectedTypeCode == "CHECKING")
+        )
     }
-    val parsedHoldBalance = remember(rawHoldBalanceInput) { com.example.domain.currency.CurrencyConversionEngine.parseUserInputAmount(rawHoldBalanceInput) }
+    val parsedBalance = remember(parsedBalanceResult) { parsedBalanceResult.amountOrZero }
+    val parsedAvailableBalance = remember(rawAvailableBalanceInput, parsedBalance, selectedTypeCode) {
+        if (rawAvailableBalanceInput.isBlank()) {
+            parsedBalance
+        } else {
+            com.example.domain.currency.CurrencyConversionEngine.parseMonetaryInput(
+                rawInput = rawAvailableBalanceInput,
+                allowNegative = (selectedTypeCode == "CHECKING")
+            ).amountOrZero
+        }
+    }
+    val parsedHoldBalance = remember(rawHoldBalanceInput) {
+        com.example.domain.currency.CurrencyConversionEngine.parseMonetaryInput(
+            rawInput = rawHoldBalanceInput,
+            allowNegative = false
+        ).amountOrZero
+    }
 
     // 4. Account Number & Security
     var rawAccountNumber by remember { mutableStateOf("") }
@@ -311,10 +337,12 @@ fun CreateAccountScreen(
     var employerName by remember { mutableStateOf("") }
     var habitualConcept by remember { mutableStateOf("Nómina") }
     var rawExpectedIncome by remember { mutableStateOf("") }
-    val parsedExpectedIncome = remember(rawExpectedIncome) { rawExpectedIncome.toDoubleOrNull() ?: 4500000.0 }
+    val parsedExpectedIncome = remember(rawExpectedIncome) {
+        com.example.domain.currency.CurrencyConversionEngine.parseMonetaryInput(rawExpectedIncome).amountOrZero
+    }
     var periodicity by remember { mutableStateOf("Mensual") }
     var expectedPayDay by remember { mutableStateOf(30) }
-    var autoRegisterPayroll by remember { mutableStateOf(true) }
+    var autoRegisterPayroll by remember { mutableStateOf(false) }
     var exemptionManagementFee by remember { mutableStateOf(true) }
     var exemptionTax4x1000 by remember { mutableStateOf(false) }
     var freeAtmWithdrawals by remember { mutableStateOf(true) }
@@ -379,7 +407,19 @@ fun CreateAccountScreen(
     // Save Account Function
     fun performSaveAccount() {
         if (accountName.isBlank()) {
-            accountErrorMessage = "Ingresa un nombre para la cuenta"
+            val errorMsg = "Ingresa un nombre para la cuenta"
+            accountErrorMessage = errorMsg
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(errorMsg)
+            }
+            return
+        }
+        if (parsedBalanceResult is com.example.domain.currency.ParsedMonetaryInput.Invalid) {
+            val errorMsg = parsedBalanceResult.reason
+            accountErrorMessage = errorMsg
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(errorMsg)
+            }
             return
         }
         accountErrorMessage = null
@@ -457,9 +497,9 @@ fun CreateAccountScreen(
         } else null
 
         coroutineScope.launch {
-            val saved = try {
+            try {
                 val repo = financialRepository ?: appContainer.financialRepository
-                repo.createAccount(
+                val saved = repo.createAccount(
                     name = createdAccount.name,
                     type = createdAccount.type,
                     balance = createdAccount.balance,
@@ -496,11 +536,14 @@ fun CreateAccountScreen(
                     isTaxExempt = createdAccount.isTaxExempt,
                     payrollConfig = payrollConfig
                 )
+                isSaving = false
+                onAccountCreated(saved, payrollConfig)
             } catch (e: Exception) {
-                createdAccount
+                isSaving = false
+                val errorMsg = "Error al crear la cuenta: ${e.localizedMessage ?: "Error en base de datos"}"
+                accountErrorMessage = errorMsg
+                snackbarHostState.showSnackbar(errorMsg)
             }
-            isSaving = false
-            onAccountCreated(saved, payrollConfig)
         }
     }
 
@@ -880,22 +923,24 @@ fun CreateAccountScreen(
                         }
 
                         // Oversized formatted balance input with live thousand dot separators and crisp black text
+                        val isBalanceInvalid = parsedBalanceResult is com.example.domain.currency.ParsedMonetaryInput.Invalid
                         OutlinedTextField(
                             value = rawBalanceInput,
                             onValueChange = { input ->
-                                val clean = input.filter { it.isDigit() || it == '.' }
+                                val clean = input.filter { it.isDigit() || it == '.' || it == ',' || (selectedTypeCode == "CHECKING" && it == '-') }
                                 rawBalanceInput = clean
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("account_balance_input"),
+                            isError = isBalanceInvalid,
                             placeholder = { Text("0", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8)) },
                             leadingIcon = {
                                 Text(
                                     text = "$",
                                     fontSize = 24.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0284C7),
+                                    color = if (isBalanceInvalid) Color(0xFFDC2626) else Color(0xFF0284C7),
                                     modifier = Modifier.padding(start = 12.dp)
                                 )
                             },
@@ -908,14 +953,30 @@ fun CreateAccountScreen(
                                     modifier = Modifier.padding(end = 12.dp)
                                 )
                             },
+                            supportingText = {
+                                if (isBalanceInvalid) {
+                                    Text(
+                                        text = (parsedBalanceResult as com.example.domain.currency.ParsedMonetaryInput.Invalid).reason,
+                                        color = Color(0xFFDC2626),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                } else if (rawBalanceInput.isBlank() || parsedBalanceResult is com.example.domain.currency.ParsedMonetaryInput.Empty) {
+                                    Text(
+                                        text = "Saldo inicial: $0 (Por defecto)",
+                                        color = Color(0xFF64748B),
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            },
                             visualTransformation = AccountCurrencyDotVisualTransformation(),
                             textStyle = TextStyle(
                                 fontSize = 28.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0F172A)
+                                color = if (isBalanceInvalid) Color(0xFFDC2626) else Color(0xFF0F172A)
                             ),
                             singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            keyboardOptions = KeyboardOptions(keyboardType = if (selectedTypeCode == "CHECKING") KeyboardType.Text else KeyboardType.Number),
                             shape = RoundedCornerShape(14.dp),
                             colors = standardFieldColors
                         )

@@ -82,4 +82,32 @@ class FinancialReportsEngineTest {
         assertTrue(analysis.debtLevelPct >= 0.0)
         assertTrue(analysis.projections.isNotEmpty())
     }
+
+    @Test
+    fun testZeroBalanceAccountsInBalanceSheet() {
+        val filter = FinancialPeriodFilter()
+        val zeroAccounts = listOf(
+            com.example.data.local.entity.AccountEntity(
+                id = "acc_zero_1",
+                userId = "user_test",
+                name = "Cuenta Nómina $0",
+                balance = 0.0,
+                type = "PAYROLL"
+            ),
+            com.example.data.local.entity.AccountEntity(
+                id = "acc_zero_2",
+                userId = "user_test",
+                name = "Caja Efectivo $0",
+                balance = 0.0,
+                type = "CASH"
+            )
+        )
+        val summary = engine.computeSummary(zeroAccounts, emptyList(), emptyList(), emptyList(), emptyList(), filter)
+        val balance = engine.computeBalanceSheet(summary, zeroAccounts, emptyList(), emptyList(), emptyList())
+
+        assertEquals(0.0, balance.totalCurrentAssets, 0.001)
+        assertFalse(balance.currentAssets.any { it.id == "ca0" })
+        assertTrue(balance.currentAssets.any { it.id == "ca2" })
+        assertTrue(balance.currentAssets.any { it.id == "ca1" })
+    }
 }

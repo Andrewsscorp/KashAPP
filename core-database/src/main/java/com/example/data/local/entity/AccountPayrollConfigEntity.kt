@@ -35,13 +35,13 @@ data class AccountPayrollConfigEntity(
     @ColumnInfo(name = "default_concept")
     val defaultConcept: String = "Nómina",
     @ColumnInfo(name = "expected_income")
-    val expectedIncome: Double = 4500000.0,
+    val expectedIncome: Double = 0.0,
     @ColumnInfo(name = "periodicity")
     val periodicity: String = "MONTHLY", // 'MONTHLY', 'BIWEEKLY', 'WEEKLY'
     @ColumnInfo(name = "expected_pay_day")
     val expectedPayDay: Int = 30, // Day of month (1 - 31)
     @ColumnInfo(name = "auto_register")
-    val autoRegister: Boolean = true,
+    val autoRegister: Boolean = false,
     @ColumnInfo(name = "exemption_management_fee")
     val exemptionManagementFee: Boolean = true,
     @ColumnInfo(name = "exemption_tax_4x1000")

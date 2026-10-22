@@ -411,11 +411,11 @@ private fun buildRawRubroItems(
             }
             if (cashAccounts.isNotEmpty()) {
                 cashAccounts.map { acc ->
-                    val accBalDouble = acc.balance.coerceAtLeast(1.0)
+                    val accBalDouble = acc.balance
                     val accTxs = roomTransactions.filter { it.accountId == acc.id }
                     val movs = if (accTxs.isNotEmpty()) {
                         accTxs.map { tx ->
-                            val pct = (kotlin.math.abs(tx.amount) / accBalDouble) * 100.0
+                            val pct = if (accBalDouble > 0.0) (kotlin.math.abs(tx.amount) / accBalDouble) * 100.0 else 0.0
                             val txTitle = tx.description?.takeIf { it.isNotBlank() } ?: tx.categoryName ?: "Transacción"
                             AccountMovementDisplay(
                                 id = tx.id,
@@ -428,11 +428,7 @@ private fun buildRawRubroItems(
                             )
                         }
                     } else {
-                        listOf(
-                            AccountMovementDisplay("mov_${acc.id}_1", "Abono Nómina / Depósito Principal", "Ingresos", "15 Sep 2026", accBalDouble * 0.60, 60.0, "Depósito / Abono"),
-                            AccountMovementDisplay("mov_${acc.id}_2", "Transferencia Interbancaria Recibida", "Transferencias", "22 Sep 2026", accBalDouble * 0.25, 25.0, "Depósito / Abono"),
-                            AccountMovementDisplay("mov_${acc.id}_3", "Rendimientos y Saldo Base", "Rendimientos", "01 Oct 2026", accBalDouble * 0.15, 15.0, "Saldo Disponible")
-                        )
+                        emptyList()
                     }
 
                     val rate = acc.interestRateEa
@@ -447,7 +443,7 @@ private fun buildRawRubroItems(
                             "WALLET" -> "Billetera Digital"
                             else -> "Efectivo / Banco"
                         },
-                        amount = BigDecimal.valueOf(acc.balance.coerceAtLeast(0.0)),
+                        amount = BigDecimal.valueOf(acc.balance),
                         currency = acc.currency,
                         rateEa = if (rate != null && rate > 0) rate else null,
                         status = if (acc.balance >= 0) "Positivo" else "Sobregiro",
@@ -511,9 +507,9 @@ private fun buildRawRubroItems(
                     val rate = config?.purchasesRateEa?.takeIf { it > 0.0 }
                         ?: config?.interestRateEa?.takeIf { it > 0.0 }
                         ?: (if (acc.overdraftRateEa > 0) acc.overdraftRateEa else 24.5)
+                    val used = config?.quotaUsed ?: kotlin.math.abs(acc.balance)
                     val limit = config?.quotaTotal?.takeIf { it > 0.0 }
-                        ?: (if (acc.overdraftLimit > 0) acc.overdraftLimit else (acc.balance.coerceAtLeast(0.0) + 3000000.0))
-                    val used = config?.quotaUsed?.takeIf { it > 0.0 } ?: kotlin.math.abs(acc.balance).coerceAtLeast(1200000.0)
+                        ?: (if (acc.overdraftLimit > 0) acc.overdraftLimit else (if (used > 0.0) used else 0.0))
                     val available = config?.quotaAvailable ?: (limit - used).coerceAtLeast(0.0)
 
                     val accTxs = roomTransactions.filter {
