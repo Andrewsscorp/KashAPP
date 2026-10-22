@@ -743,6 +743,9 @@ interface FinancialDao {
     @Query("SELECT * FROM investments WHERE userId = :userId ORDER BY isFavorite DESC, createdAt DESC")
     fun getInvestmentsFlow(userId: String): Flow<List<com.example.data.local.entity.InvestmentEntity>>
 
+    @Query("SELECT * FROM investments WHERE userId = :userId ORDER BY isFavorite DESC, createdAt DESC")
+    suspend fun getInvestments(userId: String): List<com.example.data.local.entity.InvestmentEntity>
+
     @Query("SELECT * FROM investments WHERE id = :id LIMIT 1")
     suspend fun getInvestmentById(id: String): com.example.data.local.entity.InvestmentEntity?
 

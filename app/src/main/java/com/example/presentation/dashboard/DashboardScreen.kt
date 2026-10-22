@@ -531,6 +531,7 @@ fun DashboardScreen(
         val context = LocalContext.current
         val appContainer = (context.applicationContext as KashAppApplication).appContainer
         val settingsViewModel: SettingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+            key = "settings_vm_${viewModel.userId}",
             factory = SettingsViewModel.Factory(
                 repository = appContainer.settingsRepository,
                 authRepository = appContainer.authRepository,
@@ -658,11 +659,13 @@ fun DashboardScreen(
         val context = LocalContext.current
         val appContainer = (context.applicationContext as KashAppApplication).appContainer
         val ccViewModel: CreditCardFormViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+            key = "credit_card_vm_${viewModel.userId}",
             factory = CreditCardFormViewModel.provideFactory(
                 createCreditCardUseCase = appContainer.createCreditCardUseCase,
                 validateCreditLimitsUseCase = appContainer.validateCreditLimitsUseCase,
                 calculateNextBillingDatesUseCase = appContainer.calculateNextBillingDatesUseCase,
-                financialRepository = viewModel.financialRepository
+                financialRepository = viewModel.financialRepository,
+                userId = viewModel.userId
             )
         )
         AddCreditCardScreen(
@@ -812,10 +815,12 @@ fun DashboardScreen(
         val context = LocalContext.current
         val appContainer = (context.applicationContext as KashAppApplication).appContainer
         val trmViewModel: CurrencyTrmViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+            key = "currency_trm_vm_${viewModel.userId}",
             factory = CurrencyTrmViewModelFactory(
                 exchangeRateRepository = appContainer.exchangeRateRepository,
                 settingsRepository = appContainer.settingsRepository,
-                testSuite = appContainer.exchangeRateTestSuite
+                testSuite = appContainer.exchangeRateTestSuite,
+                userId = viewModel.userId
             )
         )
         androidx.activity.compose.BackHandler {
@@ -1148,12 +1153,13 @@ fun DashboardScreen(
             showAuditVault = false
         }
         val auditViewModel: com.example.presentation.audit.AuditViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+            key = "audit_vm_${viewModel.userId}",
             factory = com.example.presentation.audit.AuditViewModelFactory(
                 auditSecurityLogDao = appContainer.securityDatabase.auditSecurityLogDao(),
                 assetAuditLogDao = appContainer.securityDatabase.assetAuditLogDao(),
                 financialDao = appContainer.securityDatabase.financialDao(),
                 fixedAssetDao = appContainer.securityDatabase.fixedAssetDao(),
-                userId = uiState.userName.ifBlank { "user_default" }
+                userId = viewModel.userId
             )
         )
         com.example.presentation.audit.AuditModuleScreen(
@@ -1162,7 +1168,7 @@ fun DashboardScreen(
         )
     }
 
-    val roomCategories by appContainer.financialDao.getCategoriesFlow().collectAsStateWithLifecycle(initialValue = emptyList())
+    val roomCategories by appContainer.financialDao.getCategoriesFlow(viewModel.userId).collectAsStateWithLifecycle(initialValue = emptyList())
     val roomTags by appContainer.financialDao.getTagsFlow().collectAsStateWithLifecycle(initialValue = emptyList())
 
     if (showAutoCaptureInbox) {

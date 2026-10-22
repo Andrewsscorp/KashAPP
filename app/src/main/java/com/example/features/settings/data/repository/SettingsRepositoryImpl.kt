@@ -19,119 +19,127 @@ class SettingsRepositoryImpl(
         context.getSharedPreferences("kashapp_enterprise_settings_prefs", Context.MODE_PRIVATE)
     }
 
-    private val _preferencesFlow = MutableStateFlow(loadInitialPreferences())
+    private val _userPreferencesFlows = java.util.concurrent.ConcurrentHashMap<String, MutableStateFlow<UserPreferencesDomain>>()
+    private val _preferencesFlow = MutableStateFlow(loadPreferences("user_default"))
 
-    private fun loadInitialPreferences(): UserPreferencesDomain {
-        val accepted = prefs.getBoolean("privacy_policy_accepted", false)
-        val version = prefs.getString("privacy_policy_version", "1.0-LEY-1581-2012") ?: "1.0-LEY-1581-2012"
-        val timestamp = prefs.getLong("privacy_policy_accepted_timestamp", 0L)
+    private fun k(userId: String, key: String): String = if (userId.isBlank()) key else "${userId}_$key"
+
+    private fun loadPreferences(userId: String): UserPreferencesDomain {
+        val uId = if (userId.isBlank()) "user_default" else userId
+        val accepted = prefs.getBoolean(k(uId, "privacy_policy_accepted"), prefs.getBoolean("privacy_policy_accepted", false))
+        val version = prefs.getString(k(uId, "privacy_policy_version"), prefs.getString("privacy_policy_version", "1.0-LEY-1581-2012")) ?: "1.0-LEY-1581-2012"
+        val timestamp = prefs.getLong(k(uId, "privacy_policy_accepted_timestamp"), prefs.getLong("privacy_policy_accepted_timestamp", 0L))
         com.example.domain.security.FirebaseApiProtectionGuard.setPrivacyConsent(
             granted = accepted,
             version = version,
             timestampMs = timestamp
         )
         return UserPreferencesDomain(
-            userId = "user_default",
-            language = prefs.getString("language", "es") ?: "es",
-            baseCurrency = prefs.getString("base_currency", "COP") ?: "COP",
-            theme = prefs.getString("theme", "SYSTEM") ?: "SYSTEM",
-            fontSize = prefs.getString("font_size", "MEDIUM") ?: "MEDIUM",
-            biometricsEnabled = prefs.getBoolean("biometrics_enabled", false),
-            pushNotifications = prefs.getBoolean("push_notifications", true),
-            budgetAlertsEnabled = prefs.getBoolean("budget_alerts_enabled", true),
-            paymentRemindersEnabled = prefs.getBoolean("payment_reminders_enabled", true),
-            weeklySummaryEnabled = prefs.getBoolean("weekly_summary_enabled", true),
-            monthlySummaryEnabled = prefs.getBoolean("monthly_summary_enabled", true),
-            wifiOnlySync = prefs.getBoolean("wifi_only_sync", false),
-            privacyModeEnabled = prefs.getBoolean("privacy_mode_enabled", false),
-            excludeAllAccountsFromDashboard = prefs.getBoolean("exclude_all_accounts_dashboard", false),
-            excludedAccountIds = prefs.getStringSet("excluded_account_ids", emptySet()) ?: emptySet(),
-            autoNoAffectInventoryForAssets = prefs.getBoolean("auto_no_affect_inventory_for_assets", false),
-            autoNoAffectDashboardForAssets = prefs.getBoolean("auto_no_affect_dashboard_for_assets", false),
-            excludeAllFixedAssetsFromDashboard = prefs.getBoolean("exclude_all_fixed_assets_dashboard", false),
+            userId = uId,
+            language = prefs.getString(k(uId, "language"), prefs.getString("language", "es")) ?: "es",
+            baseCurrency = prefs.getString(k(uId, "base_currency"), prefs.getString("base_currency", "COP")) ?: "COP",
+            theme = prefs.getString(k(uId, "theme"), prefs.getString("theme", "SYSTEM")) ?: "SYSTEM",
+            fontSize = prefs.getString(k(uId, "font_size"), prefs.getString("font_size", "MEDIUM")) ?: "MEDIUM",
+            biometricsEnabled = prefs.getBoolean(k(uId, "biometrics_enabled"), prefs.getBoolean("biometrics_enabled", false)),
+            pushNotifications = prefs.getBoolean(k(uId, "push_notifications"), prefs.getBoolean("push_notifications", true)),
+            budgetAlertsEnabled = prefs.getBoolean(k(uId, "budget_alerts_enabled"), prefs.getBoolean("budget_alerts_enabled", true)),
+            paymentRemindersEnabled = prefs.getBoolean(k(uId, "payment_reminders_enabled"), prefs.getBoolean("payment_reminders_enabled", true)),
+            weeklySummaryEnabled = prefs.getBoolean(k(uId, "weekly_summary_enabled"), prefs.getBoolean("weekly_summary_enabled", true)),
+            monthlySummaryEnabled = prefs.getBoolean(k(uId, "monthly_summary_enabled"), prefs.getBoolean("monthly_summary_enabled", true)),
+            wifiOnlySync = prefs.getBoolean(k(uId, "wifi_only_sync"), prefs.getBoolean("wifi_only_sync", false)),
+            privacyModeEnabled = prefs.getBoolean(k(uId, "privacy_mode_enabled"), prefs.getBoolean("privacy_mode_enabled", false)),
+            excludeAllAccountsFromDashboard = prefs.getBoolean(k(uId, "exclude_all_accounts_dashboard"), prefs.getBoolean("exclude_all_accounts_dashboard", false)),
+            excludedAccountIds = prefs.getStringSet(k(uId, "excluded_account_ids"), prefs.getStringSet("excluded_account_ids", emptySet())) ?: emptySet(),
+            autoNoAffectInventoryForAssets = prefs.getBoolean(k(uId, "auto_no_affect_inventory_for_assets"), prefs.getBoolean("auto_no_affect_inventory_for_assets", false)),
+            autoNoAffectDashboardForAssets = prefs.getBoolean(k(uId, "auto_no_affect_dashboard_for_assets"), prefs.getBoolean("auto_no_affect_dashboard_for_assets", false)),
+            excludeAllFixedAssetsFromDashboard = prefs.getBoolean(k(uId, "exclude_all_fixed_assets_dashboard"), prefs.getBoolean("exclude_all_fixed_assets_dashboard", false)),
             privacyPolicyAccepted = accepted,
             privacyPolicyVersion = version,
             privacyPolicyAcceptedTimestamp = timestamp,
-            version = prefs.getLong("version", 1L)
+            version = prefs.getLong(k(uId, "version"), prefs.getLong("version", 1L))
         )
     }
 
     override fun observePreferences(userId: String): Flow<UserPreferencesDomain> {
-        return _preferencesFlow.asStateFlow()
+        val uId = if (userId.isBlank()) "user_default" else userId
+        return _userPreferencesFlows.getOrPut(uId) { MutableStateFlow(loadPreferences(uId)) }.asStateFlow()
     }
 
     override suspend fun getPreferences(userId: String): UserPreferencesDomain {
-        return _preferencesFlow.value
+        val uId = if (userId.isBlank()) "user_default" else userId
+        return _userPreferencesFlows.getOrPut(uId) { MutableStateFlow(loadPreferences(uId)) }.value
     }
 
     override suspend fun updatePreferences(preferences: UserPreferencesDomain): Result<UserPreferencesDomain> {
+        val uId = if (preferences.userId.isBlank()) "user_default" else preferences.userId
         val nextVersion = preferences.version + 1
-        val updated = preferences.copy(version = nextVersion, updatedAt = System.currentTimeMillis())
+        val updated = preferences.copy(userId = uId, version = nextVersion, updatedAt = System.currentTimeMillis())
         prefs.edit()
-            .putString("language", updated.language)
-            .putString("base_currency", updated.baseCurrency)
-            .putString("theme", updated.theme)
-            .putString("font_size", updated.fontSize)
-            .putBoolean("biometrics_enabled", updated.biometricsEnabled)
-            .putBoolean("push_notifications", updated.pushNotifications)
-            .putBoolean("budget_alerts_enabled", updated.budgetAlertsEnabled)
-            .putBoolean("payment_reminders_enabled", updated.paymentRemindersEnabled)
-            .putBoolean("weekly_summary_enabled", updated.weeklySummaryEnabled)
-            .putBoolean("monthly_summary_enabled", updated.monthlySummaryEnabled)
-            .putBoolean("wifi_only_sync", updated.wifiOnlySync)
-            .putBoolean("privacy_mode_enabled", updated.privacyModeEnabled)
-            .putBoolean("exclude_all_accounts_dashboard", updated.excludeAllAccountsFromDashboard)
-            .putStringSet("excluded_account_ids", updated.excludedAccountIds)
-            .putBoolean("auto_no_affect_inventory_for_assets", updated.autoNoAffectInventoryForAssets)
-            .putBoolean("auto_no_affect_dashboard_for_assets", updated.autoNoAffectDashboardForAssets)
-            .putBoolean("exclude_all_fixed_assets_dashboard", updated.excludeAllFixedAssetsFromDashboard)
-            .putBoolean("privacy_policy_accepted", updated.privacyPolicyAccepted)
-            .putString("privacy_policy_version", updated.privacyPolicyVersion)
-            .putLong("privacy_policy_accepted_timestamp", updated.privacyPolicyAcceptedTimestamp)
-            .putLong("version", nextVersion)
+            .putString(k(uId, "language"), updated.language)
+            .putString(k(uId, "base_currency"), updated.baseCurrency)
+            .putString(k(uId, "theme"), updated.theme)
+            .putString(k(uId, "font_size"), updated.fontSize)
+            .putBoolean(k(uId, "biometrics_enabled"), updated.biometricsEnabled)
+            .putBoolean(k(uId, "push_notifications"), updated.pushNotifications)
+            .putBoolean(k(uId, "budget_alerts_enabled"), updated.budgetAlertsEnabled)
+            .putBoolean(k(uId, "payment_reminders_enabled"), updated.paymentRemindersEnabled)
+            .putBoolean(k(uId, "weekly_summary_enabled"), updated.weeklySummaryEnabled)
+            .putBoolean(k(uId, "monthly_summary_enabled"), updated.monthlySummaryEnabled)
+            .putBoolean(k(uId, "wifi_only_sync"), updated.wifiOnlySync)
+            .putBoolean(k(uId, "privacy_mode_enabled"), updated.privacyModeEnabled)
+            .putBoolean(k(uId, "exclude_all_accounts_dashboard"), updated.excludeAllAccountsFromDashboard)
+            .putStringSet(k(uId, "excluded_account_ids"), updated.excludedAccountIds)
+            .putBoolean(k(uId, "auto_no_affect_inventory_for_assets"), updated.autoNoAffectInventoryForAssets)
+            .putBoolean(k(uId, "auto_no_affect_dashboard_for_assets"), updated.autoNoAffectDashboardForAssets)
+            .putBoolean(k(uId, "exclude_all_fixed_assets_dashboard"), updated.excludeAllFixedAssetsFromDashboard)
+            .putBoolean(k(uId, "privacy_policy_accepted"), updated.privacyPolicyAccepted)
+            .putString(k(uId, "privacy_policy_version"), updated.privacyPolicyVersion)
+            .putLong(k(uId, "privacy_policy_accepted_timestamp"), updated.privacyPolicyAcceptedTimestamp)
+            .putLong(k(uId, "version"), nextVersion)
             .apply()
 
+        _userPreferencesFlows.getOrPut(uId) { MutableStateFlow(updated) }.value = updated
         _preferencesFlow.value = updated
         return Result.success(updated)
     }
 
     override suspend fun togglePrivacyMode(userId: String, enabled: Boolean): Result<Unit> {
-        val current = _preferencesFlow.value
+        val current = getPreferences(userId)
         return updatePreferences(current.copy(privacyModeEnabled = enabled)).map { }
     }
 
     override suspend fun setBaseCurrency(userId: String, currency: String): Result<Unit> {
-        val current = _preferencesFlow.value
+        val current = getPreferences(userId)
         return updatePreferences(current.copy(baseCurrency = currency)).map { }
     }
 
     override suspend fun setLanguage(userId: String, language: String): Result<Unit> {
-        val current = _preferencesFlow.value
+        val current = getPreferences(userId)
         return updatePreferences(current.copy(language = language)).map { }
     }
 
     override suspend fun setTheme(userId: String, theme: String): Result<Unit> {
-        val current = _preferencesFlow.value
+        val current = getPreferences(userId)
         return updatePreferences(current.copy(theme = theme)).map { }
     }
 
     override suspend fun setBiometricsEnabled(userId: String, enabled: Boolean): Result<Unit> {
-        val current = _preferencesFlow.value
+        val current = getPreferences(userId)
         return updatePreferences(current.copy(biometricsEnabled = enabled)).map { }
     }
 
     override suspend fun setBudgetAlertsEnabled(userId: String, enabled: Boolean): Result<Unit> {
-        val current = _preferencesFlow.value
+        val current = getPreferences(userId)
         return updatePreferences(current.copy(budgetAlertsEnabled = enabled)).map { }
     }
 
     override suspend fun setPaymentRemindersEnabled(userId: String, enabled: Boolean): Result<Unit> {
-        val current = _preferencesFlow.value
+        val current = getPreferences(userId)
         return updatePreferences(current.copy(paymentRemindersEnabled = enabled)).map { }
     }
 
     override suspend fun setExcludeAllAccountsFromDashboard(userId: String, excluded: Boolean): Result<Unit> {
-        val current = _preferencesFlow.value
+        val current = getPreferences(userId)
         val res = updatePreferences(current.copy(excludeAllAccountsFromDashboard = excluded))
         try {
             auditSecurityLogDao?.insertLog(
@@ -146,7 +154,7 @@ class SettingsRepositoryImpl(
     }
 
     override suspend fun setAccountExcludedFromDashboard(userId: String, accountId: String, excluded: Boolean): Result<Unit> {
-        val current = _preferencesFlow.value
+        val current = getPreferences(userId)
         val newSet = if (excluded) {
             current.excludedAccountIds + accountId
         } else {
@@ -166,12 +174,12 @@ class SettingsRepositoryImpl(
     }
 
     override suspend fun isAccountExcluded(userId: String, accountId: String): Boolean {
-        val current = _preferencesFlow.value
+        val current = getPreferences(userId)
         return current.excludeAllAccountsFromDashboard || current.excludedAccountIds.contains(accountId)
     }
 
     override suspend fun setAutoNoAffectInventoryForAssets(userId: String, enabled: Boolean): Result<Unit> {
-        val current = _preferencesFlow.value
+        val current = getPreferences(userId)
         val res = updatePreferences(current.copy(autoNoAffectInventoryForAssets = enabled))
         try {
             auditSecurityLogDao?.insertLog(
@@ -202,7 +210,7 @@ class SettingsRepositoryImpl(
     }
 
     override suspend fun setAutoNoAffectDashboardForAssets(userId: String, enabled: Boolean): Result<Unit> {
-        val current = _preferencesFlow.value
+        val current = getPreferences(userId)
         val res = updatePreferences(current.copy(autoNoAffectDashboardForAssets = enabled))
         try {
             auditSecurityLogDao?.insertLog(
@@ -217,7 +225,7 @@ class SettingsRepositoryImpl(
     }
 
     override suspend fun setExcludeAllFixedAssetsFromDashboard(userId: String, excluded: Boolean): Result<Unit> {
-        val current = _preferencesFlow.value
+        val current = getPreferences(userId)
         val res = updatePreferences(current.copy(excludeAllFixedAssetsFromDashboard = excluded))
         try {
             auditSecurityLogDao?.insertLog(
@@ -249,7 +257,7 @@ class SettingsRepositoryImpl(
 
     override suspend fun setPrivacyPolicyConsent(userId: String, accepted: Boolean, version: String): Result<Unit> {
         val now = System.currentTimeMillis()
-        val current = _preferencesFlow.value
+        val current = getPreferences(userId)
         val res = updatePreferences(
             current.copy(
                 privacyPolicyAccepted = accepted,
@@ -275,12 +283,21 @@ class SettingsRepositoryImpl(
     }
 
     override suspend fun isPrivacyPolicyAccepted(userId: String): Boolean {
-        return _preferencesFlow.value.privacyPolicyAccepted
+        return getPreferences(userId).privacyPolicyAccepted
     }
 
     override suspend fun executeProtocolLogout(userId: String): Result<Unit> {
         // Enforce protocol: purge active user cache
-        prefs.edit().clear().apply()
+        val uId = if (userId.isBlank()) "user_default" else userId
+        val editor = prefs.edit()
+        val allKeys = prefs.all.keys
+        for (key in allKeys) {
+            if (key.startsWith("${uId}_")) {
+                editor.remove(key)
+            }
+        }
+        editor.apply()
+        _userPreferencesFlows.remove(uId)
         _preferencesFlow.value = UserPreferencesDomain()
         return Result.success(Unit)
     }

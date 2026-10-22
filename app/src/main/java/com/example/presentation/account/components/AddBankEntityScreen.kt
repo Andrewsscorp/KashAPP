@@ -228,7 +228,7 @@ fun AddBankEntityScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
-            val saveResult = secureDocManager.saveDocumentSafely(uri, userId = "user_default")
+            val saveResult = secureDocManager.saveDocumentSafely(uri, userId = userId)
             if (saveResult.isSuccess) {
                 val saved = saveResult.getOrThrow()
                 attachedFileUri = Uri.parse(saved.localUri)

@@ -902,7 +902,8 @@ fun CreateTransferScreen(
                 showNewAccountDialog = false
             },
             onDismiss = { showNewAccountDialog = false },
-            financialRepository = financialRepository
+            financialRepository = financialRepository,
+            userId = userId
         )
     }
 }

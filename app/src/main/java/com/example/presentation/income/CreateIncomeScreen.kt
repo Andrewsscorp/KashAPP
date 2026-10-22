@@ -768,7 +768,8 @@ fun CreateIncomeScreen(
                 showCreateAccountModal = false
             },
             onDismiss = { showCreateAccountModal = false },
-            financialRepository = financialRepository
+            financialRepository = financialRepository,
+            userId = userId
         )
     }
 }

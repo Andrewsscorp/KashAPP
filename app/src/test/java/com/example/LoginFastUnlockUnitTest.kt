@@ -147,7 +147,8 @@ class LoginFastUnlockUnitTest {
             auditSecurityLogDao = fakeAuditLogDao,
             firebaseDataSource = FirebaseDataSource(context),
             googleDriveManager = GoogleDriveManager(context),
-            keystoreCryptoManager = cryptoManager
+            keystoreCryptoManager = cryptoManager,
+            ioDispatcher = testDispatcher
         )
         authenticateUserUseCase = AuthenticateUserUseCase(authRepository)
     }

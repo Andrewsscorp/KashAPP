@@ -1372,7 +1372,7 @@ fun CreateFixedAssetScreen(
 
     // ADVANCED DEPRECIATION OPTIONS MODAL (CONFIGURACIÓN AVANZADA NIIF)
     if (showAdvancedSettingsSheet) {
-        val tempAsset = formState.toEntity(userId = "user_default")
+        val tempAsset = formState.toEntity(userId = userId)
         AdvancedDepreciationOptionsIPhoneSheet(
             asset = tempAsset,
             initialSettings = tempAsset.toAdvancedSettings(),

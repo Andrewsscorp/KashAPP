@@ -1243,7 +1243,8 @@ private fun EditAccountModal(
                 LiveCurrencyConversionPreview(
                     amount = balDouble,
                     inputCurrency = selectedCurrency,
-                    isDarkTheme = true
+                    isDarkTheme = true,
+                    userId = account.userId
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))

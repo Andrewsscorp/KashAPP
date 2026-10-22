@@ -19,6 +19,7 @@ interface FinancialRepository {
     fun getAccounts(userId: String): Flow<List<AccountEntity>>
     suspend fun getAccountsSnapshot(userId: String): List<AccountEntity> = emptyList()
     fun getCategories(): Flow<List<CategoryEntity>>
+    fun getCategories(userId: String): Flow<List<CategoryEntity>>
     fun getTransactions(userId: String): Flow<List<TransactionEntity>>
     suspend fun getTransactionsSnapshot(userId: String): List<TransactionEntity> = emptyList()
     fun getIncomeSources(userId: String): Flow<List<IncomeSourceEntity>>
@@ -215,6 +216,7 @@ interface FinancialRepository {
     // Credit Cards (Pasivos Rotativos)
     fun getAccountCreditCard(accountId: String): Flow<com.example.data.local.entity.AccountCreditCardEntity?>
     fun getAllAccountCreditCards(): Flow<List<com.example.data.local.entity.AccountCreditCardEntity>>
+    fun getAccountCreditCards(userId: String): Flow<List<com.example.data.local.entity.AccountCreditCardEntity>>
     suspend fun createCreditCardAccount(
         cardAccount: AccountEntity,
         cardConfig: com.example.data.local.entity.AccountCreditCardEntity

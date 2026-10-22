@@ -90,7 +90,7 @@ fun FinancialRubroDetailScreen(
     val accountsState = financialRepository?.getAccounts(userId)?.collectAsState(initial = emptyList())
     val roomAccounts = accountsState?.value ?: emptyList()
 
-    val cardConfigsState = financialRepository?.getAllAccountCreditCards()?.collectAsState(initial = emptyList())
+    val cardConfigsState = financialRepository?.getAccountCreditCards(userId)?.collectAsState(initial = emptyList())
     val cardConfigs = cardConfigsState?.value ?: emptyList()
     val cardConfigsByAccountId = remember(cardConfigs) { cardConfigs.associateBy { it.accountId } }
 

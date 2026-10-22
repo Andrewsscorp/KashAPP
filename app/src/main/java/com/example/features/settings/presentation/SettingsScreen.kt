@@ -220,7 +220,7 @@ fun SettingsScreen(
                                 assetAuditLogDao = appContainer.securityDatabase.assetAuditLogDao(),
                                 financialDao = appContainer.securityDatabase.financialDao(),
                                 fixedAssetDao = appContainer.securityDatabase.fixedAssetDao(),
-                                userId = uiState.userEmail.ifBlank { "user_default" }
+                                userId = viewModel.userId
                             )
                         )
                         com.example.presentation.audit.AuditModuleScreen(
@@ -243,10 +243,12 @@ fun SettingsScreen(
                         val context = LocalContext.current
                         val appContainer = (context.applicationContext as KashAppApplication).appContainer
                         val trmViewModel: CurrencyTrmViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                            key = "currency_trm_vm_${viewModel.userId}",
                             factory = CurrencyTrmViewModelFactory(
                                 exchangeRateRepository = appContainer.exchangeRateRepository,
                                 settingsRepository = appContainer.settingsRepository,
-                                testSuite = appContainer.exchangeRateTestSuite
+                                testSuite = appContainer.exchangeRateTestSuite,
+                                userId = viewModel.userId
                             )
                         )
                         CurrencyTrmScreen(
@@ -272,7 +274,8 @@ fun SettingsScreen(
                     SettingsSubRoute.CUENTAS_ENTIDADES -> {
                         SettingsAccountsSubScreen(
                             onShowMessage = { viewModel.showStatusMessage(it) },
-                            onBack = { viewModel.navigateBackToMain() }
+                            onBack = { viewModel.navigateBackToMain() },
+                            userId = viewModel.userId
                         )
                     }
                     SettingsSubRoute.TIENDA -> {
@@ -289,7 +292,7 @@ fun SettingsScreen(
                             factory = com.example.presentation.thirdparty.ThirdPartyViewModel.Factory(
                                 thirdPartyRepository = appContainer.thirdPartyRepository,
                                 fixedAssetDao = appContainer.securityDatabase.fixedAssetDao(),
-                                userId = uiState.userEmail.ifBlank { "user_default" }
+                                userId = viewModel.userId
                             )
                         )
                         com.example.features.settings.presentation.screens.SettingsThirdPartiesSubScreen(

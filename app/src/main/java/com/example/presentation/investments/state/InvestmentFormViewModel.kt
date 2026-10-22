@@ -19,7 +19,8 @@ import java.util.UUID
 
 class InvestmentFormViewModel(
     private val financialRepository: FinancialRepository,
-    private val calculateRoiUseCase: CalculateInvestmentRoiUseCase = CalculateInvestmentRoiUseCase()
+    private val calculateRoiUseCase: CalculateInvestmentRoiUseCase = CalculateInvestmentRoiUseCase(),
+    val userId: String = "kash_user_01"
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(InvestmentFormState())
@@ -42,7 +43,7 @@ class InvestmentFormViewModel(
 
     private fun loadAccountsAndBanks() {
         viewModelScope.launch {
-            financialRepository.getAccounts("user_default").collect { accounts ->
+            financialRepository.getAccounts(userId).collect { accounts ->
                 _uiState.update { state ->
                     val defaultOrigin = if (state.originAccountId.isBlank()) {
                         accounts.firstOrNull { it.type.equals("SAVINGS", ignoreCase = true) || it.type.equals("CHECKING", ignoreCase = true) }
@@ -60,7 +61,7 @@ class InvestmentFormViewModel(
         }
 
         viewModelScope.launch {
-            financialRepository.getBanks("user_default").collect { banks ->
+            financialRepository.getBanks(userId).collect { banks ->
                 _uiState.update { state ->
                     val defaultBank = if (state.institutionId == null) {
                         banks.firstOrNull { it.name.contains("Bancolombia", ignoreCase = true) } ?: banks.firstOrNull()
@@ -312,7 +313,7 @@ class InvestmentFormViewModel(
         viewModelScope.launch {
             val code = clearingCode.ifBlank { name.take(4).uppercase() }
             val result = financialRepository.createBank(
-                userId = "user_default",
+                userId = userId,
                 name = name.trim(),
                 clearingCode = code,
                 countryCode = "CO",
@@ -358,7 +359,7 @@ class InvestmentFormViewModel(
 
             val investment = InvestmentEntity(
                 id = investmentId,
-                userId = "user_default",
+                userId = userId,
                 name = cleanName,
                 typeId = state.typeId,
                 typeName = state.typeName,
@@ -415,11 +416,14 @@ class InvestmentFormViewModel(
     }
 
     companion object {
-        fun provideFactory(financialRepository: FinancialRepository): ViewModelProvider.Factory =
+        fun provideFactory(
+            financialRepository: FinancialRepository,
+            userId: String = "kash_user_01"
+        ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return InvestmentFormViewModel(financialRepository) as T
+                    return InvestmentFormViewModel(financialRepository, userId = userId) as T
                 }
             }
     }

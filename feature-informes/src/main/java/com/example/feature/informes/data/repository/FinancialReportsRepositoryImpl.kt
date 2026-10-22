@@ -67,7 +67,7 @@ class FinancialReportsRepositoryImpl(
             financialDao.getTransactionsFlow(userId),
             fixedAssetDao.observeAssets(userId),
             financialDao.getInvestmentsFlow(userId),
-            financialDao.getAllAccountCreditCardsFlow()
+            financialDao.getAccountCreditCardsByUserFlow(userId)
         ) { accounts, transactions, assets, investments, creditCards ->
              Quintuple(accounts, transactions, assets, investments, creditCards)
         }
@@ -93,7 +93,7 @@ class FinancialReportsRepositoryImpl(
             financialDao.getAccountsFlow(userId),
             fixedAssetDao.observeAssets(userId),
             financialDao.getInvestmentsFlow(userId),
-            financialDao.getAllAccountCreditCardsFlow()
+            financialDao.getAccountCreditCardsByUserFlow(userId)
         ) { summary, accounts, assets, investments, creditCards ->
             Quintuple(summary, accounts, assets, investments, creditCards)
         }
@@ -155,7 +155,7 @@ class FinancialReportsRepositoryImpl(
             financialDao.getAccountsFlow(userId),
             fixedAssetDao.observeAssets(userId),
             financialDao.getInvestmentsFlow(userId),
-            financialDao.getAllAccountCreditCardsFlow(),
+            financialDao.getAccountCreditCardsByUserFlow(userId),
             observeIncomeStatement(userId, filter)
         ) { accounts, assets, investments, creditCards, incomeStatement ->
             calculationEngine.computeSpecializedReports(
@@ -200,7 +200,7 @@ class FinancialReportsRepositoryImpl(
     }
 
     override fun observeDocumentSupports(userId: String): Flow<List<DocumentSupportItem>> {
-        return documentSupportManager.documents
+        return documentSupportManager.observeDocuments(userId)
     }
 
     override suspend fun addDocumentSupport(doc: DocumentSupportItem) {
@@ -222,9 +222,9 @@ class FinancialReportsRepositoryImpl(
     ): CalculationTraceDetail {
         val accounts = financialDao.getAccounts(userId)
         val transactions = financialDao.getTransactions(userId)
-        val assets = emptyList<com.example.data.local.entity.FixedAssetEntity>()
-        val investments = emptyList<com.example.data.local.entity.InvestmentEntity>()
-        val creditCards = financialDao.getAllAccountCreditCards()
+        val assets = fixedAssetDao.getAssets(userId)
+        val investments = financialDao.getInvestments(userId)
+        val creditCards = financialDao.getAccountCreditCardsByUser(userId)
 
         val summary = calculationEngine.computeSummary(accounts, transactions, assets, investments, creditCards, filter)
         val balanceSheet = calculationEngine.computeBalanceSheet(summary, accounts, assets, investments, creditCards)
@@ -242,9 +242,9 @@ class FinancialReportsRepositoryImpl(
     ): String {
         val accounts = financialDao.getAccounts(userId)
         val transactions = financialDao.getTransactions(userId)
-        val assets = emptyList<com.example.data.local.entity.FixedAssetEntity>()
-        val investments = emptyList<com.example.data.local.entity.InvestmentEntity>()
-        val creditCards = financialDao.getAllAccountCreditCards()
+        val assets = fixedAssetDao.getAssets(userId)
+        val investments = financialDao.getInvestments(userId)
+        val creditCards = financialDao.getAccountCreditCardsByUser(userId)
 
         val summary = calculationEngine.computeSummary(accounts, transactions, assets, investments, creditCards, filter)
         val balanceSheet = calculationEngine.computeBalanceSheet(summary, accounts, assets, investments, creditCards)
@@ -268,9 +268,9 @@ class FinancialReportsRepositoryImpl(
     ): File {
         val accounts = financialDao.getAccounts(userId)
         val transactions = financialDao.getTransactions(userId)
-        val assets = emptyList<com.example.data.local.entity.FixedAssetEntity>()
-        val investments = emptyList<com.example.data.local.entity.InvestmentEntity>()
-        val creditCards = financialDao.getAllAccountCreditCards()
+        val assets = fixedAssetDao.getAssets(userId)
+        val investments = financialDao.getInvestments(userId)
+        val creditCards = financialDao.getAccountCreditCardsByUser(userId)
 
         val summary = calculationEngine.computeSummary(accounts, transactions, assets, investments, creditCards, filter)
         val balanceSheet = calculationEngine.computeBalanceSheet(summary, accounts, assets, investments, creditCards)

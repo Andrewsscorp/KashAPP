@@ -170,7 +170,7 @@ fun CreateCardPurchaseScreen(
     // 1. Fetch Room Accounts and Credit Card Configurations
     val roomAccountsState = financialRepository?.getAccounts(userId)?.collectAsState(initial = emptyList())
     val roomAccounts = roomAccountsState?.value ?: emptyList()
-    val cardConfigsState = financialRepository?.getAllAccountCreditCards()?.collectAsState(initial = emptyList())
+    val cardConfigsState = financialRepository?.getAccountCreditCards(userId)?.collectAsState(initial = emptyList())
     val cardConfigs = cardConfigsState?.value ?: emptyList()
     val cardConfigsByAccountId = remember(cardConfigs) { cardConfigs.associateBy { it.accountId } }
 

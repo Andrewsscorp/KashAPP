@@ -146,6 +146,7 @@ class FakeFinancialRepository : FinancialRepository {
 
     override fun getAccounts(userId: String): Flow<List<AccountEntity>> = flowOf(accounts.values.toList())
     override fun getCategories(): Flow<List<CategoryEntity>> = categoriesState
+    override fun getCategories(userId: String): Flow<List<CategoryEntity>> = categoriesState
     override fun getTransactions(userId: String): Flow<List<TransactionEntity>> = flowOf(emptyList())
     override fun getIncomeSources(userId: String): Flow<List<IncomeSourceEntity>> = flowOf(emptyList())
 
@@ -413,6 +414,9 @@ class FakeFinancialRepository : FinancialRepository {
 
     override fun getAllAccountCreditCards(): Flow<List<AccountCreditCardEntity>> =
         flowOf(creditCards.values.toList())
+
+    override fun getAccountCreditCards(userId: String): Flow<List<AccountCreditCardEntity>> =
+        flowOf(creditCards.values.filter { accounts[it.accountId]?.userId == userId })
 
     override suspend fun createCreditCardAccount(
         cardAccount: AccountEntity,

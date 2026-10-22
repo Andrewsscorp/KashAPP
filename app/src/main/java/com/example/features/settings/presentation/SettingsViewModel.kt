@@ -55,7 +55,7 @@ class SettingsViewModel(
 
     init {
         viewModelScope.launch {
-            repository.observePreferences("user_default").collect { prefs ->
+            repository.observePreferences(userId).collect { prefs ->
                 _uiState.update { it.copy(preferences = prefs) }
             }
         }
@@ -168,38 +168,38 @@ class SettingsViewModel(
     fun togglePrivacyMode() {
         val current = _uiState.value.preferences.privacyModeEnabled
         viewModelScope.launch {
-            repository.togglePrivacyMode("user_default", !current)
+            repository.togglePrivacyMode(userId, !current)
         }
     }
 
     fun setBaseCurrency(currency: String) {
         viewModelScope.launch {
-            repository.setBaseCurrency("user_default", currency)
+            repository.setBaseCurrency(userId, currency)
             _uiState.update { it.copy(statusMessage = "Moneda base cambiada a $currency") }
         }
     }
 
     fun setTheme(theme: String) {
         viewModelScope.launch {
-            repository.setTheme("user_default", theme)
+            repository.setTheme(userId, theme)
         }
     }
 
     fun toggleBiometrics(enabled: Boolean) {
         viewModelScope.launch {
-            repository.setBiometricsEnabled("user_default", enabled)
+            repository.setBiometricsEnabled(userId, enabled)
         }
     }
 
     fun toggleBudgetAlerts(enabled: Boolean) {
         viewModelScope.launch {
-            repository.setBudgetAlertsEnabled("user_default", enabled)
+            repository.setBudgetAlertsEnabled(userId, enabled)
         }
     }
 
     fun togglePaymentReminders(enabled: Boolean) {
         viewModelScope.launch {
-            repository.setPaymentRemindersEnabled("user_default", enabled)
+            repository.setPaymentRemindersEnabled(userId, enabled)
         }
     }
 

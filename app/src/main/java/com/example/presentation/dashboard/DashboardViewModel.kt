@@ -117,7 +117,7 @@ class DashboardViewModel(
         }
 
         val f3 = combine(
-            repo.getAllAccountCreditCards(),
+            repo.getAccountCreditCards(userId),
             repo.getScheduledPayments(userId)
         ) { creditCardConfigs, scheduledPayments ->
             creditCardConfigs to scheduledPayments

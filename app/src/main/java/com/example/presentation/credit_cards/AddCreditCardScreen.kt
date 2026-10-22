@@ -805,7 +805,8 @@ fun AddCreditCardScreen(
                             Spacer(modifier = Modifier.height(10.dp))
                             LiveCurrencyConversionPreview(
                                 amount = quotaVal,
-                                inputCurrency = state.currencyCode
+                                inputCurrency = state.currencyCode,
+                                userId = userId
                             )
                         }
 

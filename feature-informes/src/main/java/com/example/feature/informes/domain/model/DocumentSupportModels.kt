@@ -27,6 +27,7 @@ enum class SupportVerificationStatus(val label: String, val colorHex: String) {
 
 data class DocumentSupportItem(
     val id: String,
+    val userId: String = "kash_user_01",
     val title: String,
     val type: DocumentSupportType,
     val fileFormat: DocumentFileFormat,

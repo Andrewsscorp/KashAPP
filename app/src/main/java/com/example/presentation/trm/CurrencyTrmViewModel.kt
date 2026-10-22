@@ -59,7 +59,8 @@ data class CurrencyTrmUiState(
 class CurrencyTrmViewModel(
     private val exchangeRateRepository: ExchangeRateRepository,
     private val settingsRepository: SettingsRepository,
-    private val testSuite: ExchangeRateTestSuite
+    private val testSuite: ExchangeRateTestSuite,
+    val userId: String = "kash_user_01"
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CurrencyTrmUiState())
@@ -74,8 +75,8 @@ class CurrencyTrmViewModel(
 
     private fun loadInitialData() {
         viewModelScope.launch {
-            // 1. Observe Base Currency from Settings
-            settingsRepository.observePreferences("user_default").collect { prefs ->
+            // 1. Observe Base Currency from Settings for this user
+            settingsRepository.observePreferences(userId).collect { prefs ->
                 val base = prefs.baseCurrency.ifBlank { "COP" }
                 _uiState.update { it.copy(baseCurrency = base, historyToCurrency = base, converterToCurrency = base) }
                 refreshRates(forceNetwork = false)
@@ -129,7 +130,7 @@ class CurrencyTrmViewModel(
                     selectedHistoryPair = "${it.historyFromCurrency} / $upper"
                 )
             }
-            settingsRepository.setBaseCurrency("user_default", upper)
+            settingsRepository.setBaseCurrency(userId, upper)
             refreshRates(forceNetwork = true)
             loadHistoricalSeries()
             recalculateConversion()
@@ -330,10 +331,11 @@ class CurrencyTrmViewModel(
 class CurrencyTrmViewModelFactory(
     private val exchangeRateRepository: ExchangeRateRepository,
     private val settingsRepository: SettingsRepository,
-    private val testSuite: ExchangeRateTestSuite
+    private val testSuite: ExchangeRateTestSuite,
+    private val userId: String = "kash_user_01"
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return CurrencyTrmViewModel(exchangeRateRepository, settingsRepository, testSuite) as T
+        return CurrencyTrmViewModel(exchangeRateRepository, settingsRepository, testSuite, userId) as T
     }
 }

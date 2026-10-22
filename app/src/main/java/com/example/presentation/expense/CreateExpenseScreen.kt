@@ -174,7 +174,7 @@ fun CreateExpenseScreen(
         if (selectedAccountEntity == null && roomAccounts.isNotEmpty()) selectedAccountEntity = roomAccounts.first()
     }
 
-    val allCreditCardsFlow = remember(financialRepository) { financialRepository?.getAllAccountCreditCards() }
+    val allCreditCardsFlow = remember(financialRepository, userId) { financialRepository?.getAccountCreditCards(userId) }
     val allCreditCardConfigsState = allCreditCardsFlow?.collectAsState(initial = emptyList())
     val selectedCreditCardConfig = remember(selectedCreditCardToPay, allCreditCardConfigsState?.value) {
         selectedCreditCardToPay?.let { card -> allCreditCardConfigsState?.value?.find { it.accountId == card.id } }
@@ -596,7 +596,9 @@ fun CreateExpenseScreen(
         CreateAccountScreen(
             initialTypeCode = createAccountTypeCode,
             onAccountCreated = { newAcc, _ -> selectedAccountEntity = newAcc; showCreateAccountModal = false },
-            onDismiss = { showCreateAccountModal = false }, financialRepository = financialRepository
+            onDismiss = { showCreateAccountModal = false },
+            financialRepository = financialRepository,
+            userId = userId
         )
     }
 }

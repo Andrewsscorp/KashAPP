@@ -86,6 +86,10 @@ class FinancialRepositoryImpl(
         return financialDao.getCategoriesFlow()
     }
 
+    override fun getCategories(userId: String): Flow<List<CategoryEntity>> {
+        return financialDao.getCategoriesFlow(userId)
+    }
+
     override fun getTransactions(userId: String): Flow<List<TransactionEntity>> {
         return financialDao.getTransactionsFlow(userId)
     }
@@ -1648,6 +1652,10 @@ class FinancialRepositoryImpl(
 
     override fun getAllAccountCreditCards(): Flow<List<AccountCreditCardEntity>> {
         return financialDao.getAllAccountCreditCardsFlow()
+    }
+
+    override fun getAccountCreditCards(userId: String): Flow<List<AccountCreditCardEntity>> {
+        return financialDao.getAccountCreditCardsByUserFlow(userId)
     }
 
     override suspend fun createCreditCardAccount(

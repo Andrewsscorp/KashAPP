@@ -117,6 +117,7 @@ class InformesViewModel(
         viewModelScope.launch {
             val doc = DocumentSupportItem(
                 id = "doc-${System.currentTimeMillis()}",
+                userId = userId,
                 title = title,
                 type = type,
                 fileFormat = format,

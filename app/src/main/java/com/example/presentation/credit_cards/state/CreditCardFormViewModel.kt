@@ -25,7 +25,8 @@ class CreditCardFormViewModel(
     private val createCreditCardUseCase: CreateCreditCardUseCase,
     private val validateCreditLimitsUseCase: ValidateCreditLimitsUseCase = ValidateCreditLimitsUseCase(),
     private val calculateNextBillingDatesUseCase: CalculateNextBillingDatesUseCase = CalculateNextBillingDatesUseCase(),
-    private val financialRepository: FinancialRepository
+    private val financialRepository: FinancialRepository,
+    val userId: String = "kash_user_01"
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreditCardFormState())
@@ -45,7 +46,7 @@ class CreditCardFormViewModel(
     private fun loadSourceAccounts() {
         viewModelScope.launch {
             try {
-                financialRepository.getAccounts("user_default").collect { accounts ->
+                financialRepository.getAccounts(userId).collect { accounts ->
                     val nonCreditAccounts = accounts
                         .filter { it.type != "CREDIT_CARD" }
                         .map { it.id to "${it.name} - ${it.bankName}" }
@@ -428,7 +429,7 @@ class CreditCardFormViewModel(
     }
 
     fun saveCreditCard(
-        userId: String = "user_default",
+        userId: String = this.userId,
         context: android.content.Context? = null
     ) {
         val s = _uiState.value
@@ -519,7 +520,8 @@ class CreditCardFormViewModel(
             createCreditCardUseCase: CreateCreditCardUseCase,
             validateCreditLimitsUseCase: ValidateCreditLimitsUseCase,
             calculateNextBillingDatesUseCase: CalculateNextBillingDatesUseCase,
-            financialRepository: FinancialRepository
+            financialRepository: FinancialRepository,
+            userId: String = "kash_user_01"
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -527,7 +529,8 @@ class CreditCardFormViewModel(
                     createCreditCardUseCase = createCreditCardUseCase,
                     validateCreditLimitsUseCase = validateCreditLimitsUseCase,
                     calculateNextBillingDatesUseCase = calculateNextBillingDatesUseCase,
-                    financialRepository = financialRepository
+                    financialRepository = financialRepository,
+                    userId = userId
                 ) as T
             }
         }

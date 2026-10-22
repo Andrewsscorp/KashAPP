@@ -722,7 +722,7 @@ class ResponsivenessBaselineTest {
         composeTestRule.waitForIdle()
 
         composeTestRule.onNodeWithText("Bóveda de Auditoría").assertIsDisplayed()
-        composeTestRule.onNodeWithText("SOC-2 INMUTABLE").assertIsDisplayed()
+        composeTestRule.onNodeWithText("INMUTABLE").assertIsDisplayed()
         composeTestRule.onNodeWithTag("audit_back_btn").assertIsDisplayed()
         composeTestRule.onNodeWithTag("audit_verify_btn").assertIsDisplayed()
     }

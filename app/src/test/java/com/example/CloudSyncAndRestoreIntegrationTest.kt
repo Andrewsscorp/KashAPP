@@ -45,6 +45,7 @@ class CloudSyncAndRestoreIntegrationTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var database: SecurityDatabase
     private lateinit var fakeFirebaseDataSource: FakeTestFirebaseDataSource
+    private lateinit var cryptoManager: com.example.data.local.KeystoreCryptoManager
     private lateinit var repository: FinancialRepositoryImpl
 
     private val testUserId = "test_user_firebase_uid_123"
@@ -85,10 +86,12 @@ class CloudSyncAndRestoreIntegrationTest {
         SecurityDatabase.installIntegrityGuards(database.openHelper.writableDatabase)
 
         fakeFirebaseDataSource = FakeTestFirebaseDataSource(context)
+        cryptoManager = com.example.data.local.KeystoreCryptoManager(allowSoftwareFallbackForTests = true)
         repository = FinancialRepositoryImpl(
             financialDao = database.financialDao(),
             auditLogDao = database.auditSecurityLogDao(),
             firebaseDataSource = fakeFirebaseDataSource,
+            keystoreCryptoManager = cryptoManager,
             ioDispatcher = testDispatcher
         )
     }
@@ -294,21 +297,39 @@ class CloudSyncAndRestoreIntegrationTest {
         val backupResult = repository.backupFullPortfolioToCloud(testUserId)
         assertTrue(backupResult.isSuccess)
 
-        // Verify the payload sent to Firestore
+        // Verify the payload sent to Firestore (E2EE encrypted envelope conforming to firestore.rules)
         val payload = fakeFirebaseDataSource.lastSavedPayload
         assertNotNull(payload)
-        assertEquals("portfolio_backup", payload?.get("table"))
         assertEquals(testUserId, payload?.get("userId"))
+        val encryptedPayload = payload?.get("encryptedPayload") as? String
+        assertNotNull(encryptedPayload)
 
-        @Suppress("UNCHECKED_CAST")
-        val accountsList = payload?.get("accounts") as? List<Map<String, Any>>
-        assertNotNull(accountsList)
-        assertTrue(accountsList!!.any { it["name"] == "Bancolombia Nómina" && (it["balance"] as Number).toDouble() == 925000.0 })
+        val decryptedGzip = cryptoManager.decryptData(encryptedPayload!!)
+        assertNotNull(decryptedGzip)
+        val rawJson = FinancialRepositoryImpl.decompressGzip(decryptedGzip!!)
+        val rootObj = org.json.JSONObject(rawJson)
 
-        @Suppress("UNCHECKED_CAST")
-        val transactionsList = payload?.get("transactions") as? List<Map<String, Any>>
-        assertNotNull(transactionsList)
-        assertTrue(transactionsList!!.any { it["categoryName"] == "Servicios" && (it["amount"] as Number).toDouble() == 75000.0 })
+        val accountsArr = rootObj.getJSONArray("accounts")
+        var foundAccount = false
+        for (i in 0 until accountsArr.length()) {
+            val acc = accountsArr.getJSONObject(i)
+            if (acc.getString("name") == "Bancolombia Nómina" && acc.getDouble("balance") == 925000.0) {
+                foundAccount = true
+                break
+            }
+        }
+        assertTrue("La cuenta debe existir dentro del payload cifrado con saldo 925000.0", foundAccount)
+
+        val transactionsArr = rootObj.getJSONArray("transactions")
+        var foundTransaction = false
+        for (i in 0 until transactionsArr.length()) {
+            val tx = transactionsArr.getJSONObject(i)
+            if (tx.getString("categoryName") == "Servicios" && tx.getDouble("amount") == 75000.0) {
+                foundTransaction = true
+                break
+            }
+        }
+        assertTrue("La transacción de servicios debe existir dentro del payload cifrado con monto 75000.0", foundTransaction)
     }
 
     @Test

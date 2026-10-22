@@ -233,7 +233,7 @@ fun CreateAccountScreen(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     financialRepository: FinancialRepository? = null,
-    userId: String = "user_default"
+    userId: String
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -263,7 +263,7 @@ fun CreateAccountScreen(
     }
 
     // 2. Bank & Entities
-    val dbBanks by appContainer.financialRepository.getBanks("user_default").collectAsStateWithLifecycle(initialValue = emptyList())
+    val dbBanks by appContainer.financialRepository.getBanks(userId).collectAsStateWithLifecycle(initialValue = emptyList())
     var selectedBank by remember { mutableStateOf("Bancolombia") }
     var showBankPickerModal by remember { mutableStateOf(false) }
     var bankSearchQuery by remember { mutableStateOf("") }
@@ -975,7 +975,8 @@ fun CreateAccountScreen(
                         Spacer(modifier = Modifier.height(12.dp))
                         LiveCurrencyConversionPreview(
                             amount = enteredBal,
-                            inputCurrency = selectedCurrency
+                            inputCurrency = selectedCurrency,
+                            userId = userId
                         )
                     }
                 }

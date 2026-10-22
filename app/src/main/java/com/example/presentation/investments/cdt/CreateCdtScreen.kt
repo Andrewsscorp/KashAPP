@@ -111,6 +111,7 @@ fun CreateCdtScreen(
     onCdtCreated: (AccountEntity, AccountCdtEntity) -> Unit,
     onDismiss: () -> Unit,
     financialRepository: FinancialRepository? = null,
+    userId: String = "kash_user_01",
     modifier: Modifier = Modifier
 ) {
     BackHandler { onDismiss() }
@@ -125,11 +126,11 @@ fun CreateCdtScreen(
     }
 
     // Database state
-    val dbAccounts by (financialRepository?.getAccounts("user_default") ?: flowOf(emptyList()))
+    val dbAccounts by (financialRepository?.getAccounts(userId) ?: flowOf(emptyList()))
         .collectAsStateWithLifecycle(initialValue = emptyList())
-    val dbBanks by (financialRepository?.getBanks("user_default") ?: flowOf(emptyList()))
+    val dbBanks by (financialRepository?.getBanks(userId) ?: flowOf(emptyList()))
         .collectAsStateWithLifecycle(initialValue = emptyList())
-    val dbCurrencies by (financialRepository?.getCurrencies("user_default") ?: flowOf(emptyList()))
+    val dbCurrencies by (financialRepository?.getCurrencies(userId) ?: flowOf(emptyList()))
         .collectAsStateWithLifecycle(initialValue = emptyList())
 
     // Form State (Clean starting state)
@@ -304,7 +305,7 @@ fun CreateCdtScreen(
                             coroutineScope.launch {
                                 if (createCdtUseCase != null) {
                                     val result = createCdtUseCase(
-                                        userId = "user_default",
+                                        userId = userId,
                                         name = cdtName,
                                         bankName = selectedBank,
                                         currency = selectedCurrency,
@@ -335,7 +336,7 @@ fun CreateCdtScreen(
                                     // Fallback when repository is not passed directly
                                     val fallbackAccount = AccountEntity(
                                         id = java.util.UUID.randomUUID().toString(),
-                                        userId = "user_default",
+                                        userId = userId,
                                         name = cdtName,
                                         balance = initialAmountVal,
                                         availableBalance = 0.0,
@@ -1024,7 +1025,7 @@ fun CreateCdtScreen(
         AddBankEntityScreen(
             preloadedBanks = dbBanks,
             financialRepository = financialRepository,
-            userId = "user_default",
+            userId = userId,
             onDismiss = { showAddBankScreen = false },
             onBankCreated = { createdBank ->
                 selectedBank = createdBank.name
@@ -1132,7 +1133,7 @@ fun CreateCdtScreen(
     if (showAddCurrencyModal && financialRepository != null) {
         AddCurrencyModal(
             financialRepository = financialRepository,
-            userId = "user_default",
+            userId = userId,
             onCurrencyCreated = { newCurr ->
                 selectedCurrency = newCurr.code
                 selectedCurrencyLabel = "${newCurr.code} - ${newCurr.name}"

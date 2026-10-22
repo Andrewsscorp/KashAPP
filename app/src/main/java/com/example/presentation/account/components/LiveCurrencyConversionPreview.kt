@@ -59,7 +59,8 @@ fun LiveCurrencyConversionPreview(
     amount: Double,
     inputCurrency: String,
     modifier: Modifier = Modifier,
-    isDarkTheme: Boolean = false
+    isDarkTheme: Boolean = false,
+    userId: String = "kash_user_01"
 ) {
     val context = LocalContext.current
     val appContainer = remember(context) { (context.applicationContext as KashAppApplication).appContainer }
@@ -69,8 +70,8 @@ fun LiveCurrencyConversionPreview(
     var selectedTargetCurrency by remember { mutableStateOf<String?>(null) }
     var isSwappedDirection by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        appContainer.settingsRepository.observePreferences("user_default").collect { prefs ->
+    LaunchedEffect(userId) {
+        appContainer.settingsRepository.observePreferences(userId).collect { prefs ->
             baseCurrency = prefs.baseCurrency.ifBlank { "COP" }
         }
     }
