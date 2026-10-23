@@ -437,16 +437,16 @@ fun SettingsProfileScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         // Píldoras estilo iOS Cupertino en 1 sola línea (sin partirse en 2 renglones)
-                        FlowRow(
+                        Row(
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Surface(
                                 color = if (emailVerifiedState) Color(0xFFDCFCE7) else Color(0xFFFEF3C7),
                                 shape = RoundedCornerShape(50)
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
@@ -454,12 +454,12 @@ fun SettingsProfileScreen(
                                         imageVector = if (emailVerifiedState) Icons.Default.CheckCircle else Icons.Default.Shield,
                                         contentDescription = null,
                                         tint = if (emailVerifiedState) Color(0xFF15803D) else Color(0xFFB45309),
-                                        modifier = Modifier.size(13.dp)
+                                        modifier = Modifier.size(12.dp)
                                     )
                                     Text(
-                                        text = if (emailVerifiedState) "Verificada • $cleanAuthProviderBadge" else "Verificación Pendiente",
+                                        text = if (emailVerifiedState) "Verificada • $cleanAuthProviderBadge" else "Pendiente",
                                         color = if (emailVerifiedState) Color(0xFF15803D) else Color(0xFFB45309),
-                                        fontSize = 11.sp,
+                                        fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
@@ -473,10 +473,10 @@ fun SettingsProfileScreen(
                                 border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.35f))
                             ) {
                                 Text(
-                                    text = "$activeBaseCurrency • $memberSince",
+                                    text = activeBaseCurrency,
                                     color = Color.White,
                                     fontSize = 10.sp,
-                                    fontWeight = FontWeight.SemiBold,
+                                    fontWeight = FontWeight.Bold,
                                     maxLines = 1,
                                     modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp)
                                 )

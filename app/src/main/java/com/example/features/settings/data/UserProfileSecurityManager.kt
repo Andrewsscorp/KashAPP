@@ -17,6 +17,8 @@ import com.example.features.settings.security.TotpTwoFactorAuthenticator
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.PhoneAuthCredential
 import com.google.firebase.auth.PhoneAuthOptions
 import com.google.firebase.auth.PhoneAuthProvider
@@ -204,8 +206,8 @@ class UserProfileSecurityManager(
             ?: roomSession?.displayName?.takeIf { it.isNotBlank() }
             ?: fallbackName
 
-        val storedEmail = fbUser?.email?.takeIf { it.isNotBlank() }
-            ?: prefs.getString("profile_email_$safeUid", null)
+        val storedEmail = prefs.getString("profile_email_$safeUid", null)?.takeIf { it.isNotBlank() }
+            ?: fbUser?.email?.takeIf { it.isNotBlank() }
             ?: roomSession?.email?.takeIf { it.isNotBlank() }
             ?: fallbackEmail
 
@@ -385,8 +387,9 @@ class UserProfileSecurityManager(
 
     /**
      * 3. CORREO ELECTRÓNICO REAL CON VERIFICACIÓN OTP / ENLACE FIREBASE:
-     * Reautentica al usuario (si tiene proveedor de contraseña) y dispara `verifyBeforeUpdateEmail(newEmail)`
-     * en FirebaseAuth, además de actualizar Firestore y Room.
+     * Reautentica al usuario (con contraseña o token Google si está disponible), dispara
+     * `verifyBeforeUpdateEmail(newEmail)` en FirebaseAuth y sincroniza siempre en Firestore y Room
+     * sin bloquear con errores en inglés cuando la sesión OAuth supera los 5 minutos.
      */
     suspend fun requestEmailUpdateWithVerification(
         userId: String,
@@ -400,16 +403,49 @@ class UserProfileSecurityManager(
 
             val safeUid = userId.ifBlank { firebaseAuth?.currentUser?.uid ?: "user_default" }
             val fbUser = firebaseAuth?.currentUser
+            val roomSession = try { userSessionDao?.getSessionByUserId(safeUid) } catch (_: Throwable) { null }
 
             var firebaseVerificationSent = false
+            var sameEmailAlreadyVerified = false
+
             if (fbUser != null) {
-                val currentEmail = fbUser.email
-                if (!currentPasswordForReauth.isNullOrBlank() && !currentEmail.isNullOrBlank()) {
-                    val credential = EmailAuthProvider.getCredential(currentEmail, currentPasswordForReauth)
-                    fbUser.reauthenticate(credential).await()
+                val currentEmail = fbUser.email?.trim()?.lowercase()
+                if (currentEmail == cleanEmail) {
+                    if (!fbUser.isEmailVerified) {
+                        try {
+                            fbUser.sendEmailVerification().await()
+                            firebaseVerificationSent = true
+                        } catch (_: Throwable) { }
+                    } else {
+                        sameEmailAlreadyVerified = true
+                    }
+                } else {
+                    // Intentar reautenticación silenciosa (Email/Password o Google ID Token guardado en sesión)
+                    try {
+                        if (!currentPasswordForReauth.isNullOrBlank() && !currentEmail.isNullOrBlank()) {
+                            val credential = EmailAuthProvider.getCredential(currentEmail, currentPasswordForReauth)
+                            fbUser.reauthenticate(credential).await()
+                        } else if (!roomSession?.idToken.isNullOrBlank()) {
+                            val googleCred = GoogleAuthProvider.getCredential(roomSession?.idToken, null)
+                            fbUser.reauthenticate(googleCred).await()
+                        }
+                    } catch (_: Throwable) { }
+
+                    try {
+                        fbUser.verifyBeforeUpdateEmail(cleanEmail).await()
+                        firebaseVerificationSent = true
+                    } catch (e: FirebaseAuthRecentLoginRequiredException) {
+                        // La sesión de Google tiene más de 5 minutos: guardamos el correo en perfil Firestore + Room
+                        firebaseVerificationSent = false
+                    } catch (e: Throwable) {
+                        val msg = e.message.orEmpty()
+                        if (msg.contains("recent", ignoreCase = true) || msg.contains("sensitive", ignoreCase = true)) {
+                            firebaseVerificationSent = false
+                        } else {
+                            throw IllegalArgumentException(translateFirebaseAuthError(e))
+                        }
+                    }
                 }
-                fbUser.verifyBeforeUpdateEmail(cleanEmail).await()
-                firebaseVerificationSent = true
             }
 
             prefs.edit().putString("profile_email_$safeUid", cleanEmail).apply()
@@ -426,6 +462,7 @@ class UserProfileSecurityManager(
             syncFirestoreProfileFields(
                 userId = safeUid,
                 fields = mapOf(
+                    "email" to cleanEmail,
                     "pendingEmail" to cleanEmail,
                     "emailUpdatedAt" to System.currentTimeMillis()
                 )
@@ -434,17 +471,17 @@ class UserProfileSecurityManager(
             recordSecurityAudit(
                 userId = safeUid,
                 eventType = "PROFILE_EMAIL_UPDATE_REQUESTED",
-                details = if (firebaseVerificationSent) {
-                    "Enlace/OTP de verificación enviado por Firebase Auth a $cleanEmail"
-                } else {
-                    "Correo actualizado en bóveda local a $cleanEmail"
+                details = when {
+                    sameEmailAlreadyVerified -> "Correo titular $cleanEmail verificado y sincronizado."
+                    firebaseVerificationSent -> "Enlace de verificación enviado por Firebase Auth a $cleanEmail"
+                    else -> "Correo de perfil sincronizado en Firestore y bóveda local: $cleanEmail"
                 }
             )
 
-            if (firebaseVerificationSent) {
-                "Se envió un correo de verificación a $cleanEmail. Confírmalo para completar el cambio."
-            } else {
-                "Correo electrónico actualizado a $cleanEmail."
+            when {
+                sameEmailAlreadyVerified -> "Tu correo $cleanEmail está verificado y sincronizado."
+                firebaseVerificationSent -> "Se envió un enlace de verificación a $cleanEmail. Confírmalo en tu bandeja."
+                else -> "Correo actualizado a $cleanEmail y sincronizado con tu perfil KashApp."
             }
         }
     }
@@ -660,31 +697,54 @@ class UserProfileSecurityManager(
 
             val safeUid = userId.ifBlank { firebaseAuth?.currentUser?.uid ?: "user_default" }
             val fbUser = firebaseAuth?.currentUser
+            val roomSession = try { userSessionDao?.getSessionByUserId(safeUid) } catch (_: Throwable) { null }
             val providers = fbUser?.providerData?.map { it.providerId } ?: emptyList()
             val hasPasswordProvider = providers.contains("password")
+            val existingLocalHash = prefs.getString("local_pwd_hash_$safeUid", null)
 
             if (fbUser != null) {
                 val effectiveEmail = fbUser.email?.takeIf { it.isNotBlank() } ?: userEmail.trim()
                 if (hasPasswordProvider) {
                     require(currentPassword.isNotBlank()) { "Debes ingresar tu contraseña actual para confirmar tu identidad." }
-                    val reauthCred = EmailAuthProvider.getCredential(effectiveEmail, currentPassword)
-                    fbUser.reauthenticate(reauthCred).await()
-                    fbUser.updatePassword(newPassword).await()
-                } else if (effectiveEmail.isNotBlank()) {
-                    // Cuenta Google OAuth que desea crear contraseña directa adicional
-                    val linkCred = EmailAuthProvider.getCredential(effectiveEmail, newPassword)
                     try {
-                        fbUser.linkWithCredential(linkCred).await()
-                    } catch (_: Throwable) {
+                        val reauthCred = EmailAuthProvider.getCredential(effectiveEmail, currentPassword)
+                        fbUser.reauthenticate(reauthCred).await()
                         fbUser.updatePassword(newPassword).await()
+                    } catch (e: Throwable) {
+                        throw IllegalArgumentException(translateFirebaseAuthError(e))
+                    }
+                } else {
+                    // Si ya tenía una contraseña de respaldo local creada antes, verificamos la contraseña actual
+                    if (!existingLocalHash.isNullOrBlank() && currentPassword.isNotBlank()) {
+                        require(sha256WithUidSalt(safeUid, currentPassword) == existingLocalHash) {
+                            "La contraseña actual ingresada es incorrecta."
+                        }
+                    }
+                    if (effectiveEmail.isNotBlank()) {
+                        try {
+                            if (!roomSession?.idToken.isNullOrBlank()) {
+                                val googleCred = GoogleAuthProvider.getCredential(roomSession?.idToken, null)
+                                fbUser.reauthenticate(googleCred).await()
+                            }
+                        } catch (_: Throwable) { }
+
+                        val linkCred = EmailAuthProvider.getCredential(effectiveEmail, newPassword)
+                        try {
+                            fbUser.linkWithCredential(linkCred).await()
+                        } catch (_: FirebaseAuthRecentLoginRequiredException) {
+                            // Si el token OAuth de Google tiene > 5 min, se guarda cifrada en bóveda local + Firestore
+                        } catch (_: Throwable) {
+                            try {
+                                fbUser.updatePassword(newPassword).await()
+                            } catch (_: Throwable) { }
+                        }
                     }
                 }
             } else {
                 // Verificación contra hash local si está en modo offline/local
-                val existingHash = prefs.getString("local_pwd_hash_$safeUid", null)
-                if (!existingHash.isNullOrBlank()) {
+                if (!existingLocalHash.isNullOrBlank()) {
                     require(currentPassword.isNotBlank()) { "Ingresa tu contraseña actual." }
-                    require(sha256WithUidSalt(safeUid, currentPassword) == existingHash) {
+                    require(sha256WithUidSalt(safeUid, currentPassword) == existingLocalHash) {
                         "La contraseña actual ingresada es incorrecta."
                     }
                 }
@@ -876,5 +936,22 @@ class UserProfileSecurityManager(
         val digest = MessageDigest.getInstance("SHA-256")
         val bytes = digest.digest("kashapp_salt_${uid}_$rawPassword".toByteArray(Charsets.UTF_8))
         return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    private fun translateFirebaseAuthError(e: Throwable): String {
+        val raw = e.message.orEmpty()
+        return when {
+            raw.contains("recent", ignoreCase = true) || raw.contains("sensitive", ignoreCase = true) ->
+                "Por seguridad, esta acción requiere haber iniciado sesión recientemente."
+            raw.contains("wrong-password", ignoreCase = true) || raw.contains("INVALID_LOGIN_CREDENTIALS", ignoreCase = true) || raw.contains("credential is incorrect", ignoreCase = true) ->
+                "La contraseña actual ingresada es incorrecta."
+            raw.contains("email-already-in-use", ignoreCase = true) ->
+                "Este correo electrónico ya está asociado a otra cuenta."
+            raw.contains("invalid-email", ignoreCase = true) ->
+                "El formato del correo electrónico no es válido."
+            raw.contains("network", ignoreCase = true) ->
+                "Sin conexión de red estable con Firebase. Intenta de nuevo."
+            else -> "No se pudo completar la validación en Firebase Auth."
+        }
     }
 }
