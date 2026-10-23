@@ -7,6 +7,7 @@ import com.example.feature.impuestosdian.domain.model.ColombianUvtCatalog
 import com.example.feature.impuestosdian.domain.model.TaxAlertLevel
 import com.example.feature.impuestosdian.domain.model.TaxJurisdiction
 import kotlin.math.max
+import kotlin.math.min
 
 class GmfFourPerThousandEngine {
 
@@ -24,19 +25,22 @@ class GmfFourPerThousandEngine {
         accounts: List<AccountEntity>,
         monthlyTransactions: List<TransactionEntity>,
         jurisdiction: TaxJurisdiction = TaxJurisdiction.CO_DIAN,
-        customTaxRate: Double? = null
+        customTaxRate: Double? = null,
+        enforceSingleExemptAccount: Boolean = true
     ): List<AccountGmfMonthlyStatus> {
         val safeUvt = if (uvtValueCop > 0.0) uvtValueCop else jurisdiction.defaultTaxUnitValue
         val effectiveTaxRate = customTaxRate ?: jurisdiction.financialTransactionTaxRate
 
-        // Filtramos solo cuentas financieras sujetas a impuesto bancario (excluye Efectivo CASH, Tarjetas de Crédito y CDTs)
         val gmfSubjectAccounts = accounts.filter { account ->
             !account.type.equals("CASH", ignoreCase = true) &&
                 !account.type.equals("CREDIT_CARD", ignoreCase = true) &&
                 !account.type.equals("CDT", ignoreCase = true)
         }
 
-        return gmfSubjectAccounts.map { account ->
+        // Modo Bolsa Unificada de 350 UVT (Art. 65 Ley 2277/2022) cuando enforceSingleExemptAccount == false en Colombia
+        var shared350UvtRemainingCop = ColombianUvtCatalog.GMF_EXEMPT_BANK_ACCOUNT_MONTHLY_UVT * safeUvt
+
+        val accountsWithOutflows = gmfSubjectAccounts.map { account ->
             val outflowsCop = monthlyTransactions
                 .filter { tx ->
                     tx.accountId == account.id &&
@@ -48,35 +52,54 @@ class GmfFourPerThousandEngine {
                             tx.type.equals("TRANSFER_OUT", ignoreCase = true))
                 }
                 .sumOf { max(0.0, it.amount) }
+            account to outflowsCop
+        }.sortedByDescending { it.second }
 
+        return accountsWithOutflows.map { (account, outflowsCop) ->
             val isWallet = isLowAmountWallet(account)
-            val exemptLimitUvt = when {
-                jurisdiction == TaxJurisdiction.CO_DIAN -> when {
-                    account.isTaxExempt -> ColombianUvtCatalog.GMF_EXEMPT_BANK_ACCOUNT_MONTHLY_UVT // 350 UVT
-                    isWallet -> ColombianUvtCatalog.GMF_EXEMPT_LOW_AMOUNT_WALLET_MONTHLY_UVT      // 65 UVT
-                    else -> 0.0                                                                   // 0 UVT
+            val usesUnifiedPool = jurisdiction == TaxJurisdiction.CO_DIAN && !enforceSingleExemptAccount && !isWallet
+
+            val exemptLimitUvt: Double
+            val exemptLimitCop: Double
+            val remainingExemptCop: Double
+            val taxableExcessCop: Double
+
+            if (usesUnifiedPool) {
+                exemptLimitUvt = ColombianUvtCatalog.GMF_EXEMPT_BANK_ACCOUNT_MONTHLY_UVT
+                val coveredBySharedPool = min(outflowsCop, shared350UvtRemainingCop)
+                shared350UvtRemainingCop = max(0.0, shared350UvtRemainingCop - coveredBySharedPool)
+                exemptLimitCop = coveredBySharedPool + shared350UvtRemainingCop
+                remainingExemptCop = shared350UvtRemainingCop
+                taxableExcessCop = if (effectiveTaxRate <= 0.0) 0.0 else max(0.0, outflowsCop - coveredBySharedPool)
+            } else {
+                exemptLimitUvt = when {
+                    jurisdiction == TaxJurisdiction.CO_DIAN -> when {
+                        account.isTaxExempt -> ColombianUvtCatalog.GMF_EXEMPT_BANK_ACCOUNT_MONTHLY_UVT
+                        isWallet -> ColombianUvtCatalog.GMF_EXEMPT_LOW_AMOUNT_WALLET_MONTHLY_UVT
+                        else -> 0.0
+                    }
+                    account.isTaxExempt -> Double.MAX_VALUE / safeUvt.coerceAtLeast(1.0)
+                    else -> 0.0
                 }
-                account.isTaxExempt -> Double.MAX_VALUE / safeUvt.coerceAtLeast(1.0) // Exenta 100% en países con cuenta sueldo exenta
-                else -> 0.0
+                exemptLimitCop = if (jurisdiction != TaxJurisdiction.CO_DIAN && account.isTaxExempt) {
+                    outflowsCop
+                } else {
+                    exemptLimitUvt * safeUvt
+                }
+                remainingExemptCop = max(0.0, exemptLimitCop - outflowsCop)
+                taxableExcessCop = if (effectiveTaxRate <= 0.0 || (jurisdiction != TaxJurisdiction.CO_DIAN && account.isTaxExempt)) {
+                    0.0
+                } else {
+                    max(0.0, outflowsCop - exemptLimitCop)
+                }
             }
 
-            val exemptLimitCop = if (jurisdiction != TaxJurisdiction.CO_DIAN && account.isTaxExempt) {
-                outflowsCop // 100% exento en cuenta sueldo internacional
-            } else {
-                exemptLimitUvt * safeUvt
-            }
-            val remainingExemptCop = max(0.0, exemptLimitCop - outflowsCop)
-            val taxableExcessCop = if (effectiveTaxRate <= 0.0 || (jurisdiction != TaxJurisdiction.CO_DIAN && account.isTaxExempt)) {
-                0.0
-            } else {
-                max(0.0, outflowsCop - exemptLimitCop)
-            }
             val estimatedGmfTaxPaidCop = taxableExcessCop * effectiveTaxRate
 
             val alertLevel = when {
                 effectiveTaxRate <= 0.0 -> TaxAlertLevel.SAFE
-                exemptLimitCop == 0.0 && outflowsCop > 0.0 -> TaxAlertLevel.EXCEEDED
-                exemptLimitCop > 0.0 && outflowsCop >= exemptLimitCop && taxableExcessCop > 0.0 -> TaxAlertLevel.EXCEEDED
+                !usesUnifiedPool && exemptLimitCop == 0.0 && outflowsCop > 0.0 -> TaxAlertLevel.EXCEEDED
+                taxableExcessCop > 0.0 -> TaxAlertLevel.EXCEEDED
                 exemptLimitCop > 0.0 && (outflowsCop / exemptLimitCop) >= 0.75 -> TaxAlertLevel.WARNING
                 else -> TaxAlertLevel.SAFE
             }
@@ -86,7 +109,7 @@ class GmfFourPerThousandEngine {
                 accountName = account.name,
                 bankName = account.bankName,
                 accountType = account.type,
-                isMarkedTaxExempt350Uvt = account.isTaxExempt,
+                isMarkedTaxExempt350Uvt = account.isTaxExempt || usesUnifiedPool,
                 isLowAmountDigitalWallet65Uvt = isWallet && !account.isTaxExempt,
                 monthlyOutflowsCop = outflowsCop,
                 monthlyOutflowsUvt = if (safeUvt > 0.0) outflowsCop / safeUvt else 0.0,
@@ -95,14 +118,39 @@ class GmfFourPerThousandEngine {
                 remainingExemptCop = remainingExemptCop,
                 taxableExcessCop = taxableExcessCop,
                 estimatedGmfTaxPaidCop = estimatedGmfTaxPaidCop,
-                gmfAlertLevel = alertLevel
+                gmfAlertLevel = alertLevel,
+                sharesUnified350UvtPool = usesUnifiedPool
             )
-        }.sortedByDescending { it.monthlyOutflowsCop }
+        }
     }
 
     /**
-     * Genera una recomendación inteligente para ahorrar 4x1000 o impuestos bancarios según el estado de las cuentas.
+     * Calcula el 4x1000 / impuesto bancario real acumulado en los 12 meses del año gravable [fiscalYear]
+     * para alimentar con exactitud el 50% deducible en Renta (Art. 115 E.T.).
      */
+    fun calculateAnnualGmfPaid(
+        fiscalYear: Int,
+        uvtValueCop: Double,
+        accounts: List<AccountEntity>,
+        transactionsInYear: List<TransactionEntity>,
+        jurisdiction: TaxJurisdiction = TaxJurisdiction.CO_DIAN,
+        customTaxRate: Double? = null,
+        enforceSingleExemptAccount: Boolean = true
+    ): Double {
+        return (1..12).sumOf { month ->
+            val ym = "%04d-%02d".format(fiscalYear, month)
+            evaluateMonthlyGmf(
+                yearMonth = ym,
+                uvtValueCop = uvtValueCop,
+                accounts = accounts,
+                monthlyTransactions = transactionsInYear,
+                jurisdiction = jurisdiction,
+                customTaxRate = customTaxRate,
+                enforceSingleExemptAccount = enforceSingleExemptAccount
+            ).sumOf { it.estimatedGmfTaxPaidCop }
+        }
+    }
+
     fun buildGmfOptimizationAdvice(
         statuses: List<AccountGmfMonthlyStatus>,
         uvtValueCop: Double,

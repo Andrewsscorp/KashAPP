@@ -223,7 +223,7 @@ object GlobalTaxJurisdictionCatalog {
                     } else {
                         "Si no está exenta, cada retiro o transferencia gravará 4x1000 (0.4%) desde el primer peso."
                     },
-                    enforcesSingleExemptAccountRule = true,
+                    enforcesSingleExemptAccountRule = profile.enforceSingleExemptAccountInColombia,
                     financialTaxRate = profile.financialTransactionTaxRate
                 )
             }

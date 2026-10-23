@@ -66,6 +66,9 @@ fun TaxConfigurationDialog(
     var feDeductionPercentText by remember { mutableStateOf("%.1f".format(initialProfile.electronicInvoiceDeductionRate * 100.0)) }
     var singleExemptInColombia by remember { mutableStateOf(initialProfile.enforceSingleExemptAccountInColombia) }
     var autoTagOcr by remember { mutableStateOf(initialProfile.autoTagOcrReceiptsAsElectronicInvoice) }
+    var useProgressiveCedula by remember { mutableStateOf(initialProfile.useProgressiveCedulaGeneralInColombia) }
+    var dependentsCount by remember { mutableStateOf(initialProfile.dependentsCount.coerceIn(0, 4)) }
+    var incrgoPercentText by remember { mutableStateOf("%.1f".format(initialProfile.mandatoryIncrgoRate * 100.0)) }
 
     val blueFieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = Color(0xFF0F172A),
@@ -327,6 +330,88 @@ fun TaxConfigurationDialog(
                                 )
                             )
                         }
+
+                        if (selectedJurisdiction == TaxJurisdiction.CO_DIAN) {
+                            HorizontalDivider(color = Color(0xFFBFDBFE))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Depuración Cedular Progresiva DIAN (Art. 336 y 241 E.T.)",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF0F172A)
+                                    )
+                                    Text(
+                                        text = "Aplica INCRGO (Salud/Pensión), 25% exento laboral (790 UVT), límite 40%/1.340 UVT y tabla marginal Art. 241.",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF334155)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                IosStyleSwitch(
+                                    checked = useProgressiveCedula,
+                                    onCheckedChange = { useProgressiveCedula = it },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = Color(0xFF2563EB)
+                                    )
+                                )
+                            }
+
+                            if (useProgressiveCedula) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    OutlinedTextField(
+                                        value = incrgoPercentText,
+                                        onValueChange = { incrgoPercentText = it.replace(',', '.') },
+                                        label = { Text("% INCRGO Salud+Pensión") },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                        singleLine = true,
+                                        colors = blueFieldColors,
+                                        modifier = Modifier.weight(1f)
+                                    )
+
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Dependientes (72 UVT c/u)",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF1E3A8A)
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            (0..4).forEach { count ->
+                                                val isDepSelected = dependentsCount == count
+                                                Surface(
+                                                    color = if (isDepSelected) Color(0xFF2563EB) else Color.White,
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    border = BorderStroke(1.dp, if (isDepSelected) Color(0xFF1D4ED8) else Color(0xFFBFDBFE)),
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .clickable { dependentsCount = count }
+                                                ) {
+                                                    Text(
+                                                        text = count.toString(),
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (isDepSelected) Color.White else Color(0xFF1E3A8A),
+                                                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -351,6 +436,7 @@ fun TaxConfigurationDialog(
                                 val parsedVat = (vatPercentText.toDoubleOrNull() ?: (selectedJurisdiction.standardVatOrSalesTaxRate * 100.0)) / 100.0
                                 val parsedBankTax = (bankTaxPercentText.toDoubleOrNull() ?: (selectedJurisdiction.financialTransactionTaxRate * 100.0)) / 100.0
                                 val parsedFeRate = (feDeductionPercentText.toDoubleOrNull() ?: (selectedJurisdiction.electronicInvoiceDeductionRate * 100.0)) / 100.0
+                                val parsedIncrgoRate = ((incrgoPercentText.toDoubleOrNull() ?: 8.0) / 100.0).coerceIn(0.0, 0.30)
 
                                 onSave(
                                     initialProfile.copy(
@@ -364,7 +450,10 @@ fun TaxConfigurationDialog(
                                         financialTransactionTaxRate = parsedBankTax,
                                         electronicInvoiceDeductionRate = parsedFeRate,
                                         enforceSingleExemptAccountInColombia = singleExemptInColombia,
-                                        autoTagOcrReceiptsAsElectronicInvoice = autoTagOcr
+                                        autoTagOcrReceiptsAsElectronicInvoice = autoTagOcr,
+                                        dependentsCount = dependentsCount.coerceIn(0, 4),
+                                        mandatoryIncrgoRate = parsedIncrgoRate,
+                                        useProgressiveCedulaGeneralInColombia = useProgressiveCedula
                                     )
                                 )
                             },

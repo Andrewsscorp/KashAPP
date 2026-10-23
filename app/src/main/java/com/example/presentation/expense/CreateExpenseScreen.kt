@@ -49,8 +49,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.example.core.ui.components.IosStyleSwitch
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -408,6 +410,89 @@ fun CreateExpenseScreen(
                     },
                     onOpenCreateCategory = { showNewCategoryDialog = true }
                 )
+
+                // 3.5. Vinculación Radar Tributario DIAN: Factura Electrónica 1% & Vista Previa Fiscal
+                val hasElectronicInvoiceTag = formState.tagsList.any { it.equals("FE_DIAN", ignoreCase = true) } || formState.receiptUri != null
+                val paidWithElectronicAccount = selectedAccountEntity?.type?.equals("CASH", ignoreCase = true) != true
+                val estimatedOnePercentDeduction = if (hasElectronicInvoiceTag && paidWithElectronicAccount) formState.amountDouble * 0.01 else 0.0
+                val estimatedGmf4x1000 = if (selectedAccountEntity != null && !selectedAccountEntity!!.isTaxExempt && !selectedAccountEntity!!.type.equals("CASH", ignoreCase = true)) {
+                    formState.amountDouble * 0.004
+                } else 0.0
+
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFFF0F7FF),
+                    border = BorderStroke(1.dp, Color(0xFFBFDBFE)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ReceiptLong,
+                                    contentDescription = null,
+                                    tint = Color(0xFF0284C7),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = "🇨🇴 Factura Electrónica DIAN (1% Deducible)",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF0F172A)
+                                    )
+                                    Text(
+                                        text = "Ley 2277/2022 Art. 336 Num. 5 E.T. • Etiqueta automática [FE_DIAN]",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF475569)
+                                    )
+                                }
+                            }
+                            IosStyleSwitch(
+                                checked = formState.tagsList.any { it.equals("FE_DIAN", ignoreCase = true) },
+                                onCheckedChange = { enabled ->
+                                    val filtered = formState.tagsList.filterNot { it.equals("FE_DIAN", ignoreCase = true) }
+                                    formState = formState.copy(tagsList = if (enabled) filtered + "FE_DIAN" else filtered)
+                                },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = Color(0xFF0284C7)
+                                )
+                            )
+                        }
+
+                        if (formState.amountDouble > 0.0) {
+                            Text(
+                                text = buildString {
+                                    if (estimatedOnePercentDeduction > 0.0) {
+                                        append("✓ Suma ${formatMoneyDisplay(estimatedOnePercentDeduction, formState.currencyCode)} a tu deducción del 1% en Renta")
+                                    } else if (!paidWithElectronicAccount) {
+                                        append("ℹ️ Pagos en efectivo no aplican al 1% de Factura Electrónica DIAN")
+                                    } else {
+                                        append("Activa el switch o adjunta soporte para sumar el 1% deducible en Renta")
+                                    }
+                                    if (estimatedGmf4x1000 > 0.0) {
+                                        append(" • 4x1000 est.: ${formatMoneyDisplay(estimatedGmf4x1000, formState.currencyCode)}")
+                                    }
+                                },
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF1E3A8A)
+                            )
+                        }
+                    }
+                }
 
                 // 4. Recurrence, Concept & Optional Details
                 ExpenseRecurrenceOptions(

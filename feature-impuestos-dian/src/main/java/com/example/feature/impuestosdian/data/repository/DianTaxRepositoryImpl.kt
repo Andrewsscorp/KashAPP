@@ -65,6 +65,10 @@ object TaxConfigurationStore {
             ?.toDoubleOrNull() ?: jurisdiction.effectiveIncomeTaxEstimateRate
         val singleExempt = prefs.getBoolean("tax_single_exempt_$safeUser", jurisdiction == TaxJurisdiction.CO_DIAN)
         val autoTagOcr = prefs.getBoolean("tax_auto_tag_ocr_$safeUser", true)
+        val dependentsCount = prefs.getInt("tax_dependents_count_$safeUser", 0).coerceIn(0, ColombianUvtCatalog.MAX_DEPENDENTS_COUNT)
+        val mandatoryIncrgoRate = prefs.getString("tax_incrgo_rate_$safeUser", null)
+            ?.toDoubleOrNull() ?: ColombianUvtCatalog.DEFAULT_MANDATORY_INCRGO_RATE
+        val useProgressiveCedula = prefs.getBoolean("tax_progressive_cedula_$safeUser", false)
 
         return TaxConfigurationProfile(
             userId = safeUser,
@@ -79,7 +83,10 @@ object TaxConfigurationStore {
             electronicInvoiceDeductionRate = feRate,
             effectiveIncomeTaxRate = incomeTaxRate,
             enforceSingleExemptAccountInColombia = singleExempt,
-            autoTagOcrReceiptsAsElectronicInvoice = autoTagOcr
+            autoTagOcrReceiptsAsElectronicInvoice = autoTagOcr,
+            dependentsCount = dependentsCount,
+            mandatoryIncrgoRate = mandatoryIncrgoRate,
+            useProgressiveCedulaGeneralInColombia = useProgressiveCedula
         )
     }
 
@@ -99,6 +106,9 @@ object TaxConfigurationStore {
             .putString("tax_income_rate_${safeUser}_${profile.jurisdiction.code}", profile.effectiveIncomeTaxRate.toString())
             .putBoolean("tax_single_exempt_$safeUser", profile.enforceSingleExemptAccountInColombia)
             .putBoolean("tax_auto_tag_ocr_$safeUser", profile.autoTagOcrReceiptsAsElectronicInvoice)
+            .putInt("tax_dependents_count_$safeUser", profile.dependentsCount.coerceIn(0, ColombianUvtCatalog.MAX_DEPENDENTS_COUNT))
+            .putString("tax_incrgo_rate_$safeUser", profile.mandatoryIncrgoRate.toString())
+            .putBoolean("tax_progressive_cedula_$safeUser", profile.useProgressiveCedulaGeneralInColombia)
             .apply()
 
         activeProfileFlow.value = profile
@@ -145,10 +155,20 @@ class DianTaxRepositoryImpl(
                 accounts = quad.first,
                 monthlyTransactions = quad.second,
                 jurisdiction = profile.jurisdiction,
-                customTaxRate = profile.financialTransactionTaxRate
+                customTaxRate = profile.financialTransactionTaxRate,
+                enforceSingleExemptAccount = profile.enforceSingleExemptAccountInColombia
             )
 
             val totalMonthlyGmf = gmfStatuses.sumOf { it.estimatedGmfTaxPaidCop }
+            val totalAnnualGmf = gmfEngine.calculateAnnualGmfPaid(
+                fiscalYear = profile.fiscalYear,
+                uvtValueCop = profile.taxUnitValue,
+                accounts = quad.first,
+                transactionsInYear = quad.second,
+                jurisdiction = profile.jurisdiction,
+                customTaxRate = profile.financialTransactionTaxRate,
+                enforceSingleExemptAccount = profile.enforceSingleExemptAccountInColombia
+            )
             val has350Uvt = gmfStatuses.any { it.isMarkedTaxExempt350Uvt }
             val advice = gmfEngine.buildGmfOptimizationAdvice(
                 statuses = gmfStatuses,
@@ -162,14 +182,15 @@ class DianTaxRepositoryImpl(
                 accounts = quad.first,
                 transactionsInYear = quad.second,
                 deductionRate = profile.electronicInvoiceDeductionRate,
-                maxDeductionUnits = profile.jurisdiction.electronicInvoiceMaxUnits
+                maxDeductionUnits = profile.jurisdiction.electronicInvoiceMaxUnits,
+                autoTagOcrReceiptsAsElectronicInvoice = profile.autoTagOcrReceiptsAsElectronicInvoice
             )
 
             val intlSummary = internationalEngine.evaluateGeneralTaxes(
                 profile = profile,
                 transactionsInYear = quad.second,
                 investments = quad.fourth,
-                annualBankTaxPaid = totalMonthlyGmf * 12.0,
+                annualBankTaxPaid = totalAnnualGmf,
                 electronicInvoiceBenefit = feBenefit
             )
 
@@ -194,6 +215,7 @@ class DianTaxRepositoryImpl(
                 warningThresholdsCount = warningCount,
                 accountGmfStatuses = gmfStatuses,
                 totalMonthlyGmfTaxCop = totalMonthlyGmf,
+                totalAnnualGmfTaxCop = totalAnnualGmf,
                 hasMarked350UvtAccount = has350Uvt,
                 optimizationRecommendation = advice,
                 electronicInvoiceBenefit = feBenefit,

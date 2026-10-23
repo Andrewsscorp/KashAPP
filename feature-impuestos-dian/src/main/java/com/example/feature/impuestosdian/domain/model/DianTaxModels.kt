@@ -1,7 +1,7 @@
 package com.example.feature.impuestosdian.domain.model
 
 enum class TaxAlertLevel {
-    SAFE,       // < 70% del tope (Verde)
+    SAFE,       // < 70% del tope (Verde / Azul Seguro)
     WARNING,    // Entre 70% y 99.9% del tope (Ámbar — Alerta preventiva)
     EXCEEDED    // >= 100% del tope (Rojo — Obligado a declarar por este tope)
 }
@@ -34,7 +34,10 @@ data class TaxConfigurationProfile(
     val electronicInvoiceDeductionRate: Double = jurisdiction.electronicInvoiceDeductionRate,
     val effectiveIncomeTaxRate: Double = jurisdiction.effectiveIncomeTaxEstimateRate,
     val enforceSingleExemptAccountInColombia: Boolean = true,
-    val autoTagOcrReceiptsAsElectronicInvoice: Boolean = true
+    val autoTagOcrReceiptsAsElectronicInvoice: Boolean = true,
+    val dependentsCount: Int = 0,
+    val mandatoryIncrgoRate: Double = ColombianUvtCatalog.DEFAULT_MANDATORY_INCRGO_RATE,
+    val useProgressiveCedulaGeneralInColombia: Boolean = false
 )
 
 /**
@@ -66,7 +69,7 @@ data class DianThresholdStatus(
     val accumulatedUvt: Double,
     val limitUvt: Double,
     val limitCop: Double,
-    val consumptionPercentage: Double, // 0.0 .. 100.0+
+    val consumptionPercentage: Double,
     val remainingCopBeforeLimit: Double,
     val alertLevel: TaxAlertLevel
 )
@@ -85,7 +88,8 @@ data class AccountGmfMonthlyStatus(
     val remainingExemptCop: Double,
     val taxableExcessCop: Double,
     val estimatedGmfTaxPaidCop: Double,
-    val gmfAlertLevel: TaxAlertLevel
+    val gmfAlertLevel: TaxAlertLevel,
+    val sharesUnified350UvtPool: Boolean = false
 )
 
 data class ElectronicInvoiceBenefitSummary(
@@ -115,13 +119,17 @@ data class InternationalTaxSummary(
     val estimatedTaxableNetIncome: Double,
     val estimatedAnnualIncomeTax: Double,
     val totalEstimatedTaxBurden: Double,
-    val effectiveTaxPressurePercentage: Double
+    val effectiveTaxPressurePercentage: Double,
+    val mandatoryIncrgoAmount: Double = 0.0,
+    val laborExempt25PercentAmount: Double = 0.0,
+    val dependentsDeductionAmount: Double = 0.0,
+    val cappedGeneralDeductionsAmount: Double = 0.0
 )
 
 data class DianTaxRadarReport(
     val userId: String,
     val fiscalYear: Int,
-    val currentYearMonth: String, // "YYYY-MM"
+    val currentYearMonth: String,
     val uvtValueCop: Double,
     val lastTwoDigitsNitOrCedula: String,
     val estimatedFilingDeadlineDescription: String,
@@ -131,10 +139,16 @@ data class DianTaxRadarReport(
     val warningThresholdsCount: Int,
     val accountGmfStatuses: List<AccountGmfMonthlyStatus>,
     val totalMonthlyGmfTaxCop: Double,
+    val totalAnnualGmfTaxCop: Double = totalMonthlyGmfTaxCop,
     val hasMarked350UvtAccount: Boolean,
     val optimizationRecommendation: String,
     val electronicInvoiceBenefit: ElectronicInvoiceSummaryAlias,
-    val configProfile: TaxConfigurationProfile = TaxConfigurationProfile(userId = userId, fiscalYear = fiscalYear, taxUnitValue = uvtValueCop, taxIdLastDigits = lastTwoDigitsNitOrCedula),
+    val configProfile: TaxConfigurationProfile = TaxConfigurationProfile(
+        userId = userId,
+        fiscalYear = fiscalYear,
+        taxUnitValue = uvtValueCop,
+        taxIdLastDigits = lastTwoDigitsNitOrCedula
+    ),
     val internationalTaxSummary: InternationalTaxSummary? = null
 )
 

@@ -62,7 +62,7 @@ class DianUvtThresholdEngine {
             it.date.startsWith(yearPrefix) && !isOpeningOrInternalTransfer(it)
         }
 
-        // 1. PATRIMONIO BRUTO (Tope: 4.500 UVT en Colombia o el umbral patrimonial de la jurisdicción)
+        // 1. PATRIMONIO BRUTO (Tope: 4.500 UVT en Colombia — Art. 592 Num. 1 y Art. 261 E.T.)
         val positiveAccountBalancesCop = accounts
             .filter { !it.type.equals("CREDIT_CARD", ignoreCase = true) && it.balance > 0.0 }
             .sumOf { it.balance }
@@ -99,8 +99,8 @@ class DianUvtThresholdEngine {
             .filter { it.type.equals("EXPENSE", ignoreCase = true) }
             .sumOf { max(0.0, it.amount) }
 
-        // 5. CONSIGNACIONES BANCARIAS, DEPÓSITOS O INVERSIONES FINANCIERAS (Tope: 1.400 UVT en Colombia)
-        val bankDepositsAndInvestmentsCop = yearTx
+        // 5. CONSIGNACIONES BANCARIAS, DEPÓSITOS O INVERSIONES FINANCIERAS DEL AÑO (Art. 594-3 Lit. c) E.T.)
+        val bankDepositsInYearCop = yearTx
             .filter { tx ->
                 val account = accountsById[tx.accountId]
                 val isBankOrWallet = account != null &&
@@ -108,7 +108,19 @@ class DianUvtThresholdEngine {
                     !account.type.equals("CREDIT_CARD", ignoreCase = true)
                 isBankOrWallet && tx.type.equals("INCOME", ignoreCase = true)
             }
-            .sumOf { max(0.0, it.amount) } + activeInvestmentsCop
+            .sumOf { max(0.0, it.amount) }
+
+        // Solo suman inversiones constituidas en el año gravable actual que no sean traslados internos ya contados
+        val newInvestmentsInFiscalYearCop = investments
+            .filter { inv ->
+                inv.status.equals("ACTIVE", ignoreCase = true) &&
+                    inv.acquisitionDate.startsWith(yearPrefix) &&
+                    !inv.tags.contains("INTERNAL_TRANSFER", ignoreCase = true) &&
+                    !inv.tags.contains("RENEWAL_SAME_YEAR", ignoreCase = true)
+            }
+            .sumOf { inv -> max(0.0, inv.initialAmount + inv.contributions) }
+
+        val bankDepositsAndInvestmentsCop = bankDepositsInYearCop + newInvestmentsInFiscalYearCop
 
         val wealthLimitUnits = if (jurisdiction == TaxJurisdiction.CO_DIAN) {
             ColombianUvtCatalog.THRESHOLD_GROSS_WEALTH_UVT
@@ -197,7 +209,8 @@ class DianUvtThresholdEngine {
         accounts: List<AccountEntity>,
         transactionsInYear: List<TransactionEntity>,
         deductionRate: Double = ColombianUvtCatalog.ELECTRONIC_INVOICE_DEDUCTION_RATE,
-        maxDeductionUnits: Double = ColombianUvtCatalog.ELECTRONIC_INVOICE_MAX_DEDUCTION_UVT
+        maxDeductionUnits: Double = ColombianUvtCatalog.ELECTRONIC_INVOICE_MAX_DEDUCTION_UVT,
+        autoTagOcrReceiptsAsElectronicInvoice: Boolean = true
     ): ElectronicInvoiceBenefitSummary {
         val safeUvt = if (uvtValueCop > 0.0) uvtValueCop else ColombianUvtCatalog.getDefaultUvtForYear(fiscalYear)
         val accountsById = accounts.associateBy { it.id }
@@ -210,12 +223,12 @@ class DianUvtThresholdEngine {
             val account = accountsById[tx.accountId]
             // Requisito legal Ley 2277/2022: Pago por medio electrónico (no efectivo CASH)
             val paidElectronically = account != null && !account.type.equals("CASH", ignoreCase = true)
-            // Soporte de factura electrónica: Etiqueta explícita o recibo escaneado en :feature-ocr
-            val hasElectronicInvoiceSupport = tx.tags.contains("FE_DIAN", ignoreCase = true) ||
+            val hasExplicitTag = tx.tags.contains("FE_DIAN", ignoreCase = true) ||
                 tx.tags.contains("FACTURA_ELECTRONICA", ignoreCase = true) ||
-                tx.tags.contains("TAX_DEDUCTIBLE", ignoreCase = true) ||
-                !tx.receiptUrl.isNullOrBlank()
-            paidElectronically && hasElectronicInvoiceSupport
+                tx.tags.contains("TAX_DEDUCTIBLE", ignoreCase = true)
+            val hasOcrReceiptSupport = autoTagOcrReceiptsAsElectronicInvoice && !tx.receiptUrl.isNullOrBlank()
+
+            paidElectronically && (hasExplicitTag || hasOcrReceiptSupport)
         }
 
         val eligibleTotalCop = eligibleTransactions.sumOf { max(0.0, it.amount) }

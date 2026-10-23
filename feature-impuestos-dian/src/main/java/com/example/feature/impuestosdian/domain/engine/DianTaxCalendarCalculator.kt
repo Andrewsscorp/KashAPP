@@ -34,9 +34,16 @@ object DianTaxCalendarCalculator {
 
         val normalized = if (numeric == 0) 100 else numeric
         val periodDescription = when (normalized) {
-            in 1..26 -> "Segunda y tercera semana de Agosto de $declarationYear"
-            in 27..66 -> "Primera a cuarta semana de Septiembre de $declarationYear"
-            else -> "Primera a cuarta semana de Octubre de $declarationYear"
+            in 1..12 -> "Segunda semana de Agosto de $declarationYear"
+            in 13..26 -> "Tercera y cuarta semana de Agosto de $declarationYear"
+            in 27..36 -> "Primera semana de Septiembre de $declarationYear"
+            in 37..46 -> "Segunda semana de Septiembre de $declarationYear"
+            in 47..56 -> "Tercera semana de Septiembre de $declarationYear"
+            in 57..66 -> "Cuarta semana de Septiembre de $declarationYear"
+            in 67..76 -> "Primera semana de Octubre de $declarationYear"
+            in 77..86 -> "Segunda semana de Octubre de $declarationYear"
+            in 87..94 -> "Tercera semana de Octubre de $declarationYear"
+            else -> "Cuarta semana de Octubre de $declarationYear"
         }
         return "Dígitos '$digits': Vencimiento estimado en $periodDescription (Declaración del año gravable $fiscalYear)"
     }

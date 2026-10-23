@@ -1,5 +1,6 @@
 package com.example.feature.impuestosdian.ui
 
+import android.content.Intent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,9 +32,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import com.example.feature.impuestosdian.domain.model.DianTaxRadarReport
 import com.example.feature.impuestosdian.domain.model.GlobalTaxJurisdictionCatalog
 import com.example.feature.impuestosdian.domain.model.TaxConfigurationProfile
@@ -46,6 +49,7 @@ fun DianTaxRadarInteractiveContainer(
     onNavigateBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val state by viewModel.uiState.collectAsState()
     val report = state.report
 
@@ -59,7 +63,33 @@ fun DianTaxRadarInteractiveContainer(
     DianTaxRadarScreen(
         report = report,
         onToggleAccountTaxExempt = { accId, exempt -> viewModel.toggleAccountTaxExempt(accId, exempt) },
-        onExportPreRentaPdf = { viewModel.exportPreRentaPdf() },
+        onExportPreRentaPdf = {
+            viewModel.exportPreRentaPdf { exportedFile ->
+                try {
+                    val uri = FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.provider",
+                        exportedFile
+                    )
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "application/pdf"
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        putExtra(
+                            Intent.EXTRA_SUBJECT,
+                            "Certificado Pre-Renta ${report.configProfile.jurisdiction.authorityAcronym} ${report.fiscalYear}"
+                        )
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    context.startActivity(
+                        Intent.createChooser(shareIntent, "Compartir Borrador Pre-Renta PDF").apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                    )
+                } catch (_: Exception) {
+                    // Fallback silencioso en entornos de prueba sin FileProvider registrado
+                }
+            }
+        },
         onOpenConfigureUvtDialog = { viewModel.openConfigDialog() },
         onSelectJurisdiction = { jur -> viewModel.selectJurisdictionQuick(jur) },
         onNavigateBack = onNavigateBack,

@@ -133,7 +133,6 @@ class DianUvtAndGmfEngineTest {
         )
 
         val wealthStatus = statuses.first { it.type == DianCriterionType.PATRIMONIO_BRUTO }
-        // Deudas de TC (-15M) no restan del Patrimonio Bruto (Estatuto Tributario Art. 261)
         assertEquals(245_000_000.0, wealthStatus.accumulatedCop, 0.01)
         assertEquals(TaxAlertLevel.EXCEEDED, wealthStatus.alertLevel)
     }
@@ -247,7 +246,6 @@ class DianUvtAndGmfEngineTest {
         val benefit1 = thresholdEngine.calculateElectronicInvoiceBenefit(2026, uvt2026, listOf(bankAcc), listOf(txNormal))
         assertEquals(400_000.0, benefit1.appliedDeductionCop, 0.01)
 
-        // Si las compras fueran $1.500M, se limita a 240 UVT ($12.569.760 COP)
         val txHuge = txNormal.copy(id = "tx_fe_2", amount = 1_500_000_000.0)
         val benefitCapped = thresholdEngine.calculateElectronicInvoiceBenefit(2026, uvt2026, listOf(bankAcc), listOf(txHuge))
         assertEquals(240.0 * uvt2026, benefitCapped.appliedDeductionCop, 0.01)
@@ -282,7 +280,7 @@ class DianUvtAndGmfEngineTest {
             accountName = "BBVA México",
             categoryId = "cat_comp",
             categoryName = "Equipos",
-            amount = 116_000.0, // Incluye 16% IVA (16,000 MXN)
+            amount = 116_000.0,
             currency = "MXN",
             type = "EXPENSE",
             date = "2026-04-12",
@@ -325,7 +323,6 @@ class DianUvtAndGmfEngineTest {
         val acc = AccountEntity(id = "acc_1", userId = "u1", name = "Ahorros", balance = 0.0, type = "SAVINGS")
         val limitCop = 1_400.0 * uvt2026 // 73,323,600.0
 
-        // Caso A: 69.9% del tope -> SAFE
         val txSafe = TransactionEntity(
             id = "tx_safe", userId = "u1", accountId = "acc_1", accountName = "Ahorros",
             categoryId = "c1", categoryName = "Salario", amount = limitCop * 0.699, currency = "COP",
@@ -335,19 +332,16 @@ class DianUvtAndGmfEngineTest {
             .first { it.type == DianCriterionType.INGRESOS_BRUTOS }
         assertEquals(TaxAlertLevel.SAFE, statusSafe.alertLevel)
 
-        // Caso B: Exactamente 70.0% del tope -> WARNING
         val txWarn = txSafe.copy(id = "tx_warn", amount = limitCop * 0.70, idempotencyKey = "k_warn")
         val statusWarn = thresholdEngine.evaluateAnnualThresholds(2026, uvt2026, listOf(acc), listOf(txWarn), emptyList(), emptyList())
             .first { it.type == DianCriterionType.INGRESOS_BRUTOS }
         assertEquals(TaxAlertLevel.WARNING, statusWarn.alertLevel)
 
-        // Caso C: 99.9% del tope -> WARNING
         val txWarn99 = txSafe.copy(id = "tx_warn99", amount = limitCop * 0.999, idempotencyKey = "k_warn99")
         val statusWarn99 = thresholdEngine.evaluateAnnualThresholds(2026, uvt2026, listOf(acc), listOf(txWarn99), emptyList(), emptyList())
             .first { it.type == DianCriterionType.INGRESOS_BRUTOS }
         assertEquals(TaxAlertLevel.WARNING, statusWarn99.alertLevel)
 
-        // Caso D: Exactamente 100.0% del tope -> EXCEEDED
         val txExceeded = txSafe.copy(id = "tx_exc", amount = limitCop, idempotencyKey = "k_exc")
         val statusExceeded = thresholdEngine.evaluateAnnualThresholds(2026, uvt2026, listOf(acc), listOf(txExceeded), emptyList(), emptyList())
             .first { it.type == DianCriterionType.INGRESOS_BRUTOS }
@@ -384,13 +378,12 @@ class DianUvtAndGmfEngineTest {
             monthlyTransactions = listOf(txSavings, txCash, txCc)
         )
 
-        // Solo la cuenta bancaria debe estar en el reporte GMF (Efectivo y TC excluidas)
         assertEquals(1, gmfResults.size)
         val normStatus = gmfResults.first()
         assertEquals("acc_norm", normStatus.accountId)
         assertEquals(0.0, normStatus.exemptLimitUvt, 0.01)
         assertEquals(5_000_000.0, normStatus.taxableExcessCop, 0.01)
-        assertEquals(20_000.0, normStatus.estimatedGmfTaxPaidCop, 0.01) // 5M * 0.004 = 20,000
+        assertEquals(20_000.0, normStatus.estimatedGmfTaxPaidCop, 0.01)
     }
 
     @Test
@@ -418,7 +411,6 @@ class DianUvtAndGmfEngineTest {
             transactionsInYear = listOf(txCashWithInvoice, txBankWithInvoice)
         )
 
-        // Art. 336 Num 5 E.T. exige pago por medio electrónico (tarjeta débito/crédito o transferencia), excluyendo efectivo
         assertEquals(1, benefit.eligibleTransactionsCount)
         assertEquals(3_000_000.0, benefit.eligiblePurchasesTotalCop, 0.01)
         assertEquals(30_000.0, benefit.appliedDeductionCop, 0.01)
@@ -438,7 +430,7 @@ class DianUvtAndGmfEngineTest {
             accumulatedDepreciation = 32_000_000.0,
             usefulLifeMonths = 60,
             depreciationMethod = "STRAIGHT_LINE",
-            currentMarketValue = 0.0, // Sin avalúo comercial, usa valor en libros NIC 16 ($68M)
+            currentMarketValue = 0.0,
             status = "ACTIVE",
             includeInNetWorth = true
         )
@@ -454,8 +446,141 @@ class DianUvtAndGmfEngineTest {
         )
 
         val wealth = statuses.first { it.type == DianCriterionType.PATRIMONIO_BRUTO }
-        // El activo vendido se excluye y el activo vigente vale costo ($100M) - depreciación ($32M) = $68M
         assertEquals(68_000_000.0, wealth.accumulatedCop, 0.01)
         assertFalse(wealth.accumulatedCop > 100_000_000.0)
+    }
+
+    @Test
+    fun `TEST-DIAN-12 Inversiones de anos anteriores suman a Patrimonio Bruto pero NO inflan Consignaciones del ano actual`() {
+        val acc = AccountEntity(id = "acc_1", userId = "u1", name = "Ahorros", balance = 10_000_000.0, type = "SAVINGS")
+        val oldCdt2024 = InvestmentEntity(
+            id = "inv_old",
+            userId = "u1",
+            name = "CDT Antiguo 2024",
+            typeId = "RENTA_FIJA",
+            typeName = "CDT",
+            acquisitionDate = "2024-11-10",
+            status = "ACTIVE",
+            initialAmount = 60_000_000.0,
+            currentValue = 68_000_000.0,
+            originAccountId = "acc_1",
+            originAccountName = "Ahorros"
+        )
+        val newCdt2026 = InvestmentEntity(
+            id = "inv_new",
+            userId = "u1",
+            name = "CDT Nuevo 2026",
+            typeId = "RENTA_FIJA",
+            typeName = "CDT",
+            acquisitionDate = "2026-04-01",
+            status = "ACTIVE",
+            initialAmount = 15_000_000.0,
+            currentValue = 16_000_000.0,
+            originAccountId = "acc_1",
+            originAccountName = "Ahorros"
+        )
+
+        val statuses = thresholdEngine.evaluateAnnualThresholds(
+            fiscalYear = 2026,
+            uvtValueCop = uvt2026,
+            accounts = listOf(acc),
+            transactionsInYear = emptyList(),
+            fixedAssets = emptyList(),
+            investments = listOf(oldCdt2024, newCdt2026)
+        )
+
+        val wealth = statuses.first { it.type == DianCriterionType.PATRIMONIO_BRUTO }
+        val deposits = statuses.first { it.type == DianCriterionType.CONSIGNACIONES_E_INVERSIONES }
+
+        // Patrimonio Bruto suma cuenta ($10M) + CDT 2024 ($68M) + CDT 2026 ($16M) = $94M
+        assertEquals(94_000_000.0, wealth.accumulatedCop, 0.01)
+        // Consignaciones e Inversiones 2026 solo suma el capital constituido en 2026 ($15M), NO el CDT de 2024
+        assertEquals(15_000_000.0, deposits.accumulatedCop, 0.01)
+        assertEquals(TaxAlertLevel.SAFE, deposits.alertLevel)
+    }
+
+    @Test
+    fun `TEST-DIAN-13 Bolsa compartida de 350 UVT entre multiples cuentas cuando enforceSingleExemptAccount es false`() {
+        val acc1 = AccountEntity(id = "acc_1", userId = "u1", name = "Bancolombia", bankName = "Bancolombia", balance = 30_000_000.0, type = "SAVINGS", isTaxExempt = false)
+        val acc2 = AccountEntity(id = "acc_2", userId = "u1", name = "Davivienda", bankName = "Davivienda", balance = 30_000_000.0, type = "SAVINGS", isTaxExempt = false)
+
+        val tx1 = TransactionEntity(
+            id = "tx_1", userId = "u1", accountId = "acc_1", accountName = "Bancolombia",
+            categoryId = "c1", categoryName = "Pagos", amount = 12_000_000.0, currency = "COP",
+            type = "EXPENSE", date = "2026-10-05", description = "Salida 1", receiptUrl = null, idempotencyKey = "k1"
+        )
+        val tx2 = TransactionEntity(
+            id = "tx_2", userId = "u1", accountId = "acc_2", accountName = "Davivienda",
+            categoryId = "c1", categoryName = "Pagos", amount = 8_330_900.0, currency = "COP",
+            type = "EXPENSE", date = "2026-10-12", description = "Salida 2", receiptUrl = null, idempotencyKey = "k2"
+        )
+
+        val statuses = gmfEngine.evaluateMonthlyGmf(
+            yearMonth = "2026-10",
+            uvtValueCop = uvt2026,
+            accounts = listOf(acc1, acc2),
+            monthlyTransactions = listOf(tx1, tx2),
+            jurisdiction = TaxJurisdiction.CO_DIAN,
+            enforceSingleExemptAccount = false
+        )
+
+        val st1 = statuses.first { it.accountId == "acc_1" }
+        val st2 = statuses.first { it.accountId == "acc_2" }
+
+        assertTrue(st1.sharesUnified350UvtPool)
+        assertTrue(st2.sharesUnified350UvtPool)
+        assertEquals(0.0, st1.estimatedGmfTaxPaidCop, 0.01)
+        assertEquals(2_000_000.0, st2.taxableExcessCop, 0.01)
+        assertEquals(8_000.0, st2.estimatedGmfTaxPaidCop, 0.01)
+    }
+
+    @Test
+    fun `TEST-DIAN-14 Calculo anual real de 12 meses de 4x1000 evita distorsion de multiplicar un solo mes por 12`() {
+        val acc = AccountEntity(id = "acc_1", userId = "u1", name = "Ahorros No Exenta", bankName = "BBVA", balance = 50_000_000.0, type = "SAVINGS", isTaxExempt = false)
+        val txMarch = TransactionEntity(
+            id = "tx_mar", userId = "u1", accountId = "acc_1", accountName = "Ahorros No Exenta",
+            categoryId = "c1", categoryName = "Gasto", amount = 5_000_000.0, currency = "COP",
+            type = "EXPENSE", date = "2026-03-10", description = "Marzo", receiptUrl = null, idempotencyKey = "k_mar"
+        )
+        val txJuly = txMarch.copy(id = "tx_jul", amount = 10_000_000.0, date = "2026-07-15", idempotencyKey = "k_jul")
+
+        val annualGmf = gmfEngine.calculateAnnualGmfPaid(
+            fiscalYear = 2026,
+            uvtValueCop = uvt2026,
+            accounts = listOf(acc),
+            transactionsInYear = listOf(txMarch, txJuly)
+        )
+
+        assertEquals(60_000.0, annualGmf, 0.01)
+    }
+
+    @Test
+    fun `TEST-DIAN-15 Switch autoTagOcrReceiptsAsElectronicInvoice en false exige etiqueta explicita FE_DIAN`() {
+        val bankAcc = AccountEntity(id = "acc_b", userId = "u1", name = "Ahorros", balance = 20_000_000.0, type = "SAVINGS")
+        val txOnlyReceiptPhoto = TransactionEntity(
+            id = "tx_photo", userId = "u1", accountId = "acc_b", accountName = "Ahorros",
+            categoryId = "c1", categoryName = "Almuerzo", amount = 1_000_000.0, currency = "COP",
+            type = "EXPENSE", date = "2026-05-01", description = "Recibo cámara sin tag FE",
+            receiptUrl = "content://media/external/images/101", tags = "", idempotencyKey = "k_photo"
+        )
+        val txExplicitFe = txOnlyReceiptPhoto.copy(
+            id = "tx_fe", amount = 4_000_000.0, tags = "FE_DIAN", idempotencyKey = "k_fe"
+        )
+
+        val whenSwitchOn = thresholdEngine.calculateElectronicInvoiceBenefit(
+            fiscalYear = 2026, uvtValueCop = uvt2026, accounts = listOf(bankAcc),
+            transactionsInYear = listOf(txOnlyReceiptPhoto, txExplicitFe),
+            autoTagOcrReceiptsAsElectronicInvoice = true
+        )
+        assertEquals(2, whenSwitchOn.eligibleTransactionsCount)
+        assertEquals(50_000.0, whenSwitchOn.appliedDeductionCop, 0.01)
+
+        val whenSwitchOff = thresholdEngine.calculateElectronicInvoiceBenefit(
+            fiscalYear = 2026, uvtValueCop = uvt2026, accounts = listOf(bankAcc),
+            transactionsInYear = listOf(txOnlyReceiptPhoto, txExplicitFe),
+            autoTagOcrReceiptsAsElectronicInvoice = false
+        )
+        assertEquals(1, whenSwitchOff.eligibleTransactionsCount)
+        assertEquals(40_000.0, whenSwitchOff.appliedDeductionCop, 0.01)
     }
 }

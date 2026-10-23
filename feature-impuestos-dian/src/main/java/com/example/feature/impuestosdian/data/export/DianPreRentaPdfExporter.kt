@@ -21,7 +21,7 @@ class DianPreRentaPdfExporter(private val context: Context) {
         val fileName = "KashApp_Borrador_PreRenta_${report.configProfile.jurisdiction.code}_${report.fiscalYear}.pdf"
         val outFile = File(exportDir, fileName)
 
-        val currencyFormatter = NumberFormat.getNumberInstance(Locale("es", "CO")).apply {
+        val currencyFormatter = NumberFormat.getNumberInstance(Locale.forLanguageTag("es-CO")).apply {
             maximumFractionDigits = 0
         }
         val cur = report.configProfile.currency
@@ -32,15 +32,17 @@ class DianPreRentaPdfExporter(private val context: Context) {
             report.thresholds.forEach { t ->
                 append("${t.type}:${t.accumulatedCop.toLong()}|")
             }
-            append("GMF:${report.totalMonthlyGmfTaxCop.toLong()}|")
+            append("GMF_MES:${report.totalMonthlyGmfTaxCop.toLong()}|")
+            append("GMF_ANUAL:${report.totalAnnualGmfTaxCop.toLong()}|")
             append("FE:${report.electronicInvoiceBenefit.appliedDeductionCop.toLong()}")
         }
         val sha256Signature = computeSha256Hex(canonicalPayload)
 
         val pdfDocument = PdfDocument()
-        val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
-        val page = pdfDocument.startPage(pageInfo)
-        val canvas: Canvas = page.canvas
+        var pageNumber = 1
+        var currentPage = pdfDocument.startPage(PdfDocument.PageInfo.Builder(595, 842, pageNumber).create())
+        var canvas: Canvas = currentPage.canvas
+        var y = 45f
 
         val titlePaint = Paint().apply {
             color = Color.rgb(15, 23, 42)
@@ -66,7 +68,34 @@ class DianPreRentaPdfExporter(private val context: Context) {
             isAntiAlias = true
         }
 
-        var y = 45f
+        fun drawFooter(targetCanvas: Canvas, pNum: Int) {
+            targetCanvas.drawText("Sello de Integridad SHA-256: $sha256Signature", 36f, 785f, bodyPaint)
+            targetCanvas.drawText(
+                "Nota Legal (Ley 43 de 1990): Herramienta informativa de planeación tributaria (Andrés Suárez) • Pág. $pNum",
+                36f,
+                799f,
+                bodyPaint
+            )
+        }
+
+        fun ensureSpace(neededHeight: Float) {
+            if (y + neededHeight > 760f) {
+                drawFooter(canvas, pageNumber)
+                pdfDocument.finishPage(currentPage)
+                pageNumber++
+                currentPage = pdfDocument.startPage(PdfDocument.PageInfo.Builder(595, 842, pageNumber).create())
+                canvas = currentPage.canvas
+                y = 45f
+                canvas.drawText(
+                    "KASHAPP • CERTIFICADO BORRADOR PRE-RENTA (${report.fiscalYear}) — Continuación Pág. $pageNumber",
+                    36f,
+                    y,
+                    subtitlePaint
+                )
+                y += 22f
+            }
+        }
+
         canvas.drawText(
             "KASHAPP • CERTIFICADO BORRADOR PRE-RENTA E IMPUESTOS (${report.fiscalYear})",
             36f,
@@ -87,23 +116,34 @@ class DianPreRentaPdfExporter(private val context: Context) {
         canvas.drawText("1. EVALUACIÓN DE TOPES ANUALES (${report.fiscalYear})", 36f, y, boldBodyPaint)
         y += 16f
         report.thresholds.forEach { t ->
+            ensureSpace(16f)
             val line = "• ${t.title}: ${currencyFormatter.format(t.accumulatedCop)} $cur (${"%.1f".format(t.accumulatedUvt)} / ${t.limitUvt.toInt()} $unitName) — [${t.alertLevel.name}]"
             canvas.drawText(line, 44f, y, bodyPaint)
             y += 15f
         }
 
         y += 12f
-        canvas.drawText("2. CONTROL MENSUAL DE IMPUESTOS BANCARIOS (4x1000 / ITF — ${report.currentYearMonth})", 36f, y, boldBodyPaint)
+        ensureSpace(45f)
+        canvas.drawText("2. CONTROL DE IMPUESTOS BANCARIOS (4x1000 / ITF — ${report.currentYearMonth} y Acumulado Anual)", 36f, y, boldBodyPaint)
         y += 16f
         canvas.drawText(
-            "• Total Impuesto Bancario / 4x1000 del Mes: ${currencyFormatter.format(report.totalMonthlyGmfTaxCop)} $cur (50% Deducible Art. 115 E.T.: ${currencyFormatter.format(report.totalMonthlyGmfTaxCop * 0.5)} $cur)",
+            "• Total 4x1000 del Mes (${report.currentYearMonth}): ${currencyFormatter.format(report.totalMonthlyGmfTaxCop)} $cur | Acumulado Anual (${report.fiscalYear}): ${currencyFormatter.format(report.totalAnnualGmfTaxCop)} $cur",
             44f,
             y,
             bodyPaint
         )
         y += 15f
-        report.accountGmfStatuses.take(6).forEach { acc ->
+        canvas.drawText(
+            "• 50% del 4x1000 Anual Deducible en Renta (Art. 115 E.T.): ${currencyFormatter.format(report.totalAnnualGmfTaxCop * 0.5)} $cur",
+            44f,
+            y,
+            bodyPaint
+        )
+        y += 15f
+        report.accountGmfStatuses.forEach { acc ->
+            ensureSpace(15f)
             val exemptTag = when {
+                acc.sharesUnified350UvtPool -> "Bolsa Compartida 350 UVT"
                 acc.isMarkedTaxExempt350Uvt -> "Exenta 350 UVT"
                 acc.isLowAmountDigitalWallet65Uvt -> "Billetera 65 UVT"
                 else -> "Gravada"
@@ -118,6 +158,7 @@ class DianPreRentaPdfExporter(private val context: Context) {
         }
 
         y += 12f
+        ensureSpace(35f)
         val fe = report.electronicInvoiceBenefit
         canvas.drawText("3. DEDUCCIÓN POR FACTURA ELECTRÓNICA / GASTOS SOPORTADOS", 36f, y, boldBodyPaint)
         y += 16f
@@ -130,6 +171,7 @@ class DianPreRentaPdfExporter(private val context: Context) {
 
         report.internationalTaxSummary?.let { intl ->
             y += 22f
+            ensureSpace(110f)
             canvas.drawText("4. RESUMEN DE IMPUESTOS GENERALES (${intl.jurisdiction.countryName})", 36f, y, boldBodyPaint)
             y += 16f
             canvas.drawText(
@@ -146,6 +188,24 @@ class DianPreRentaPdfExporter(private val context: Context) {
                 bodyPaint
             )
             y += 15f
+            if (report.configProfile.useProgressiveCedulaGeneralInColombia && intl.mandatoryIncrgoAmount > 0.0) {
+                canvas.drawText(
+                    "• Depuración Cédula General DIAN: INCRGO ${currencyFormatter.format(intl.mandatoryIncrgoAmount)} $cur | Deducciones Topadas (40%/1340 UVT): ${currencyFormatter.format(intl.cappedGeneralDeductionsAmount)} $cur",
+                    44f,
+                    y,
+                    bodyPaint
+                )
+                y += 15f
+                if (intl.dependentsDeductionAmount > 0.0) {
+                    canvas.drawText(
+                        "• Deducción por Dependientes Económicos (72 UVT c/u): ${currencyFormatter.format(intl.dependentsDeductionAmount)} $cur",
+                        44f,
+                        y,
+                        bodyPaint
+                    )
+                    y += 15f
+                }
+            }
             canvas.drawText(
                 "• Renta Líquida Gravable Estimada: ${currencyFormatter.format(intl.estimatedTaxableNetIncome)} $cur | Impuesto Renta Estimado: ${currencyFormatter.format(intl.estimatedAnnualIncomeTax)} $cur",
                 44f,
@@ -161,17 +221,8 @@ class DianPreRentaPdfExporter(private val context: Context) {
             )
         }
 
-        y = 785f
-        canvas.drawText("Sello de Integridad SHA-256: $sha256Signature", 36f, y, bodyPaint)
-        y += 14f
-        canvas.drawText(
-            "Nota Legal (Ley 43 de 1990): Herramienta informativa de planeación tributaria (Andrés Suárez). No sustituye firma de Contador Público.",
-            36f,
-            y,
-            bodyPaint
-        )
-
-        pdfDocument.finishPage(page)
+        drawFooter(canvas, pageNumber)
+        pdfDocument.finishPage(currentPage)
         FileOutputStream(outFile).use { fos ->
             pdfDocument.writeTo(fos)
         }

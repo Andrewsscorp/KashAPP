@@ -63,7 +63,7 @@ import com.example.feature.impuestosdian.domain.model.TaxJurisdiction
 import java.text.NumberFormat
 import java.util.Locale
 
-// Paleta de tonos azules corporativos KashApp
+// Paleta de tonos azules corporativos KashApp + Semáforo de Alertas Tributarias
 private val BlueDeepNavy = Color(0xFF0F172A)
 private val BlueRoyalDark = Color(0xFF1E3A8A)
 private val BluePrimary = Color(0xFF0284C7)
@@ -74,6 +74,9 @@ private val BlueCardSubtle = Color(0xFFEFF6FF)
 private val BlueBorder = Color(0xFFBFDBFE)
 private val BlueSteelText = Color(0xFF334155)
 private val BlueMutedText = Color(0xFF64748B)
+private val AlertAmber = Color(0xFFD97706)
+private val AlertCrimson = Color(0xFFDC2626)
+private val AlertSafeBlue = Color(0xFF0284C7)
 
 @Composable
 fun DianTaxRadarScreen(
@@ -472,13 +475,23 @@ fun DianTaxRadarScreen(
                                 shape = RoundedCornerShape(10.dp),
                                 border = BorderStroke(1.dp, BlueBorder)
                             ) {
-                                Text(
-                                    text = "Mes: $${numberFormatter.format(report.totalMonthlyGmfTaxCop)} $cur",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = BlueRoyalDark,
+                                Column(
+                                    horizontalAlignment = Alignment.End,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                )
+                                ) {
+                                    Text(
+                                        text = "Mes: $${numberFormatter.format(report.totalMonthlyGmfTaxCop)} $cur",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = BlueRoyalDark
+                                    )
+                                    Text(
+                                        text = "Año: $${numberFormatter.format(report.totalAnnualGmfTaxCop)} $cur",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = BluePrimary
+                                    )
+                                }
                             }
                         }
 
@@ -730,29 +743,68 @@ private fun ElectronicInvoiceCard(
                 border = BorderStroke(1.dp, BlueBorder),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Compras electrónicas (${fe.eligibleTransactionsCount})", fontSize = 11.sp, color = BlueMutedText)
-                        Text(
-                            text = "$${numberFormatter.format(fe.eligiblePurchasesTotalCop)} $cur",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = BlueDeepNavy
-                        )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Compras electrónicas (${fe.eligibleTransactionsCount})", fontSize = 11.sp, color = BlueMutedText)
+                            Text(
+                                text = "$${numberFormatter.format(fe.eligiblePurchasesTotalCop)} $cur",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = BlueDeepNavy
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text("Deducción acumulada ($pctLabel)", fontSize = 11.sp, color = BlueMutedText)
+                            Text(
+                                text = "$${numberFormatter.format(fe.appliedDeductionCop)} $cur (${"%.1f".format(fe.deductionOnePercentUvt)} $unitName)",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = BlueOcean
+                            )
+                        }
                     }
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text("Deducción acumulada ($pctLabel)", fontSize = 11.sp, color = BlueMutedText)
+
+                    val feProgress = if (fe.maxAllowedDeductionCop > 0.0) {
+                        (fe.appliedDeductionCop / fe.maxAllowedDeductionCop).toFloat().coerceIn(0f, 1f)
+                    } else 0f
+
+                    LinearProgressIndicator(
+                        progress = { feProgress },
+                        color = BlueOcean,
+                        trackColor = BlueBorder,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(7.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
-                            text = "$${numberFormatter.format(fe.appliedDeductionCop)} $cur (${"%.1f".format(fe.deductionOnePercentUvt)} $unitName)",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = BlueOcean
+                            text = "Cupo deducible restante: $${numberFormatter.format(fe.remainingBenefitCop)} $cur",
+                            fontSize = 11.sp,
+                            color = BlueSteelText,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = if (report.configProfile.autoTagOcrReceiptsAsElectronicInvoice) "OCR + Etiqueta FE" else "Solo Etiqueta FE",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = BluePrimary
                         )
                     }
                 }
@@ -816,8 +868,26 @@ private fun InternationalGeneralTaxesCard(
             )
             if (intl.deductibleBankTaxFiftyPercent > 0.0) {
                 GeneralTaxMetricRow(
-                    label = "50% del 4x1000 deducible en Renta (Art. 115 E.T.)",
+                    label = "50% del 4x1000 anual deducible en Renta (Art. 115 E.T.)",
                     value = "$${numberFormatter.format(intl.deductibleBankTaxFiftyPercent)} $cur"
+                )
+            }
+            if (intl.mandatoryIncrgoAmount > 0.0) {
+                GeneralTaxMetricRow(
+                    label = "Aportes obligatorios INCRGO Salud/Pensión (Arts. 55-56 E.T.)",
+                    value = "$${numberFormatter.format(intl.mandatoryIncrgoAmount)} $cur"
+                )
+            }
+            if (intl.cappedGeneralDeductionsAmount > 0.0) {
+                GeneralTaxMetricRow(
+                    label = "Renta exenta 25% + Deducciones (Tope 40% / 1.340 UVT)",
+                    value = "$${numberFormatter.format(intl.cappedGeneralDeductionsAmount)} $cur"
+                )
+            }
+            if (intl.dependentsDeductionAmount > 0.0) {
+                GeneralTaxMetricRow(
+                    label = "Deducción por dependientes (72 UVT c/u — Art. 336 E.T.)",
+                    value = "$${numberFormatter.format(intl.dependentsDeductionAmount)} $cur"
                 )
             }
             GeneralTaxMetricRow(
@@ -892,9 +962,9 @@ private fun ThresholdProgressCard(
     unitName: String
 ) {
     val barColor = when (threshold.alertLevel) {
-        TaxAlertLevel.EXCEEDED -> BlueRoyalDark
-        TaxAlertLevel.WARNING -> BlueOcean
-        TaxAlertLevel.SAFE -> BluePrimary
+        TaxAlertLevel.EXCEEDED -> AlertCrimson
+        TaxAlertLevel.WARNING -> AlertAmber
+        TaxAlertLevel.SAFE -> AlertSafeBlue
     }
 
     val badgeLabel = when (threshold.alertLevel) {
@@ -932,7 +1002,7 @@ private fun ThresholdProgressCard(
                     text = badgeLabel,
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Bold,
-                    color = BlueOcean
+                    color = barColor
                 )
             }
         }
@@ -949,14 +1019,19 @@ private fun ThresholdProgressCard(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "Acumulado: $${numberFormatter.format(threshold.accumulatedCop)} $currency (${"%.0f".format(threshold.consumptionPercentage)}%)",
                 fontSize = 11.sp,
                 color = BlueSteelText,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
             )
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = if (threshold.remainingCopBeforeLimit > 0.0) {
                     "Disponible: $${numberFormatter.format(threshold.remainingCopBeforeLimit)} $currency"
@@ -965,7 +1040,8 @@ private fun ThresholdProgressCard(
                 },
                 fontSize = 11.sp,
                 color = barColor,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1
             )
         }
     }
@@ -1001,6 +1077,7 @@ private fun AccountGmfRow(
                 )
                 Text(
                     text = when {
+                        status.sharesUnified350UvtPool -> "Bolsa Compartida 350 $unitName/mes (Art. 65 Ley 2277/2022)"
                         status.isMarkedTaxExempt350Uvt -> "Cuenta Exenta (${status.exemptLimitUvt.toInt()} $unitName/mes = $${numberFormatter.format(status.exemptLimitCop)} $currency)"
                         status.isLowAmountDigitalWallet65Uvt -> "Billetera Bajo Monto: Exenta ${status.exemptLimitUvt.toInt()} $unitName/mes ($${numberFormatter.format(status.exemptLimitCop)} $currency)"
                         else -> "Sin exención activa (Grava desde $1 $currency)"
@@ -1030,13 +1107,18 @@ private fun AccountGmfRow(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "Salidas mes: $${numberFormatter.format(status.monthlyOutflowsCop)} $currency (${"%.1f".format(status.monthlyOutflowsUvt)} $unitName)",
                 fontSize = 11.sp,
-                color = BlueSteelText
+                color = BlueSteelText,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
             )
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = if (status.estimatedGmfTaxPaidCop > 0.0) {
                     "Impuesto causado: $${numberFormatter.format(status.estimatedGmfTaxPaidCop)} $currency"
@@ -1045,7 +1127,8 @@ private fun AccountGmfRow(
                 },
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (status.estimatedGmfTaxPaidCop > 0.0) BlueRoyalDark else BluePrimary
+                color = if (status.estimatedGmfTaxPaidCop > 0.0) AlertCrimson else BluePrimary,
+                maxLines = 1
             )
         }
     }

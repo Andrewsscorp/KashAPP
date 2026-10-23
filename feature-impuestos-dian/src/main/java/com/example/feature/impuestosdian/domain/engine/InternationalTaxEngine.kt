@@ -8,6 +8,7 @@ import com.example.feature.impuestosdian.domain.model.InternationalTaxSummary
 import com.example.feature.impuestosdian.domain.model.TaxConfigurationProfile
 import com.example.feature.impuestosdian.domain.model.TaxJurisdiction
 import kotlin.math.max
+import kotlin.math.min
 
 /**
  * Motor de Impuestos Generales Multi-País (Colombia DIAN, México SAT, EE.UU. IRS, España AEAT,
@@ -47,14 +48,12 @@ class InternationalTaxEngine {
             .sumOf { max(0.0, it.amount) }
 
         val vatRate = profile.vatOrSalesTaxRate.coerceAtLeast(0.0)
-        // IVA implícito = Gasto - (Gasto / (1 + tasaIVA))
         val estimatedVatPaid = if (vatRate > 0.0) {
             taxableVatExpenses - (taxableVatExpenses / (1.0 + vatRate))
         } else {
             0.0
         }
 
-        // Rendimientos positivos en inversiones activas
         val positiveInvestmentYields = investments
             .filter { it.status.equals("ACTIVE", ignoreCase = true) }
             .sumOf { inv -> max(0.0, inv.currentValue - inv.initialAmount) }
@@ -62,20 +61,57 @@ class InternationalTaxEngine {
         val withholdingRate = profile.jurisdiction.investmentYieldWithholdingRate
         val estimatedInvestmentWithholding = positiveInvestmentYields * withholdingRate
 
-        // En Colombia el 50% del 4x1000 certificado es deducible en Renta (Art. 115 E.T.)
         val deductibleBankTax = if (profile.jurisdiction == TaxJurisdiction.CO_DIAN) {
             annualBankTaxPaid * ColombianUvtCatalog.GMF_DEDUCTIBLE_RENTA_PERCENTAGE
         } else {
             0.0
         }
 
-        val totalAllowableDeductions = electronicInvoiceBenefit.appliedDeductionCop + deductibleBankTax
-        val estimatedTaxableNetIncome = max(0.0, totalIncome - totalAllowableDeductions)
+        val safeUvt = profile.taxUnitValue.coerceAtLeast(1.0)
 
-        // Exención base anual antes de aplicar tasa efectiva estimada de impuesto de renta
-        val annualExemptIncomeAmount = profile.jurisdiction.annualIncomeFilingThresholdUnits * profile.taxUnitValue
-        val netIncomeAboveThreshold = max(0.0, estimatedTaxableNetIncome - annualExemptIncomeAmount)
-        val estimatedAnnualIncomeTax = netIncomeAboveThreshold * profile.effectiveIncomeTaxRate.coerceAtLeast(0.0)
+        var mandatoryIncrgo = 0.0
+        var laborExempt25 = 0.0
+        var dependentsDeduction = 0.0
+        var cappedGeneralDeductions = 0.0
+        val totalAllowableDeductions: Double
+        val estimatedTaxableNetIncome: Double
+        val estimatedAnnualIncomeTax: Double
+
+        if (profile.jurisdiction == TaxJurisdiction.CO_DIAN && profile.useProgressiveCedulaGeneralInColombia) {
+            // 1. Ingresos No Constitutivos de Renta (INCRGO: Salud + Pensión obligatoria)
+            mandatoryIncrgo = totalIncome * profile.mandatoryIncrgoRate.coerceIn(0.0, 0.30)
+            val netIncomeAfterIncrgo = max(0.0, totalIncome - mandatoryIncrgo)
+
+            // 2. Renta exenta laboral del 25% (Art. 206 Num. 10 E.T., tope 790 UVT)
+            val baseFor25Percent = max(0.0, netIncomeAfterIncrgo - deductibleBankTax)
+            val max790UvtCop = ColombianUvtCatalog.LABOR_EXEMPT_INCOME_MAX_UVT * safeUvt
+            laborExempt25 = min(baseFor25Percent * ColombianUvtCatalog.LABOR_EXEMPT_INCOME_RATE, max790UvtCop)
+
+            // 3. Límite global del 40% o 1.340 UVT (Art. 336 E.T. - Ley 2277/2022)
+            val subjectToCap = deductibleBankTax + laborExempt25
+            val fortyPercentCap = netIncomeAfterIncrgo * ColombianUvtCatalog.CEDULA_GENERAL_GLOBAL_CAP_RATE
+            val max1340UvtCop = ColombianUvtCatalog.CEDULA_GENERAL_GLOBAL_MAX_UVT * safeUvt
+            cappedGeneralDeductions = min(subjectToCap, min(fortyPercentCap, max1340UvtCop))
+
+            // 4. Deducciones especiales que NO entran en el límite del 40% (1% Factura Electrónica y 72 UVT por dependiente)
+            val validDependents = profile.dependentsCount.coerceIn(0, ColombianUvtCatalog.MAX_DEPENDENTS_COUNT)
+            dependentsDeduction = validDependents * ColombianUvtCatalog.DEPENDENT_DEDUCTION_UVT_PER_PERSON * safeUvt
+
+            val outsideCapDeductions = electronicInvoiceBenefit.appliedDeductionCop + dependentsDeduction
+            totalAllowableDeductions = mandatoryIncrgo + cappedGeneralDeductions + outsideCapDeductions
+            estimatedTaxableNetIncome = max(0.0, totalIncome - totalAllowableDeductions)
+
+            // 5. Impuesto progresivo Art. 241 E.T. (0% hasta 1.090 UVT)
+            val taxableUvt = estimatedTaxableNetIncome / safeUvt
+            val taxInUvt = ColombianUvtCatalog.calculateProgressiveIncomeTaxUvt(taxableUvt)
+            estimatedAnnualIncomeTax = taxInUvt * safeUvt
+        } else {
+            totalAllowableDeductions = electronicInvoiceBenefit.appliedDeductionCop + deductibleBankTax
+            estimatedTaxableNetIncome = max(0.0, totalIncome - totalAllowableDeductions)
+            val annualExemptIncomeAmount = profile.jurisdiction.annualIncomeFilingThresholdUnits * profile.taxUnitValue
+            val netIncomeAboveThreshold = max(0.0, estimatedTaxableNetIncome - annualExemptIncomeAmount)
+            estimatedAnnualIncomeTax = netIncomeAboveThreshold * profile.effectiveIncomeTaxRate.coerceAtLeast(0.0)
+        }
 
         val totalTaxBurden = estimatedVatPaid + annualBankTaxPaid + estimatedInvestmentWithholding + estimatedAnnualIncomeTax
         val effectiveTaxPressurePct = if (totalIncome > 0.0) {
@@ -96,7 +132,11 @@ class InternationalTaxEngine {
             estimatedTaxableNetIncome = estimatedTaxableNetIncome,
             estimatedAnnualIncomeTax = estimatedAnnualIncomeTax,
             totalEstimatedTaxBurden = totalTaxBurden,
-            effectiveTaxPressurePercentage = effectiveTaxPressurePct
+            effectiveTaxPressurePercentage = effectiveTaxPressurePct,
+            mandatoryIncrgoAmount = mandatoryIncrgo,
+            laborExempt25PercentAmount = laborExempt25,
+            dependentsDeductionAmount = dependentsDeduction,
+            cappedGeneralDeductionsAmount = cappedGeneralDeductions
         )
     }
 }
