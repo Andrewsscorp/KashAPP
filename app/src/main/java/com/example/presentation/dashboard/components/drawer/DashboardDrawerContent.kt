@@ -1,11 +1,25 @@
 package com.example.presentation.dashboard.components.drawer
 
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.fillMaxSize
+import com.example.features.settings.data.UserProfileSecurityManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -94,6 +108,28 @@ fun DashboardDrawerContent(
     onLogoutClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val avatarTrigger by UserProfileSecurityManager.avatarUpdateTrigger.collectAsState()
+    var avatarBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    val activeEmail = remember(avatarTrigger, uiState.userName) {
+        UserProfileSecurityManager.resolveActiveUserEmail(context, fallback = "Cuenta verificada KashApp")
+    }
+
+    LaunchedEffect(avatarTrigger, uiState.userName) {
+        val path = UserProfileSecurityManager.resolveAvatarPath(context)
+        avatarBitmap = if (!path.isNullOrBlank() && File(path).exists()) {
+            withContext(Dispatchers.IO) {
+                try {
+                    BitmapFactory.decodeFile(path)
+                } catch (_: Throwable) {
+                    null
+                }
+            }
+        } else {
+            null
+        }
+    }
+
     ModalDrawerSheet(
         modifier = modifier
             .width(320.dp)
@@ -196,13 +232,30 @@ fun DashboardDrawerContent(
                                 border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFF38BDF8)),
                                 modifier = Modifier.size(46.dp)
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = "CS",
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White
-                                    )
+                                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                    val bmp = avatarBitmap
+                                    if (bmp != null) {
+                                        Image(
+                                            bitmap = bmp.asImageBitmap(),
+                                            contentDescription = "Foto de perfil de ${uiState.userName}",
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .clip(CircleShape)
+                                        )
+                                    } else {
+                                        val initials = uiState.userName.split(" ")
+                                            .mapNotNull { it.firstOrNull()?.uppercaseChar()?.toString() }
+                                            .take(2)
+                                            .joinToString("")
+                                            .ifEmpty { "KA" }
+                                        Text(
+                                            text = initials,
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                    }
                                 }
                             }
 
@@ -211,7 +264,7 @@ fun DashboardDrawerContent(
                             Column(modifier = Modifier.weight(1f)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = if (uiState.userName.isNotBlank()) uiState.userName else "Carlos Suarez",
+                                        text = if (uiState.userName.isNotBlank()) uiState.userName else "Titular KashApp",
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White,
@@ -233,7 +286,7 @@ fun DashboardDrawerContent(
                                     }
                                 }
                                 Text(
-                                    text = "cdosuarez@gmail.com",
+                                    text = activeEmail,
                                     fontSize = 11.sp,
                                     color = Color(0xFF94A3B8),
                                     maxLines = 1,

@@ -1,6 +1,8 @@
 package com.example.features.settings.presentation.components
 
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -61,6 +63,8 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,14 +74,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.features.settings.data.UserProfileSecurityManager
 import com.example.features.settings.domain.model.SettingsSubRoute
 import com.example.ui.theme.KashBlue
 import com.example.ui.theme.KashNavy
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
 
 /**
  * Main Settings Menu list showing Profile Hero, Account, Finance, Preferences, Data, and Logout.
@@ -99,6 +110,25 @@ fun SettingsMainContent(
     onRequestDeleteAccount: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val avatarTrigger by UserProfileSecurityManager.avatarUpdateTrigger.collectAsState()
+    var avatarBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+
+    LaunchedEffect(avatarTrigger, userName) {
+        val path = UserProfileSecurityManager.resolveAvatarPath(context)
+        avatarBitmap = if (!path.isNullOrBlank() && File(path).exists()) {
+            withContext(Dispatchers.IO) {
+                try {
+                    BitmapFactory.decodeFile(path)
+                } catch (_: Throwable) {
+                    null
+                }
+            }
+        } else {
+            null
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -133,12 +163,22 @@ fun SettingsMainContent(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = userName.split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString("").ifEmpty { "AF" },
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                    val bmp = avatarBitmap
+                    if (bmp != null) {
+                        Image(
+                            bitmap = bmp.asImageBitmap(),
+                            contentDescription = "Foto de perfil de $userName",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Text(
+                            text = userName.split(" ").mapNotNull { it.firstOrNull()?.uppercaseChar()?.toString() }.take(2).joinToString("").ifEmpty { "AF" },
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.width(14.dp))
                 Column(modifier = Modifier.weight(1f)) {

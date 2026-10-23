@@ -68,6 +68,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -180,9 +181,11 @@ fun SettingsProfileScreen(
         hasGoogleProvider = state.hasGoogleProvider
     }
 
-    // Decodificar Bitmap del avatar local cuando cambia la ruta
-    LaunchedEffect(avatarLocalPath) {
-        val path = avatarLocalPath
+    val avatarTrigger by UserProfileSecurityManager.avatarUpdateTrigger.collectAsState()
+
+    // Decodificar Bitmap del avatar local cuando cambia la ruta o se actualiza el archivo
+    LaunchedEffect(avatarLocalPath, avatarTrigger) {
+        val path = avatarLocalPath ?: UserProfileSecurityManager.resolveAvatarPath(context, effectiveUserId)
         avatarBitmap = if (!path.isNullOrBlank() && File(path).exists()) {
             withContext(Dispatchers.IO) {
                 try {

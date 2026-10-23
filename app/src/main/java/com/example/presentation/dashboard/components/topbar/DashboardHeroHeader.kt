@@ -1,10 +1,19 @@
 package com.example.presentation.dashboard.components.topbar
 
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import com.example.features.settings.data.UserProfileSecurityManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -119,6 +128,25 @@ fun DashboardHeroHeader(
     highestAlertSeverity: String = "INFO",
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val avatarTrigger by UserProfileSecurityManager.avatarUpdateTrigger.collectAsState()
+    var avatarBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+
+    LaunchedEffect(avatarTrigger, userName) {
+        val path = UserProfileSecurityManager.resolveAvatarPath(context)
+        avatarBitmap = if (!path.isNullOrBlank() && File(path).exists()) {
+            withContext(Dispatchers.IO) {
+                try {
+                    BitmapFactory.decodeFile(path)
+                } catch (_: Throwable) {
+                    null
+                }
+            }
+        } else {
+            null
+        }
+    }
+
     val colombianLocale = remember { Locale("es", "CO") }
     var isPeriodDropdownOpen by remember { mutableStateOf(false) }
 
@@ -283,7 +311,7 @@ fun DashboardHeroHeader(
                         }
                     }
 
-                    // Avatar Circle (MG / Initials)
+                    // Avatar Circle (Real Photo or Initials)
                     Surface(
                         shape = CircleShape,
                         color = Color.White,
@@ -297,12 +325,29 @@ fun DashboardHeroHeader(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            Text(
-                                text = if (userName.length >= 2) userName.take(2).uppercase() else "MG",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0F172A)
-                            )
+                            val bmp = avatarBitmap
+                            if (bmp != null) {
+                                Image(
+                                    bitmap = bmp.asImageBitmap(),
+                                    contentDescription = "Foto de perfil de $userName",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape)
+                                )
+                            } else {
+                                val initials = userName.split(" ")
+                                    .mapNotNull { it.firstOrNull()?.uppercaseChar()?.toString() }
+                                    .take(2)
+                                    .joinToString("")
+                                    .ifEmpty { if (userName.length >= 2) userName.take(2).uppercase() else "KA" }
+                                Text(
+                                    text = initials,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0F172A)
+                                )
+                            }
                         }
                     }
                 }

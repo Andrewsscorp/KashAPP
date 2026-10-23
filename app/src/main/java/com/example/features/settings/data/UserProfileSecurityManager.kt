@@ -26,6 +26,9 @@ import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -83,6 +86,44 @@ class UserProfileSecurityManager(
 
     companion object {
         private const val PREFS_NAME = "kashapp_user_profile_security_prefs"
+        private val _avatarUpdateTrigger = MutableStateFlow(System.currentTimeMillis())
+        val avatarUpdateTrigger: StateFlow<Long> = _avatarUpdateTrigger.asStateFlow()
+
+        /**
+         * Resuelve la ruta local del avatar para el usuario activo, permitiendo que el Dashboard,
+         * el Drawer lateral y el menú principal de Ajustes muestren la foto en tiempo real.
+         */
+        fun resolveAvatarPath(context: Context, explicitUserId: String? = null): String? {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val fbUid = try { FirebaseAuth.getInstance().currentUser?.uid } catch (_: Throwable) { null }
+            val safeUid = explicitUserId?.takeIf { it.isNotBlank() }
+                ?: fbUid?.takeIf { it.isNotBlank() }
+                ?: prefs.getString("last_active_profile_uid", null)
+                ?: "user_default"
+
+            val storedPath = prefs.getString("profile_avatar_path_$safeUid", null)
+            if (!storedPath.isNullOrBlank() && File(storedPath).exists()) {
+                return storedPath
+            }
+            val fallbackFile = File(File(context.filesDir, "avatars"), "avatar_${safeUid}.webp")
+            return if (fallbackFile.exists()) fallbackFile.absolutePath else null
+        }
+
+        /**
+         * Resuelve el correo electrónico activo del usuario autenticado.
+         */
+        fun resolveActiveUserEmail(context: Context, explicitUserId: String? = null, fallback: String = ""): String {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val fbUser = try { FirebaseAuth.getInstance().currentUser } catch (_: Throwable) { null }
+            val safeUid = explicitUserId?.takeIf { it.isNotBlank() }
+                ?: fbUser?.uid?.takeIf { it.isNotBlank() }
+                ?: prefs.getString("last_active_profile_uid", null)
+                ?: "user_default"
+
+            return prefs.getString("profile_email_$safeUid", null)?.takeIf { it.isNotBlank() }
+                ?: fbUser?.email?.takeIf { it.isNotBlank() }
+                ?: fallback
+        }
 
         val SUPPORTED_JURISDICTIONS = listOf(
             ProfileJurisdictionOption(
@@ -197,6 +238,7 @@ class UserProfileSecurityManager(
         fallbackPhone: String
     ): PersistedUserProfileState = withContext(Dispatchers.IO) {
         val safeUid = userId.ifBlank { firebaseAuth?.currentUser?.uid ?: "user_default" }
+        prefs.edit().putString("last_active_profile_uid", safeUid).apply()
         val fbUser = firebaseAuth?.currentUser
         val roomSession = try { userSessionDao?.getSessionByUserId(safeUid) } catch (_: Throwable) { null }
         val taxProfile = TaxConfigurationStore.loadProfile(context, safeUid)
@@ -290,7 +332,11 @@ class UserProfileSecurityManager(
             }
 
             val absolutePath = targetFile.absolutePath
-            prefs.edit().putString("profile_avatar_path_$safeUid", absolutePath).apply()
+            prefs.edit()
+                .putString("last_active_profile_uid", safeUid)
+                .putString("profile_avatar_path_$safeUid", absolutePath)
+                .apply()
+            _avatarUpdateTrigger.value = System.currentTimeMillis()
 
             // Actualizar Room UserSessionEntity
             userSessionDao?.getSessionByUserId(safeUid)?.let { session ->
