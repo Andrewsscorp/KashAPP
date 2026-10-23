@@ -39,10 +39,11 @@ class FirestoreNotificationBridge(
         activeListeningUserId = cleanUser
 
         // 1. Listener en tiempo real para notificaciones personales exclusivas de este userId
+        // (No usamos orderBy("createdAtEpochMs") en Firestore para que documentos creados manualmente
+        // desde Firebase Console solo con campos string como title/body lleguen siempre sin ser filtrados)
         userListener = firestore.collection("users")
             .document(cleanUser)
             .collection("notifications")
-            .orderBy("createdAtEpochMs", Query.Direction.DESCENDING)
             .limit(40)
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) return@addSnapshotListener
@@ -56,6 +57,13 @@ class FirestoreNotificationBridge(
                         if (docTargetUser != cleanUser) continue
 
                         val rawDedup = doc.getString("dedupKey") ?: "FS_USER_${doc.id}"
+                        val parsedCreatedAt = runCatching { doc.getLong("createdAtEpochMs") }.getOrNull()
+                            ?: runCatching { doc.getString("createdAtEpochMs")?.toLongOrNull() }.getOrNull()
+                            ?: System.currentTimeMillis()
+                        val parsedIsRead = runCatching { doc.getBoolean("isRead") }.getOrNull()
+                            ?: runCatching { doc.getString("isRead")?.toBooleanStrictOrNull() }.getOrNull()
+                            ?: false
+
                         val entity = NotificationEntity(
                             id = "${cleanUser}_${doc.id}",
                             userId = cleanUser,
@@ -68,8 +76,8 @@ class FirestoreNotificationBridge(
                             deepLinkRoute = doc.getString("deepLinkRoute") ?: "DASHBOARD",
                             actionLabel = doc.getString("actionLabel"),
                             actionPayloadJson = doc.getString("actionPayloadJson"),
-                            isRead = doc.getBoolean("isRead") ?: false,
-                            createdAtEpochMs = doc.getLong("createdAtEpochMs") ?: System.currentTimeMillis(),
+                            isRead = parsedIsRead,
+                            createdAtEpochMs = parsedCreatedAt,
                             syncedToFirestore = true
                         )
                         externalScope.launch(Dispatchers.IO) {
@@ -100,6 +108,9 @@ class FirestoreNotificationBridge(
                             continue
                         }
 
+                        val parsedBcastCreatedAt = runCatching { doc.getLong("createdAtEpochMs") }.getOrNull()
+                            ?: runCatching { doc.getString("createdAtEpochMs")?.toLongOrNull() }.getOrNull()
+                            ?: System.currentTimeMillis()
                         val entity = NotificationEntity(
                             id = "bcast_${doc.id}_$cleanUser",
                             userId = cleanUser,
@@ -111,7 +122,7 @@ class FirestoreNotificationBridge(
                             sourceOrigin = "FIRESTORE_BROADCAST",
                             deepLinkRoute = doc.getString("deepLinkRoute") ?: "DASHBOARD",
                             actionLabel = doc.getString("actionLabel") ?: "Abrir",
-                            createdAtEpochMs = doc.getLong("createdAtEpochMs") ?: System.currentTimeMillis(),
+                            createdAtEpochMs = parsedBcastCreatedAt,
                             syncedToFirestore = true
                         )
                         externalScope.launch(Dispatchers.IO) {

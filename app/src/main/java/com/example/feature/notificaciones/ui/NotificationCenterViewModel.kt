@@ -113,7 +113,8 @@ class NotificationCenterViewModel(
         category: String,
         severity: String,
         route: String,
-        isBroadcast: Boolean
+        isBroadcast: Boolean,
+        targetJurisdiction: String = "ALL"
     ) {
         val uid = activeUserIdFlow.value
         if (uid.isBlank()) return
@@ -127,12 +128,16 @@ class NotificationCenterViewModel(
                 deepLinkRoute = route,
                 actionLabel = "Ver ahora",
                 isGlobalBroadcast = isBroadcast,
-                targetJurisdiction = "ALL"
+                targetJurisdiction = targetJurisdiction
             )
             _statusMessage.value = if (res.isSuccess) {
-                "Push enviado y sincronizado con Firebase Cloud (${res.getOrNull()})."
+                if (isBroadcast) {
+                    "Campaña Masiva publicada en broadcast_notifications ($targetJurisdiction) • ID: ${res.getOrNull()}"
+                } else {
+                    "Push Personal enviado a tu cuenta (${res.getOrNull()})."
+                }
             } else {
-                "Alerta disparada localmente (modo offline / sin conexión a Firestore)."
+                "Alerta disparada localmente (verifica reglas de Firestore para broadcast_notifications)."
             }
         }
     }

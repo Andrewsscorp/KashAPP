@@ -27,6 +27,12 @@ service cloud.firestore {
         && request.auth.token.admin == true;
     }
 
+    // Global & Country Broadcast Notifications (Información, Mantenimientos, Promociones, Alertas Oficiales)
+    match /broadcast_notifications/{notificationId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

@@ -804,9 +804,56 @@ private fun FirebasePushStudioDialog(
                     color = Color(0xFF8E8E93)
                 )
 
-                // Plantillas rápidas en 1 toque
+                // 1. PLANTILLAS MASIVAS (PARA TODOS LOS USUARIOS: MANTENIMIENTO, PROMOCIONES, INFORMACIÓN)
                 Text(
-                    text = "PLANTILLAS RÁPIDAS",
+                    text = "📢 PLANTILLAS MASIVAS (ENVIAR A TODOS)",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF007AFF)
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    PresetChip("🛠️ Mantenimiento") {
+                        title = "🛠️ Mantenimiento Programado KashApp"
+                        body = "Optimizaremos nuestros servidores hoy de 11:00 PM a 11:30 PM. Tu bóveda local cifrada seguirá funcionando sin interrupciones."
+                        category = "FIREBASE_CLOUD"
+                        severity = "WARNING"
+                        route = "DASHBOARD"
+                        isBroadcast = true
+                    }
+                    PresetChip("🎁 Promoción") {
+                        title = "🎁 Beneficio Especial KashApp Pro"
+                        body = "Desbloquea reportes ilimitados Pre-Renta DIAN, auditoría patrimonial avanzada y respaldo multi-nube con descuento exclusivo."
+                        category = "FIREBASE_CLOUD"
+                        severity = "INFO"
+                        route = "DASHBOARD"
+                        isBroadcast = true
+                    }
+                    PresetChip("ℹ️ Información / Novedad") {
+                        title = "✨ Nueva Actualización KashApp 9.0"
+                        body = "Ya tienes disponible el nuevo Radar Tributario DIAN 2026, control de 4x1000 en tiempo real y bandeja de Auto-Captura."
+                        category = "FIREBASE_CLOUD"
+                        severity = "INFO"
+                        route = "RADAR_DIAN"
+                        isBroadcast = true
+                    }
+                    PresetChip("🛡️ Aviso Seguridad") {
+                        title = "🛡️ Comunicado Oficial de Seguridad"
+                        body = "Recuerda mantener activa tu huella biométrica. KashApp jamás te solicitará tu PIN o semilla criptográfica por correo o SMS."
+                        category = "FIREBASE_CLOUD"
+                        severity = "CRITICAL"
+                        route = "DASHBOARD"
+                        isBroadcast = true
+                    }
+                }
+
+                // 2. PLANTILLAS FINANCIERAS PERSONALES (SOLO MI CUENTA)
+                Text(
+                    text = "👤 PLANTILLAS FINANCIERAS (MI CUENTA)",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF8E8E93)
@@ -823,6 +870,7 @@ private fun FirebasePushStudioDialog(
                         category = "TAX_DIAN"
                         severity = "WARNING"
                         route = "RADAR_DIAN"
+                        isBroadcast = false
                     }
                     PresetChip("💸 4x1000 Excedido") {
                         title = "💸 Cupo de 350 UVT superado este mes"
@@ -830,6 +878,7 @@ private fun FirebasePushStudioDialog(
                         category = "BANK_GMF"
                         severity = "CRITICAL"
                         route = "RADAR_DIAN"
+                        isBroadcast = false
                     }
                     PresetChip("💳 Pago Tarjeta") {
                         title = "💳 Fecha límite de pago en 2 días"
@@ -837,6 +886,7 @@ private fun FirebasePushStudioDialog(
                         category = "CREDIT_CARD"
                         severity = "CRITICAL"
                         route = "PAY_CREDIT_CARD"
+                        isBroadcast = false
                     }
                     PresetChip("📲 Auto-Captura") {
                         title = "📲 Compra bancaria detectada"
@@ -844,6 +894,7 @@ private fun FirebasePushStudioDialog(
                         category = "AUTO_CAPTURE"
                         severity = "INFO"
                         route = "AUTO_CAPTURE"
+                        isBroadcast = false
                     }
                 }
 
