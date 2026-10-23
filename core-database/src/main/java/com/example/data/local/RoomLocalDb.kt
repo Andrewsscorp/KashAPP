@@ -846,6 +846,43 @@ object RoomLocalDb {
         }
     }
 
+    val MIGRATION_39_40 = object : androidx.room.migration.Migration(39, 40) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+            try {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `notifications` (
+                        `id` TEXT NOT NULL,
+                        `userId` TEXT NOT NULL,
+                        `dedupKey` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `body` TEXT NOT NULL,
+                        `category` TEXT NOT NULL,
+                        `severity` TEXT NOT NULL,
+                        `sourceOrigin` TEXT NOT NULL,
+                        `deepLinkRoute` TEXT NOT NULL,
+                        `actionLabel` TEXT,
+                        `actionPayloadJson` TEXT,
+                        `isRead` INTEGER NOT NULL DEFAULT 0,
+                        `isArchived` INTEGER NOT NULL DEFAULT 0,
+                        `snoozedUntilEpochMs` INTEGER,
+                        `createdAtEpochMs` INTEGER NOT NULL,
+                        `readAtEpochMs` INTEGER,
+                        `syncedToFirestore` INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_notifications_userId_createdAtEpochMs` ON `notifications` (`userId`, `createdAtEpochMs`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_notifications_userId_isRead_isArchived` ON `notifications` (`userId`, `isRead`, `isArchived`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_notifications_userId_category` ON `notifications` (`userId`, `category`)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_notifications_userId_dedupKey` ON `notifications` (`userId`, `dedupKey`)")
+            } catch (e: Throwable) {
+                Log.w(TAG, "Notice running MIGRATION_39_40: ${e.message}")
+            }
+        }
+    }
+
     private fun tryCreateEncryptedDb(context: Context, passphraseBytes: ByteArray): SecurityDatabase? {
         return try {
             // Attempt to load native SQLCipher library if available
@@ -860,7 +897,7 @@ object RoomLocalDb {
                 ENCRYPTED_DB_NAME
             )
                 .openHelperFactory(openHelperFactory)
-                .addMigrations(MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33, MIGRATION_33_34, MIGRATION_34_35, MIGRATION_35_36, MIGRATION_36_37, MIGRATION_37_38, MIGRATION_38_39)
+                .addMigrations(MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33, MIGRATION_33_34, MIGRATION_34_35, MIGRATION_35_36, MIGRATION_36_37, MIGRATION_37_38, MIGRATION_38_39, MIGRATION_39_40)
                 .addCallback(foreignKeyCallback)
                 .build()
 

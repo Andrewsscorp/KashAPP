@@ -111,6 +111,8 @@ dependencies {
   implementation(libs.firebase.ai)
   // Firestore:
   implementation(libs.firebase.firestore)
+  implementation(libs.firebase.messaging)
+  implementation(libs.firebase.inappmessaging.display)
 
   // Firebase Auth and Google Sign-In via Credential Manager:
   implementation(libs.firebase.auth)

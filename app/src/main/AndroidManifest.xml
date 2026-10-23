@@ -39,6 +39,25 @@
             android:name="com.example.util.DebtReminderReceiver"
             android:exported="false" />
 
+        <!-- Canal predeterminado para payloads Push de Firebase Cloud Messaging -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="kash_channel_critical_finance" />
+
+        <!-- Servicio Push en Segundo Plano de Firebase Cloud Messaging -->
+        <service
+            android:name="com.example.feature.notificaciones.service.KashFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- Receptor de Acciones Rápidas de Notificaciones (Posponer / Marcar Leída) -->
+        <receiver
+            android:name="com.example.feature.notificaciones.receiver.NotificationActionBroadcastReceiver"
+            android:exported="false" />
+
         <receiver
             android:name="com.example.util.BootCompletedReceiver"
             android:exported="true">

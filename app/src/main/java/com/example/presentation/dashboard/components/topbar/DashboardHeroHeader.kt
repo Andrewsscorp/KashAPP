@@ -115,6 +115,8 @@ fun DashboardHeroHeader(
     onToggleUsdConversion: () -> Unit = {},
     onOpenTrmRateClick: () -> Unit = {},
     onSyncClick: () -> Unit = {},
+    unreadNotificationCount: Int = 0,
+    highestAlertSeverity: String = "INFO",
     modifier: Modifier = Modifier
 ) {
     val colombianLocale = remember { Locale("es", "CO") }
@@ -240,7 +242,7 @@ fun DashboardHeroHeader(
                         )
                     }
 
-                    // Notification Bell with unread dot
+                    // Notification Bell with dynamic unread count badge & severity color
                     Box(
                         modifier = Modifier
                             .size(38.dp)
@@ -252,19 +254,33 @@ fun DashboardHeroHeader(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Notifications,
-                            contentDescription = "Notificaciones",
+                            contentDescription = "Centro de Notificaciones",
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
                         )
-                        // Blue unread dot
-                        Box(
-                            modifier = Modifier
-                                .size(7.dp)
-                                .align(Alignment.TopEnd)
-                                .padding(top = 8.dp, end = 8.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFF38BDF8))
-                        )
+                        if (unreadNotificationCount > 0) {
+                            val badgeColor = when (highestAlertSeverity) {
+                                "CRITICAL" -> Color(0xFFFF3B30)
+                                "WARNING" -> Color(0xFFFF9500)
+                                else -> Color(0xFF0A84FF)
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(top = 3.dp, end = 2.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(badgeColor)
+                                    .padding(horizontal = 4.dp, vertical = 1.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (unreadNotificationCount > 99) "99+" else unreadNotificationCount.toString(),
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color.White
+                                )
+                            }
+                        }
                     }
 
                     // Avatar Circle (MG / Initials)

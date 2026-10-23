@@ -74,9 +74,10 @@ import com.example.data.local.entity.UserSessionEntity
         com.example.data.local.entity.SharedSettlementPaymentEntity::class,
         com.example.data.local.entity.ThirdPartyEntity::class,
         com.example.data.local.entity.ThirdPartyCategoryEntity::class,
-        com.example.data.local.entity.PendingAutoCaptureEntity::class
+        com.example.data.local.entity.PendingAutoCaptureEntity::class,
+        com.example.data.local.entity.NotificationEntity::class
     ],
-    version = 39,
+    version = 40,
     exportSchema = true
 )
 abstract class SecurityDatabase : RoomDatabase() {
@@ -94,6 +95,7 @@ abstract class SecurityDatabase : RoomDatabase() {
     abstract fun thirdPartyDao(): com.example.data.local.dao.ThirdPartyDao
     abstract fun thirdPartyCategoryDao(): com.example.data.local.dao.ThirdPartyCategoryDao
     abstract fun autoCaptureDao(): com.example.data.local.dao.AutoCaptureDao
+    abstract fun notificationDao(): com.example.data.local.dao.NotificationDao
 
 
         companion object {

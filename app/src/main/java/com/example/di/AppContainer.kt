@@ -73,6 +73,7 @@ class AppContainer(private val context: Context) {
                 try {
                     settingsRepository.executeProtocolLogout(userId)
                     financialRepository.clearMemoryCaches()
+                    notificationRepository.onUserLogout()
                 } catch (e: Exception) {
                     android.util.Log.w("AppContainer", "Logout cleanup error: ${e.message}")
                 }
@@ -358,6 +359,20 @@ class AppContainer(private val context: Context) {
 
     val dianPreRentaPdfExporter: com.example.feature.impuestosdian.data.export.DianPreRentaPdfExporter by lazy {
         com.example.feature.impuestosdian.data.export.DianPreRentaPdfExporter(context)
+    }
+
+    // =========================================================================
+    // CENTRO DE COMANDO DE NOTIFICACIONES & FIREBASE CLOUD (:app)
+    // =========================================================================
+
+    val notificationRepository: com.example.feature.notificaciones.data.NotificationRepositoryImpl by lazy {
+        com.example.feature.notificaciones.data.NotificationRepositoryImpl(
+            context = context,
+            notificationDao = securityDatabase.notificationDao(),
+            financialDao = financialDao,
+            autoCaptureDao = autoCaptureDao,
+            dianTaxRepository = dianTaxRepository
+        )
     }
 }
 

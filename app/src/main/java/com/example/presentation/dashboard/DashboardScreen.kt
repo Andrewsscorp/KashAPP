@@ -168,6 +168,29 @@ fun DashboardScreen(
     var showAutoCaptureInbox by rememberSaveable { mutableStateOf(false) }
     var showAutoCaptureSettings by rememberSaveable { mutableStateOf(false) }
     var showQuickCashEntry by rememberSaveable { mutableStateOf(false) }
+    var showNotificationCenterModule by rememberSaveable { mutableStateOf(false) }
+
+    val notificationViewModel: com.example.feature.notificaciones.ui.NotificationCenterViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+        key = "notif_center_vm_${viewModel.userId}",
+        factory = com.example.feature.notificaciones.ui.NotificationCenterViewModel.Factory(
+            repository = appContainer.notificationRepository,
+            userId = viewModel.userId
+        )
+    )
+    LaunchedEffect(viewModel.userId) {
+        notificationViewModel.setActiveUserId(viewModel.userId)
+    }
+    val activeNotifications by notificationViewModel.notifications.collectAsStateWithLifecycle()
+    val unreadNotificationsCount by notificationViewModel.unreadCount.collectAsStateWithLifecycle()
+    val notifStatusMessage by notificationViewModel.statusMessage.collectAsStateWithLifecycle()
+    val highestAlertSeverity = remember(activeNotifications) {
+        val unread = activeNotifications.filter { !it.isRead }
+        when {
+            unread.any { it.severity == "CRITICAL" } -> "CRITICAL"
+            unread.any { it.severity == "WARNING" } -> "WARNING"
+            else -> "INFO"
+        }
+    }
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -189,6 +212,17 @@ fun DashboardScreen(
         }
         if (currentActivity?.intent?.action == AutoCaptureNotificationHelper.ACTION_OPEN_INBOX) {
             showAutoCaptureInbox = true
+        }
+        val deepLinkRoute = currentActivity?.intent?.getStringExtra("extra_deep_link_route")
+        if (!deepLinkRoute.isNullOrBlank()) {
+            currentActivity.intent?.removeExtra("extra_deep_link_route")
+            when (deepLinkRoute) {
+                "RADAR_DIAN" -> showDianTaxRadarModule = true
+                "PAY_CREDIT_CARD", "CREATE_EXPENSE" -> showCreateExpense = true
+                "SHARED_EXPENSES" -> showSharedExpensesModule = true
+                "AUTO_CAPTURE" -> showAutoCaptureInbox = true
+                else -> showNotificationCenterModule = true
+            }
         }
     }
 
@@ -320,11 +354,14 @@ fun DashboardScreen(
                         coroutineScope.launch { drawerState.open() }
                     },
                     onNotificationClick = {
-                        viewModel.onEvent(DashboardEvent.OpenSettingsClick)
+                        showNotificationCenterModule = true
                     },
                     onSyncClick = {
                         viewModel.onEvent(DashboardEvent.Refresh)
+                        notificationViewModel.runProactiveScan()
                     },
+                    unreadNotificationCount = unreadNotificationsCount,
+                    highestAlertSeverity = highestAlertSeverity,
                     onProfileClick = {
                         viewModel.onEvent(DashboardEvent.OpenSettingsClick)
                     },
@@ -459,7 +496,7 @@ fun DashboardScreen(
                 AlertasYNotificacionesCard(
                     insights = uiState.insights,
                     onCardClick = {
-                        viewModel.onEvent(DashboardEvent.SubmitAiQuery("Explícame mis alertas financieras actuales"))
+                        showNotificationCenterModule = true
                     }
                 )
 
@@ -1223,6 +1260,42 @@ fun DashboardScreen(
         com.example.presentation.audit.AuditModuleScreen(
             viewModel = auditViewModel,
             onNavigateBack = { showAuditVault = false }
+        )
+    }
+
+    if (showNotificationCenterModule) {
+        BackHandler {
+            showNotificationCenterModule = false
+        }
+        com.example.feature.notificaciones.ui.NotificationCenterScreen(
+            notifications = activeNotifications,
+            unreadCount = unreadNotificationsCount,
+            onNavigateBack = { showNotificationCenterModule = false },
+            onOpenDeepLink = { notif ->
+                showNotificationCenterModule = false
+                when (notif.deepLinkRoute) {
+                    "RADAR_DIAN" -> showDianTaxRadarModule = true
+                    "PAY_CREDIT_CARD", "CREATE_EXPENSE" -> showCreateExpense = true
+                    "SHARED_EXPENSES" -> showSharedExpensesModule = true
+                    "AUTO_CAPTURE" -> showAutoCaptureInbox = true
+                }
+            },
+            onMarkAsRead = { notificationViewModel.markAsRead(it) },
+            onMarkAllAsRead = { notificationViewModel.markAllAsRead() },
+            onSnoozeTwoHours = { notificationViewModel.snoozeTwoHours(it) },
+            onArchive = { notificationViewModel.archive(it) },
+            onRunProactiveScan = { notificationViewModel.runProactiveScan() },
+            onSendFirebasePush = { title, body, category, severity, route, isBroadcast ->
+                notificationViewModel.sendFirebasePush(
+                    title = title,
+                    body = body,
+                    category = category,
+                    severity = severity,
+                    route = route,
+                    isBroadcast = isBroadcast
+                )
+            },
+            statusMessage = notifStatusMessage
         )
     }
 
