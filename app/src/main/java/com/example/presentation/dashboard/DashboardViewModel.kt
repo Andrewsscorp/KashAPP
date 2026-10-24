@@ -71,20 +71,23 @@ class DashboardViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                // 1. Rescate proactivo de cuentas legadas (user_default o kash_user_01) huérfanas
-                financialRepository?.migrateLegacyUserDefaultDataIfNeeded(userId)
+                val activeSessionUid = userSessionDao?.getActiveSession()?.userId?.takeIf { it.isNotBlank() && it != "user_default" }
+                val targetUid = activeSessionUid ?: userId
 
-                val currentAccounts = financialRepository?.getAccounts(userId)?.firstOrNull().orEmpty()
+                // 1. Rescate proactivo de cuentas legadas (user_default o kash_user_01) huérfanas
+                financialRepository?.migrateLegacyUserDefaultDataIfNeeded(targetUid)
+
+                val currentAccounts = financialRepository?.getAccounts(targetUid)?.firstOrNull().orEmpty()
                 val dummyIds = setOf("acc_ahorros", "acc_corriente", "acc_billetera", "acc_efectivo")
                 val hasRealAccounts = currentAccounts.any { !dummyIds.contains(it.id) || it.balance > 0.0 }
                 if (!hasRealAccounts) {
-                    val restored = financialRepository?.restoreFinancialBackupFromCloudIfNeeded(userId)?.getOrDefault(false) ?: false
+                    val restored = financialRepository?.restoreFinancialBackupFromCloudIfNeeded(targetUid)?.getOrDefault(false) ?: false
                     if (!restored) {
-                        financialRepository?.seedDefaultsIfNeeded(userId)
+                        financialRepository?.seedDefaultsIfNeeded(targetUid)
                     }
                 }
-                fixedAssetRepository?.seedDefaultCategoriesIfNeeded(userId)
-                fixedAssetRepository?.seedDefaultAssetsIfNeeded(userId)
+                fixedAssetRepository?.seedDefaultCategoriesIfNeeded(targetUid)
+                fixedAssetRepository?.seedDefaultAssetsIfNeeded(targetUid)
             } catch (e: Exception) {
                 android.util.Log.w("DashboardViewModel", "Error sincronizando datos al iniciar: ${e.message}")
             } finally {
@@ -736,19 +739,22 @@ class DashboardViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                // Primero intentamos recuperar datos legados locales si las cuentas están vacías
-                financialRepository?.migrateLegacyUserDefaultDataIfNeeded(userId)
+                val activeSessionUid = userSessionDao?.getActiveSession()?.userId?.takeIf { it.isNotBlank() && it != "user_default" }
+                val targetUid = activeSessionUid ?: userId
 
-                val currentAccounts = financialRepository?.getAccounts(userId)?.firstOrNull().orEmpty()
+                // Primero intentamos recuperar datos legados locales si las cuentas están vacías
+                financialRepository?.migrateLegacyUserDefaultDataIfNeeded(targetUid)
+
+                val currentAccounts = financialRepository?.getAccounts(targetUid)?.firstOrNull().orEmpty()
                 val dummyIds = setOf("acc_ahorros", "acc_corriente", "acc_billetera", "acc_efectivo")
                 val hasRealAccounts = currentAccounts.any { !dummyIds.contains(it.id) || it.balance > 0.0 }
                 if (!hasRealAccounts) {
-                    val restored = financialRepository?.restoreFinancialBackupFromCloudIfNeeded(userId)?.getOrDefault(false) ?: false
+                    val restored = financialRepository?.restoreFinancialBackupFromCloudIfNeeded(targetUid)?.getOrDefault(false) ?: false
                     if (restored) {
                         android.util.Log.i("DashboardViewModel", "✓ Cuentas restauradas de la nube")
                     }
                 } else {
-                    financialRepository?.backupFullPortfolioToCloud(userId)
+                    financialRepository?.backupFullPortfolioToCloud(targetUid)
                     android.util.Log.i("DashboardViewModel", "✓ Portafolio respaldado en la nube exitosamente")
                 }
             } catch (e: Exception) {

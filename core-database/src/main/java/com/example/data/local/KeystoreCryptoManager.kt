@@ -4,11 +4,14 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import androidx.biometric.BiometricPrompt
 import java.security.KeyStore
+import java.security.MessageDigest
 import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
+import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 /**
@@ -258,5 +261,86 @@ class KeystoreCryptoManager(private val allowSoftwareFallbackForTests: Boolean =
         } catch (e: Exception) {
             null
         }
+    }
+
+    /**
+     * Deriva una clave AES-256 criptográficamente reproducible a partir de la identidad del usuario (UID/Email).
+     * Garantiza resiliencia total frente a desinstalación de la app o cambio de dispositivo.
+     */
+    fun deriveCloudKey(userSeed: String): SecretKey {
+        val cleanSeed = userSeed.trim()
+        val saltPreimage = "KashApp_Cloud_Vault_Salt_v2_$cleanSeed".toByteArray(Charsets.UTF_8)
+        val salt = MessageDigest.getInstance("SHA-256").digest(saltPreimage)
+        val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+        val spec = PBEKeySpec(cleanSeed.toCharArray(), salt, 100_000, 256)
+        val keyBytes = factory.generateSecret(spec).encoded
+        return SecretKeySpec(keyBytes, "AES")
+    }
+
+    /**
+     * Cifra un payload para respaldo en la nube de forma resiliente a desinstalaciones y multi-dispositivo.
+     * Utiliza AES-256 GCM con derivación determinística PBKDF2 basada en la identidad del usuario.
+     */
+    fun encryptCloudPayload(plainText: String, userSeed: String): String {
+        val key = deriveCloudKey(userSeed)
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        cipher.init(Cipher.ENCRYPT_MODE, key)
+        val iv = cipher.iv ?: ByteArray(GCM_IV_LENGTH).also { SecureRandom().nextBytes(it) }
+        val encrypted = cipher.doFinal(plainText.toByteArray(Charsets.UTF_8))
+        val combined = ByteArray(iv.size + encrypted.size)
+        System.arraycopy(iv, 0, combined, 0, iv.size)
+        System.arraycopy(encrypted, 0, combined, iv.size, encrypted.size)
+        return try {
+            java.util.Base64.getEncoder().encodeToString(combined)
+        } catch (_: Throwable) {
+            android.util.Base64.encodeToString(combined, android.util.Base64.NO_WRAP)
+        }
+    }
+
+    /**
+     * Descifra un payload de la nube utilizando derivación de clave por identidad de usuario,
+     * con fallback automático a la clave de Keystore local.
+     */
+    fun decryptCloudPayload(cipherTextBase64: String, userSeed: String): String? {
+        val combined = try {
+            java.util.Base64.getDecoder().decode(cipherTextBase64)
+        } catch (_: Throwable) {
+            try {
+                android.util.Base64.decode(cipherTextBase64, android.util.Base64.NO_WRAP)
+            } catch (_: Throwable) {
+                return null
+            }
+        }
+        if (combined.size <= GCM_IV_LENGTH) return null
+        val iv = ByteArray(GCM_IV_LENGTH)
+        val encrypted = ByteArray(combined.size - GCM_IV_LENGTH)
+        System.arraycopy(combined, 0, iv, 0, GCM_IV_LENGTH)
+        System.arraycopy(combined, GCM_IV_LENGTH, encrypted, 0, encrypted.size)
+
+        // Intento 1: Descifrado con clave determinística derivada del userSeed
+        try {
+            val key = deriveCloudKey(userSeed)
+            val cipher = Cipher.getInstance(TRANSFORMATION)
+            val spec = GCMParameterSpec(GCM_TAG_LENGTH, iv)
+            cipher.init(Cipher.DECRYPT_MODE, key, spec)
+            val decryptedBytes = cipher.doFinal(encrypted)
+            return String(decryptedBytes, Charsets.UTF_8)
+        } catch (_: Exception) {
+            // Continuar con fallback
+        }
+
+        // Intento 2: Fallback a clave local de hardware Keystore (por si el respaldo se generó en la misma sesión previa)
+        try {
+            val key = getOrCreateSecretKey()
+            val cipher = Cipher.getInstance(TRANSFORMATION)
+            val spec = GCMParameterSpec(GCM_TAG_LENGTH, iv)
+            cipher.init(Cipher.DECRYPT_MODE, key, spec)
+            val decryptedBytes = cipher.doFinal(encrypted)
+            return String(decryptedBytes, Charsets.UTF_8)
+        } catch (_: Exception) {
+            // Fallback falló
+        }
+
+        return null
     }
 }

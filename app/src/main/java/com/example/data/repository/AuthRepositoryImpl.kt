@@ -475,10 +475,10 @@ class AuthRepositoryImpl(
                 put("budgets", budgetsArr)
             }.toString()
 
-            keystoreCryptoManager.encryptData(backupJson)
+            keystoreCryptoManager.encryptCloudPayload(backupJson, userId)
         } catch (e: Exception) {
             Log.e("AuthRepositoryImpl", "Error al generar respaldo cifrado para Google Drive: ${e.message}", e)
-            keystoreCryptoManager.encryptData("{\"backupVersion\":2,\"timestamp\":${System.currentTimeMillis()},\"userId\":\"$userId\",\"status\":\"error_generating\"}")
+            keystoreCryptoManager.encryptCloudPayload("{\"backupVersion\":2,\"timestamp\":${System.currentTimeMillis()},\"userId\":\"$userId\",\"status\":\"error_generating\"}", userId)
         }
     }
 

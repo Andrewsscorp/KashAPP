@@ -55,15 +55,15 @@ open class FirebaseDataSource(private val context: Context) {
         }
     }
 
-    fun getCurrentUser(): FirebaseUser? = auth.currentUser
+    open fun getCurrentUser(): FirebaseUser? = auth.currentUser
 
-    fun getCurrentUserId(): String? = auth.currentUser?.uid
+    open fun getCurrentUserId(): String? = auth.currentUser?.uid
 
-    fun getCurrentUserEmail(): String? = auth.currentUser?.email
+    open fun getCurrentUserEmail(): String? = auth.currentUser?.email
 
-    fun getCurrentUserDisplayName(): String? = auth.currentUser?.displayName
+    open fun getCurrentUserDisplayName(): String? = auth.currentUser?.displayName
 
-    fun getCurrentUserPhotoUrl(): String? = auth.currentUser?.photoUrl?.toString()
+    open fun getCurrentUserPhotoUrl(): String? = auth.currentUser?.photoUrl?.toString()
 
     fun isEmailVerified(): Boolean = auth.currentUser?.isEmailVerified ?: false
 

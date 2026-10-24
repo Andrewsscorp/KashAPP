@@ -2365,22 +2365,29 @@ class FinancialRepositoryImpl(
 
     private suspend fun restoreFinancialBackupInternal(userId: String, force: Boolean): Result<Boolean> {
         return try {
+            val currentFbUid = firebaseDataSource.getCurrentUserId()
+            val targetId = if (!currentFbUid.isNullOrBlank()) currentFbUid else userId
+            val activeUserId = if (targetId.isNotBlank() && targetId != "user_default" && targetId != "kash_user_01") targetId else userId
+
             if (!force) {
-                val localAccounts = financialDao.getAccountsFlow(userId).firstOrNull().orEmpty()
+                val localAccounts = financialDao.getAccountsFlow(activeUserId).firstOrNull().orEmpty()
                 val dummyIds = setOf("acc_ahorros", "acc_corriente", "acc_billetera", "acc_efectivo")
                 val hasCustomOrFundedAccounts = localAccounts.any { !dummyIds.contains(it.id) || it.balance > 0.0 }
                 if (hasCustomOrFundedAccounts) {
-                    Log.i("FinancialRepository", "Omitiendo restauración desde la nube: el usuario $userId ya posee ${localAccounts.size} cuenta(s) en la base de datos local.")
+                    Log.i("FinancialRepository", "Omitiendo restauración desde la nube: el usuario $activeUserId ya posee ${localAccounts.size} cuenta(s) en la base de datos local.")
                     return Result.success(false)
                 }
             }
 
-            val backupData = firebaseDataSource.getFinancialBackup(userId)
+            val backupData = firebaseDataSource.getFinancialBackup(targetId)
+                ?: if (userId != targetId) firebaseDataSource.getFinancialBackup(userId) else null
+
             if (backupData == null) {
+                Log.i("FinancialRepository", "No se encontró ningún documento de respaldo en Firestore para $targetId ni $userId.")
                 return Result.success(false)
             }
 
-            Log.i("FinancialRepository", "Iniciando restauración de datos financieros desde Firestore para usuario $userId")
+            Log.i("FinancialRepository", "Iniciando restauración de datos financieros desde Firestore para usuario $activeUserId")
 
             fun parseDoubleAmount(v: Any?): Double {
                 if (v == null) return 0.0
@@ -2408,19 +2415,32 @@ class FinancialRepositoryImpl(
             val transactionsToInsert = mutableListOf<TransactionEntity>()
             var isLegacyBackup = false
 
+            var decryptedContent: String? = null
             if (backupData.containsKey("encryptedPayload")) {
                 val encryptedPayload = backupData["encryptedPayload"] as? String
-                if (encryptedPayload.isNullOrBlank()) {
-                    Log.w("FinancialRepository", "Respaldo cifrado tiene payload vacío.")
-                    return Result.success(false)
-                }
+                if (!encryptedPayload.isNullOrBlank()) {
+                    // Intento 1: Descifrado determinístico con targetId (UID activo de Firebase)
+                    decryptedContent = cryptoManager.decryptCloudPayload(encryptedPayload, targetId)
 
-                val decryptedContent = cryptoManager.decryptData(encryptedPayload)
-                if (decryptedContent.isNullOrBlank()) {
-                    Log.e("FinancialRepository", "Fallo al descifrar el payload del respaldo en la nube.")
-                    return Result.failure(IllegalStateException("No fue posible descifrar el respaldo de Firestore."))
-                }
+                    // Intento 2: Con userId local si difiere
+                    if (decryptedContent.isNullOrBlank() && userId.isNotBlank() && userId != targetId) {
+                        decryptedContent = cryptoManager.decryptCloudPayload(encryptedPayload, userId)
+                    }
 
+                    // Intento 3: Con el correo electrónico de Firebase si está disponible
+                    val fbEmail = firebaseDataSource.getCurrentUserEmail()
+                    if (decryptedContent.isNullOrBlank() && !fbEmail.isNullOrBlank()) {
+                        decryptedContent = cryptoManager.decryptCloudPayload(encryptedPayload, fbEmail)
+                    }
+
+                    // Intento 4: Fallback con la clave de hardware Keystore local
+                    if (decryptedContent.isNullOrBlank()) {
+                        decryptedContent = cryptoManager.decryptData(encryptedPayload)
+                    }
+                }
+            }
+
+            if (!decryptedContent.isNullOrBlank()) {
                 val jsonString = if (decryptedContent.trim().startsWith("{")) {
                     decryptedContent
                 } else {
@@ -2445,7 +2465,7 @@ class FinancialRepositoryImpl(
                         accountsToInsert.add(
                             AccountEntity(
                                 id = id,
-                                userId = userId,
+                                userId = activeUserId,
                                 name = name,
                                 balance = balance,
                                 currency = currency,
@@ -2477,7 +2497,7 @@ class FinancialRepositoryImpl(
                         transactionsToInsert.add(
                             TransactionEntity(
                                 id = txId,
-                                userId = userId,
+                                userId = activeUserId,
                                 accountId = accId,
                                 accountName = accName,
                                 categoryId = catId,
@@ -2494,6 +2514,7 @@ class FinancialRepositoryImpl(
                     }
                 }
             } else {
+                Log.w("FinancialRepository", "Aviso: No fue posible descifrar encryptedPayload con claves de usuario. Intentando recuperar datos legados en el documento de respaldo...")
                 isLegacyBackup = true
                 // Formato 1 legado: Lista de cuentas en backupData["accounts"]
                 val accountsListObj = backupData["accounts"] as? List<*>
@@ -2512,7 +2533,7 @@ class FinancialRepositoryImpl(
                         accountsToInsert.add(
                             AccountEntity(
                                 id = id,
-                                userId = userId,
+                                userId = activeUserId,
                                 name = name,
                                 balance = balance,
                                 currency = currency,
@@ -2542,7 +2563,7 @@ class FinancialRepositoryImpl(
                         accountsToInsert.add(
                             AccountEntity(
                                 id = id,
-                                userId = userId,
+                                userId = activeUserId,
                                 name = name,
                                 balance = balance,
                                 currency = currency,
@@ -2565,7 +2586,7 @@ class FinancialRepositoryImpl(
                             backupData["table"] == "accounts"
 
                     if (hasAccountTraits) {
-                        val accId = backupData["id"] as? String ?: ("acc_cloud_" + userId.take(6))
+                        val accId = backupData["id"] as? String ?: ("acc_cloud_" + activeUserId.take(6))
                         val accName = backupData["name"] as? String ?: backupData["nombre"] as? String ?: "Cuenta Principal"
                         val currency = backupData["currency"] as? String ?: backupData["moneda"] as? String ?: "COP"
                         val type = backupData["type"] as? String ?: backupData["tipo"] as? String ?: "SAVINGS"
@@ -2576,7 +2597,7 @@ class FinancialRepositoryImpl(
                         accountsToInsert.add(
                             AccountEntity(
                                 id = accId,
-                                userId = userId,
+                                userId = activeUserId,
                                 name = accName,
                                 balance = directBalance,
                                 currency = currency,
@@ -2632,7 +2653,7 @@ class FinancialRepositoryImpl(
 
                             val tx = TransactionEntity(
                                 id = txId,
-                                userId = userId,
+                                userId = activeUserId,
                                 accountId = accId,
                                 accountName = accName,
                                 categoryId = catId,
@@ -2655,12 +2676,12 @@ class FinancialRepositoryImpl(
 
                     // Asegurar movimiento inicial para cuentas con saldo si no hay transacciones
                     if (restoredTransactionsCount == 0) {
-                        val existingTxs = financialDao.getTransactionsFlow(userId).firstOrNull().orEmpty()
+                        val existingTxs = financialDao.getTransactionsFlow(activeUserId).firstOrNull().orEmpty()
                         if (existingTxs.isEmpty()) {
                             for (acc in accountsToInsert.filter { it.balance > 0.0 }) {
                                 val initTx = TransactionEntity(
                                     id = "tx_cloud_init_" + acc.id.takeLast(6) + "_" + (System.currentTimeMillis() % 10000),
-                                    userId = userId,
+                                    userId = activeUserId,
                                     accountId = acc.id,
                                     accountName = acc.name,
                                     categoryId = "cat_inc_otros",
@@ -2680,11 +2701,9 @@ class FinancialRepositoryImpl(
                     }
                 }
 
-                // Migración transparente si se restauró de un respaldo legado
-                if (isLegacyBackup) {
-                    syncScope.launch {
-                        backupFullPortfolioToCloud(userId)
-                    }
+                // Migración transparente si se restauró de un respaldo legado o descifrado con fallback
+                syncScope.launch {
+                    backupFullPortfolioToCloud(activeUserId)
                 }
             }
 
@@ -2766,24 +2785,27 @@ class FinancialRepositoryImpl(
                 put("categories", categoriesArr)
             }
 
+            val currentFbUid = firebaseDataSource.getCurrentUserId()
+            val effectiveSeed = if (!currentFbUid.isNullOrBlank()) currentFbUid else userId
+
             val rawJson = rootJson.toString()
             val compressedBase64 = compressGzip(rawJson)
-            val encryptedPayload = cryptoManager.encryptData(compressedBase64)
+            val encryptedPayload = cryptoManager.encryptCloudPayload(compressedBase64, effectiveSeed)
 
             val digest = java.security.MessageDigest.getInstance("SHA-256").digest(rawJson.toByteArray(Charsets.UTF_8))
             val checksumSha256 = digest.joinToString("") { "%02x".format(it) }
 
-            // Sobre cifrado estricto E2EE según firestore.rules
+            // Sobre cifrado estricto E2EE según firestore.rules con clave derivada determinística
             val envelope = hashMapOf<String, Any>(
                 "schemaVersion" to 2,
-                "userId" to userId,
+                "userId" to effectiveSeed,
                 "encryptedPayload" to encryptedPayload,
                 "recordCount" to (allAccounts.size + allTransactions.size),
                 "checksumSha256" to checksumSha256,
                 "updatedAt" to System.currentTimeMillis()
             )
 
-            val success = firebaseDataSource.syncOfflineFinancialBackup(userId, envelope)
+            val success = firebaseDataSource.syncOfflineFinancialBackup(effectiveSeed, envelope)
             if (success) {
                 try {
                     auditLogDao.insertLog(
