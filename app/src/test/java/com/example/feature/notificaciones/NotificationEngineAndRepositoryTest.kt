@@ -367,4 +367,51 @@ class NotificationEngineAndRepositoryTest {
         assertTrue(notifsA.first().id.startsWith("user_A_"))
         assertTrue(notifsB.first().id.startsWith("user_B_"))
     }
+
+    @Test
+    fun `TEST-NOTIF-13 Sanitizacion para pantalla de bloqueo (ISO 27001) enmascara montos de dinero y numeros de tarjeta`() {
+        val rawBody = "Tarjeta Visa *4512 registró una compra por $ 1.450.000 COP en Éxito. Saldo disponible al día."
+        val sanitized = com.example.feature.notificaciones.dispatcher.RichSystemNotificationDispatcher.sanitizeForLockScreen(rawBody)
+
+        assertFalse("El texto sanitizado no debe exponer la cifra exacta de dinero", sanitized.contains("1.450.000"))
+        assertFalse("El texto sanitizado no debe exponer los dígitos de la tarjeta", sanitized.contains("4512"))
+        assertTrue("El texto sanitizado debe contener el indicador de confidencialidad", sanitized.contains("$ ••••••"))
+    }
+
+    @Test
+    fun `TEST-NOTIF-14 QuietHoursPolicy suprime alertas no criticas durante la noche pero permite sobregiro o alertas CRITICAL`() {
+        val policy = QuietHoursPolicy(enabled = true, startHour24 = 22, endHour24 = 7)
+
+        // A las 23:30 (noche): no crítica se suprime, crítica atraviesa
+        assertTrue("Alerta normal a las 23:30 debe ser silenciada", policy.shouldSuppressSystemPush(LocalTime.of(23, 30), "DEFAULT"))
+        assertFalse("Alerta CRITICAL a las 23:30 debe sonar", policy.shouldSuppressSystemPush(LocalTime.of(23, 30), "CRITICAL"))
+
+        // A las 03:15 (madrugada): no crítica se suprime, crítica atraviesa
+        assertTrue("Alerta normal a las 03:15 debe ser silenciada", policy.shouldSuppressSystemPush(LocalTime.of(3, 15), "DEFAULT"))
+        assertFalse("Alerta CRITICAL a las 03:15 debe sonar", policy.shouldSuppressSystemPush(LocalTime.of(3, 15), "CRITICAL"))
+
+        // A las 14:00 (tarde): ninguna se suprime
+        assertFalse("Alerta normal a las 14:00 no debe ser silenciada", policy.shouldSuppressSystemPush(LocalTime.of(14, 0), "DEFAULT"))
+        assertFalse("Alerta CRITICAL a las 14:00 no debe ser silenciada", policy.shouldSuppressSystemPush(LocalTime.of(14, 0), "CRITICAL"))
+    }
+
+    @Test
+    fun `TEST-NOTIF-15 Canales de notificaciones estan configurados formalmente para respetar prioridades de Android`() {
+        assertEquals("kash_security_critical", com.example.feature.notificaciones.dispatcher.RichSystemNotificationDispatcher.CHANNEL_SECURITY_CRITICAL)
+        assertEquals("kash_payments_due", com.example.feature.notificaciones.dispatcher.RichSystemNotificationDispatcher.CHANNEL_PAYMENTS_DUE)
+        assertEquals("kash_budgets_goals", com.example.feature.notificaciones.dispatcher.RichSystemNotificationDispatcher.CHANNEL_BUDGETS_GOALS)
+        assertEquals("kash_tax_and_assets", com.example.feature.notificaciones.dispatcher.RichSystemNotificationDispatcher.CHANNEL_TAX_AND_ASSETS)
+        assertEquals("kash_weekly_digest", com.example.feature.notificaciones.dispatcher.RichSystemNotificationDispatcher.CHANNEL_WEEKLY_DIGEST)
+    }
+
+    @Test
+    fun `TEST-NOTIF-16 Modelo de Dominio NotificationSettingsConfig contiene valores por defecto bancarios consistentes`() {
+        val config = com.example.features.settings.domain.model.NotificationSettingsConfig()
+
+        assertTrue("Presupuestos activos por defecto", config.budgetPolicy.isEnabled)
+        assertEquals("Umbral preventivo por defecto 80%", 80, config.budgetPolicy.warningThresholdPercent)
+        assertTrue("Tarjetas activas por defecto", config.paymentPolicy.isEnabled)
+        assertTrue("Aviso a 3 días incluido", config.paymentPolicy.daysBeforeDueDate.contains(3))
+        assertTrue("Ocultar saldos en pantalla de bloqueo activo por defecto (ISO 27001)", config.privacyPolicy.maskAmountsOnLockScreen)
+    }
 }

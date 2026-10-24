@@ -239,6 +239,9 @@ fun SettingsScreen(
                     }
                     SettingsSubRoute.NOTIFICACIONES -> {
                         SettingsNotificationsScreen(
+                            userId = viewModel.userId,
+                            config = uiState.preferences.notificationSettings,
+                            onUpdateConfig = { viewModel.updateNotificationSettings(it) },
                             budgetAlerts = uiState.preferences.budgetAlertsEnabled,
                             paymentReminders = uiState.preferences.paymentRemindersEnabled,
                             weeklySummary = uiState.preferences.weeklySummaryEnabled,

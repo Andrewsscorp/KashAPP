@@ -209,6 +209,60 @@ class SettingsViewModel(
         }
     }
 
+    fun updateNotificationSettings(config: com.example.features.settings.domain.model.NotificationSettingsConfig) {
+        viewModelScope.launch {
+            repository.updateNotificationSettings(userId, config)
+        }
+    }
+
+    fun updateBudgetPolicy(transform: (com.example.features.settings.domain.model.BudgetAlertPolicy) -> com.example.features.settings.domain.model.BudgetAlertPolicy) {
+        viewModelScope.launch {
+            val current = repository.getPreferences(userId).notificationSettings
+            val updated = current.copy(budgetPolicy = transform(current.budgetPolicy))
+            repository.updateNotificationSettings(userId, updated)
+        }
+    }
+
+    fun updatePaymentPolicy(transform: (com.example.features.settings.domain.model.PaymentAndCardAlertPolicy) -> com.example.features.settings.domain.model.PaymentAndCardAlertPolicy) {
+        viewModelScope.launch {
+            val current = repository.getPreferences(userId).notificationSettings
+            val updated = current.copy(paymentPolicy = transform(current.paymentPolicy))
+            repository.updateNotificationSettings(userId, updated)
+        }
+    }
+
+    fun updateSecurityPolicy(transform: (com.example.features.settings.domain.model.SecurityAndAnomalyAlertPolicy) -> com.example.features.settings.domain.model.SecurityAndAnomalyAlertPolicy) {
+        viewModelScope.launch {
+            val current = repository.getPreferences(userId).notificationSettings
+            val updated = current.copy(securityPolicy = transform(current.securityPolicy))
+            repository.updateNotificationSettings(userId, updated)
+        }
+    }
+
+    fun updateTaxPolicy(transform: (com.example.features.settings.domain.model.TaxAndPatrimonyAlertPolicy) -> com.example.features.settings.domain.model.TaxAndPatrimonyAlertPolicy) {
+        viewModelScope.launch {
+            val current = repository.getPreferences(userId).notificationSettings
+            val updated = current.copy(taxPolicy = transform(current.taxPolicy))
+            repository.updateNotificationSettings(userId, updated)
+        }
+    }
+
+    fun updateWeeklyDigestPolicy(transform: (com.example.features.settings.domain.model.WeeklyDigestPolicy) -> com.example.features.settings.domain.model.WeeklyDigestPolicy) {
+        viewModelScope.launch {
+            val current = repository.getPreferences(userId).notificationSettings
+            val updated = current.copy(weeklyDigestPolicy = transform(current.weeklyDigestPolicy))
+            repository.updateNotificationSettings(userId, updated)
+        }
+    }
+
+    fun updatePrivacyPolicy(transform: (com.example.features.settings.domain.model.PrivacyAndDeliveryPolicy) -> com.example.features.settings.domain.model.PrivacyAndDeliveryPolicy) {
+        viewModelScope.launch {
+            val current = repository.getPreferences(userId).notificationSettings
+            val updated = current.copy(privacyPolicy = transform(current.privacyPolicy))
+            repository.updateNotificationSettings(userId, updated)
+        }
+    }
+
     fun updateProfile(name: String, email: String, phone: String) {
         _uiState.update {
             it.copy(

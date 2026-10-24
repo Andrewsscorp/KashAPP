@@ -18,6 +18,22 @@ interface SettingsRepository {
     }
     suspend fun setBudgetAlertsEnabled(userId: String, enabled: Boolean): Result<Unit>
     suspend fun setPaymentRemindersEnabled(userId: String, enabled: Boolean): Result<Unit>
+    suspend fun getNotificationSettings(userId: String): com.example.features.settings.domain.model.NotificationSettingsConfig {
+        return getPreferences(userId).notificationSettings
+    }
+    suspend fun updateNotificationSettings(
+        userId: String,
+        config: com.example.features.settings.domain.model.NotificationSettingsConfig
+    ): Result<Unit> {
+        val current = getPreferences(userId)
+        val updated = current.copy(
+            notificationSettings = config,
+            budgetAlertsEnabled = config.budgetPolicy.isEnabled,
+            paymentRemindersEnabled = config.paymentPolicy.isEnabled,
+            weeklySummaryEnabled = config.weeklyDigestPolicy.isEnabled
+        )
+        return updatePreferences(updated).map { }
+    }
     suspend fun setExcludeAllAccountsFromDashboard(userId: String, excluded: Boolean): Result<Unit>
     suspend fun setAccountExcludedFromDashboard(userId: String, accountId: String, excluded: Boolean): Result<Unit>
     suspend fun isAccountExcluded(userId: String, accountId: String): Boolean

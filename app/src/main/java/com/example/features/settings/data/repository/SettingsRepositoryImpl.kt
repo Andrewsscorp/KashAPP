@@ -24,6 +24,24 @@ class SettingsRepositoryImpl(
 
     private fun k(userId: String, key: String): String = if (userId.isBlank()) key else "${userId}_$key"
 
+    private fun migrateLegacyNotificationPrefsIfNeeded(userId: String) {
+        val migrationKey = k(userId, "notif_migrated_legacy_prefs")
+        if (prefs.getBoolean(migrationKey, false)) return
+        try {
+            val legacyManager = com.example.presentation.payments.notification.UpcomingPaymentsNotificationPrefsManager(context)
+            val legacyConfig = legacyManager.getConfig()
+            prefs.edit()
+                .putBoolean(k(userId, "notif_payment_enabled"), legacyConfig.enabled)
+                .putStringSet(k(userId, "notif_payment_days"), setOf(legacyConfig.advanceNoticeDays.toString(), "1", "0"))
+                .putInt(k(userId, "notif_payment_hour"), legacyConfig.preferredHour)
+                .putInt(k(userId, "notif_payment_minute"), legacyConfig.preferredMinute)
+                .putBoolean(migrationKey, true)
+                .apply()
+        } catch (_: Throwable) {
+            prefs.edit().putBoolean(migrationKey, true).apply()
+        }
+    }
+
     private fun loadPreferences(userId: String): UserPreferencesDomain {
         val uId = if (userId.isBlank()) "user_default" else userId
         val accepted = prefs.getBoolean(k(uId, "privacy_policy_accepted"), prefs.getBoolean("privacy_policy_accepted", false))
@@ -34,6 +52,60 @@ class SettingsRepositoryImpl(
             version = version,
             timestampMs = timestamp
         )
+        migrateLegacyNotificationPrefsIfNeeded(uId)
+
+        val budgetEnabled = prefs.getBoolean(k(uId, "notif_budget_enabled"), prefs.getBoolean(k(uId, "budget_alerts_enabled"), true))
+        val paymentEnabled = prefs.getBoolean(k(uId, "notif_payment_enabled"), prefs.getBoolean(k(uId, "payment_reminders_enabled"), true))
+        val weeklyEnabled = prefs.getBoolean(k(uId, "notif_weekly_enabled"), prefs.getBoolean(k(uId, "weekly_summary_enabled"), true))
+
+        val daysStrings = prefs.getStringSet(k(uId, "notif_payment_days"), setOf("3", "1", "0")) ?: setOf("3", "1", "0")
+        val daysSet = daysStrings.mapNotNull { it.toIntOrNull() }.toSet().ifEmpty { setOf(3, 1, 0) }
+
+        val notificationConfig = com.example.features.settings.domain.model.NotificationSettingsConfig(
+            budgetPolicy = com.example.features.settings.domain.model.BudgetAlertPolicy(
+                isEnabled = budgetEnabled,
+                warningThresholdPercent = prefs.getInt(k(uId, "notif_budget_threshold"), 80),
+                notifyOnCritical100Percent = prefs.getBoolean(k(uId, "notif_budget_100"), true),
+                suggestEnvelopeRebalance = prefs.getBoolean(k(uId, "notif_budget_rebalance"), true)
+            ),
+            paymentPolicy = com.example.features.settings.domain.model.PaymentAndCardAlertPolicy(
+                isEnabled = paymentEnabled,
+                daysBeforeDueDate = daysSet,
+                preferredAlertHour = prefs.getInt(k(uId, "notif_payment_hour"), 9),
+                preferredAlertMinute = prefs.getInt(k(uId, "notif_payment_minute"), 0),
+                includeMinimumPaymentPreview = prefs.getBoolean(k(uId, "notif_payment_minimum"), true)
+            ),
+            securityPolicy = com.example.features.settings.domain.model.SecurityAndAnomalyAlertPolicy(
+                overdraftImmediateAlert = prefs.getBoolean(k(uId, "notif_security_overdraft"), true),
+                mlUnusualExpenseAlert = prefs.getBoolean(k(uId, "notif_security_ml_anomalies"), true),
+                failedAuthAttemptAlert = prefs.getBoolean(k(uId, "notif_security_failed_auth"), true),
+                highValueTransactionThresholdCop = prefs.getLong(k(uId, "notif_security_high_value_cop"), 1_000_000L)
+            ),
+            taxPolicy = com.example.features.settings.domain.model.TaxAndPatrimonyAlertPolicy(
+                dianTaxCalendarAlerts = prefs.getBoolean(k(uId, "notif_tax_dian"), true),
+                uvtThresholdWarningPercent = prefs.getInt(k(uId, "notif_tax_uvt_threshold"), 85),
+                gmfExemptionAlert = prefs.getBoolean(k(uId, "notif_tax_gmf"), true),
+                fixedAssetMaintenanceAndDepreciationAlerts = prefs.getBoolean(k(uId, "notif_tax_fixed_assets"), true),
+                cdtMaturityAlerts = prefs.getBoolean(k(uId, "notif_tax_cdt"), true),
+                sharedDebtRemindersEnabled = prefs.getBoolean(k(uId, "notif_tax_shared_debt"), true)
+            ),
+            weeklyDigestPolicy = com.example.features.settings.domain.model.WeeklyDigestPolicy(
+                isEnabled = weeklyEnabled,
+                dayOfWeekIso = prefs.getInt(k(uId, "notif_weekly_day_iso"), 1),
+                hourOfDay = prefs.getInt(k(uId, "notif_weekly_hour"), 8),
+                minute = prefs.getInt(k(uId, "notif_weekly_minute"), 0),
+                includeAiInsights = prefs.getBoolean(k(uId, "notif_weekly_ai_insights"), true)
+            ),
+            privacyPolicy = com.example.features.settings.domain.model.PrivacyAndDeliveryPolicy(
+                maskAmountsOnLockScreen = prefs.getBoolean(k(uId, "notif_privacy_mask_amounts"), true),
+                requireBiometricForNotificationActions = prefs.getBoolean(k(uId, "notif_privacy_require_biometric"), true),
+                quietHoursEnabled = prefs.getBoolean(k(uId, "notif_privacy_quiet_hours_enabled"), false),
+                quietStartHour = prefs.getInt(k(uId, "notif_privacy_quiet_start_hour"), 22),
+                quietEndHour = prefs.getInt(k(uId, "notif_privacy_quiet_end_hour"), 7),
+                allowCriticalSecurityInQuietHours = prefs.getBoolean(k(uId, "notif_privacy_quiet_allow_critical"), true)
+            )
+        )
+
         return UserPreferencesDomain(
             userId = uId,
             language = prefs.getString(k(uId, "language"), prefs.getString("language", "es")) ?: "es",
@@ -43,10 +115,11 @@ class SettingsRepositoryImpl(
             biometricsEnabled = prefs.getBoolean(k(uId, "biometrics_enabled"), prefs.getBoolean("biometrics_enabled", false)),
             allowScreenshots = prefs.getBoolean(k(uId, "allow_screenshots"), prefs.getBoolean("allow_screenshots", false)),
             pushNotifications = prefs.getBoolean(k(uId, "push_notifications"), prefs.getBoolean("push_notifications", true)),
-            budgetAlertsEnabled = prefs.getBoolean(k(uId, "budget_alerts_enabled"), prefs.getBoolean("budget_alerts_enabled", true)),
-            paymentRemindersEnabled = prefs.getBoolean(k(uId, "payment_reminders_enabled"), prefs.getBoolean("payment_reminders_enabled", true)),
-            weeklySummaryEnabled = prefs.getBoolean(k(uId, "weekly_summary_enabled"), prefs.getBoolean("weekly_summary_enabled", true)),
+            budgetAlertsEnabled = budgetEnabled,
+            paymentRemindersEnabled = paymentEnabled,
+            weeklySummaryEnabled = weeklyEnabled,
             monthlySummaryEnabled = prefs.getBoolean(k(uId, "monthly_summary_enabled"), prefs.getBoolean("monthly_summary_enabled", true)),
+            notificationSettings = notificationConfig,
             wifiOnlySync = prefs.getBoolean(k(uId, "wifi_only_sync"), prefs.getBoolean("wifi_only_sync", false)),
             privacyModeEnabled = prefs.getBoolean(k(uId, "privacy_mode_enabled"), prefs.getBoolean("privacy_mode_enabled", false)),
             excludeAllAccountsFromDashboard = prefs.getBoolean(k(uId, "exclude_all_accounts_dashboard"), prefs.getBoolean("exclude_all_accounts_dashboard", false)),
@@ -75,6 +148,7 @@ class SettingsRepositoryImpl(
         val uId = if (preferences.userId.isBlank()) "user_default" else preferences.userId
         val nextVersion = preferences.version + 1
         val updated = preferences.copy(userId = uId, version = nextVersion, updatedAt = System.currentTimeMillis())
+        val notif = updated.notificationSettings
         prefs.edit()
             .putString(k(uId, "language"), updated.language)
             .putString(k(uId, "base_currency"), updated.baseCurrency)
@@ -83,10 +157,40 @@ class SettingsRepositoryImpl(
             .putBoolean(k(uId, "biometrics_enabled"), updated.biometricsEnabled)
             .putBoolean(k(uId, "allow_screenshots"), updated.allowScreenshots)
             .putBoolean(k(uId, "push_notifications"), updated.pushNotifications)
-            .putBoolean(k(uId, "budget_alerts_enabled"), updated.budgetAlertsEnabled)
-            .putBoolean(k(uId, "payment_reminders_enabled"), updated.paymentRemindersEnabled)
-            .putBoolean(k(uId, "weekly_summary_enabled"), updated.weeklySummaryEnabled)
+            .putBoolean(k(uId, "budget_alerts_enabled"), notif.budgetPolicy.isEnabled)
+            .putBoolean(k(uId, "payment_reminders_enabled"), notif.paymentPolicy.isEnabled)
+            .putBoolean(k(uId, "weekly_summary_enabled"), notif.weeklyDigestPolicy.isEnabled)
             .putBoolean(k(uId, "monthly_summary_enabled"), updated.monthlySummaryEnabled)
+            .putBoolean(k(uId, "notif_budget_enabled"), notif.budgetPolicy.isEnabled)
+            .putInt(k(uId, "notif_budget_threshold"), notif.budgetPolicy.warningThresholdPercent)
+            .putBoolean(k(uId, "notif_budget_100"), notif.budgetPolicy.notifyOnCritical100Percent)
+            .putBoolean(k(uId, "notif_budget_rebalance"), notif.budgetPolicy.suggestEnvelopeRebalance)
+            .putBoolean(k(uId, "notif_payment_enabled"), notif.paymentPolicy.isEnabled)
+            .putStringSet(k(uId, "notif_payment_days"), notif.paymentPolicy.daysBeforeDueDate.map { it.toString() }.toSet())
+            .putInt(k(uId, "notif_payment_hour"), notif.paymentPolicy.preferredAlertHour)
+            .putInt(k(uId, "notif_payment_minute"), notif.paymentPolicy.preferredAlertMinute)
+            .putBoolean(k(uId, "notif_payment_minimum"), notif.paymentPolicy.includeMinimumPaymentPreview)
+            .putBoolean(k(uId, "notif_security_overdraft"), notif.securityPolicy.overdraftImmediateAlert)
+            .putBoolean(k(uId, "notif_security_ml_anomalies"), notif.securityPolicy.mlUnusualExpenseAlert)
+            .putBoolean(k(uId, "notif_security_failed_auth"), notif.securityPolicy.failedAuthAttemptAlert)
+            .putLong(k(uId, "notif_security_high_value_cop"), notif.securityPolicy.highValueTransactionThresholdCop)
+            .putBoolean(k(uId, "notif_tax_dian"), notif.taxPolicy.dianTaxCalendarAlerts)
+            .putInt(k(uId, "notif_tax_uvt_threshold"), notif.taxPolicy.uvtThresholdWarningPercent)
+            .putBoolean(k(uId, "notif_tax_gmf"), notif.taxPolicy.gmfExemptionAlert)
+            .putBoolean(k(uId, "notif_tax_fixed_assets"), notif.taxPolicy.fixedAssetMaintenanceAndDepreciationAlerts)
+            .putBoolean(k(uId, "notif_tax_cdt"), notif.taxPolicy.cdtMaturityAlerts)
+            .putBoolean(k(uId, "notif_tax_shared_debt"), notif.taxPolicy.sharedDebtRemindersEnabled)
+            .putBoolean(k(uId, "notif_weekly_enabled"), notif.weeklyDigestPolicy.isEnabled)
+            .putInt(k(uId, "notif_weekly_day_iso"), notif.weeklyDigestPolicy.dayOfWeekIso)
+            .putInt(k(uId, "notif_weekly_hour"), notif.weeklyDigestPolicy.hourOfDay)
+            .putInt(k(uId, "notif_weekly_minute"), notif.weeklyDigestPolicy.minute)
+            .putBoolean(k(uId, "notif_weekly_ai_insights"), notif.weeklyDigestPolicy.includeAiInsights)
+            .putBoolean(k(uId, "notif_privacy_mask_amounts"), notif.privacyPolicy.maskAmountsOnLockScreen)
+            .putBoolean(k(uId, "notif_privacy_require_biometric"), notif.privacyPolicy.requireBiometricForNotificationActions)
+            .putBoolean(k(uId, "notif_privacy_quiet_hours_enabled"), notif.privacyPolicy.quietHoursEnabled)
+            .putInt(k(uId, "notif_privacy_quiet_start_hour"), notif.privacyPolicy.quietStartHour)
+            .putInt(k(uId, "notif_privacy_quiet_end_hour"), notif.privacyPolicy.quietEndHour)
+            .putBoolean(k(uId, "notif_privacy_quiet_allow_critical"), notif.privacyPolicy.allowCriticalSecurityInQuietHours)
             .putBoolean(k(uId, "wifi_only_sync"), updated.wifiOnlySync)
             .putBoolean(k(uId, "privacy_mode_enabled"), updated.privacyModeEnabled)
             .putBoolean(k(uId, "exclude_all_accounts_dashboard"), updated.excludeAllAccountsFromDashboard)
@@ -147,12 +251,16 @@ class SettingsRepositoryImpl(
 
     override suspend fun setBudgetAlertsEnabled(userId: String, enabled: Boolean): Result<Unit> {
         val current = getPreferences(userId)
-        return updatePreferences(current.copy(budgetAlertsEnabled = enabled)).map { }
+        val notif = current.notificationSettings
+        val updatedNotif = notif.copy(budgetPolicy = notif.budgetPolicy.copy(isEnabled = enabled))
+        return updatePreferences(current.copy(budgetAlertsEnabled = enabled, notificationSettings = updatedNotif)).map { }
     }
 
     override suspend fun setPaymentRemindersEnabled(userId: String, enabled: Boolean): Result<Unit> {
         val current = getPreferences(userId)
-        return updatePreferences(current.copy(paymentRemindersEnabled = enabled)).map { }
+        val notif = current.notificationSettings
+        val updatedNotif = notif.copy(paymentPolicy = notif.paymentPolicy.copy(isEnabled = enabled))
+        return updatePreferences(current.copy(paymentRemindersEnabled = enabled, notificationSettings = updatedNotif)).map { }
     }
 
     override suspend fun setExcludeAllAccountsFromDashboard(userId: String, excluded: Boolean): Result<Unit> {
