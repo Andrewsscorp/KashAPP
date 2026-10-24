@@ -206,11 +206,15 @@ fun SettingsScreen(
                         )
                     }
                     SettingsSubRoute.SEGURIDAD -> {
+                        val ctx = LocalContext.current
+                        val appContainer = (ctx.applicationContext as KashAppApplication).appContainer
                         SettingsSecurityScreen(
+                            userId = viewModel.userId,
                             biometricsEnabled = uiState.preferences.biometricsEnabled,
                             onToggleBiometrics = { viewModel.toggleBiometrics(it) },
                             allowScreenshots = uiState.preferences.allowScreenshots,
                             onToggleAllowScreenshots = { viewModel.toggleAllowScreenshots(it) },
+                            authRepository = appContainer.authRepository,
                             onShowMessage = { viewModel.showStatusMessage(it) },
                             onChangePin = { current, new -> viewModel.changePin(current, new) },
                             onBack = { viewModel.navigateBackToMain() }

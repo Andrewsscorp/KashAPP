@@ -59,6 +59,29 @@ object Pbkdf2PinHasher {
         return HashResult(saltBase64 = salt, hashFormatted = formatted)
     }
 
+    fun hashPin(pin: String): String {
+        return createNewPinHash(pin).hashFormatted
+    }
+
+    fun verifyPin(pin: String, formattedHash: String): Boolean {
+        return try {
+            val parts = formattedHash.split("$").filter { it.isNotEmpty() }
+            if (parts.size >= 4) {
+                val salt = parts[2]
+                val expectedHashBytes = decodeBase64(parts[3])
+                val saltBytes = decodeBase64(salt)
+                val spec = PBEKeySpec(pin.toCharArray(), saltBytes, ITERATIONS, KEY_LENGTH)
+                val factory = SecretKeyFactory.getInstance(ALGORITHM)
+                val computedHashBytes = factory.generateSecret(spec).encoded
+                MessageDigest.isEqual(computedHashBytes, expectedHashBytes)
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     fun verifyPin(pin: String, storedHash: String, storedSalt: String): Boolean {
         return try {
             val computed = hashPin(pin, storedSalt)
