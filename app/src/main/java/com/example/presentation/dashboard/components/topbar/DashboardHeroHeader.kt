@@ -131,6 +131,13 @@ fun DashboardHeroHeader(
     val context = LocalContext.current
     val avatarTrigger by UserProfileSecurityManager.avatarUpdateTrigger.collectAsState()
     var avatarBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    val activeUserName = remember(avatarTrigger, userName) {
+        if (userName.isNotBlank() && userName != "Usuario") {
+            userName
+        } else {
+            UserProfileSecurityManager.resolveActiveUserName(context, fallback = "Andrés Felipe")
+        }
+    }
 
     LaunchedEffect(avatarTrigger, userName) {
         val path = UserProfileSecurityManager.resolveAvatarPath(context)
@@ -329,18 +336,18 @@ fun DashboardHeroHeader(
                             if (bmp != null) {
                                 Image(
                                     bitmap = bmp.asImageBitmap(),
-                                    contentDescription = "Foto de perfil de $userName",
+                                    contentDescription = "Foto de perfil de $activeUserName",
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .clip(CircleShape)
                                 )
                             } else {
-                                val initials = userName.split(" ")
+                                val initials = activeUserName.split(" ")
                                     .mapNotNull { it.firstOrNull()?.uppercaseChar()?.toString() }
                                     .take(2)
                                     .joinToString("")
-                                    .ifEmpty { if (userName.length >= 2) userName.take(2).uppercase() else "KA" }
+                                    .ifEmpty { if (activeUserName.length >= 2) activeUserName.take(2).uppercase() else "AF" }
                                 Text(
                                     text = initials,
                                     fontSize = 13.sp,
@@ -365,7 +372,7 @@ fun DashboardHeroHeader(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Hola, ${userName.ifBlank { "María" }}",
+                        text = "Hola, ${activeUserName.ifBlank { "Andrés" }}",
                         fontSize = 28.sp,
                         fontStyle = FontStyle.Italic,
                         fontWeight = FontWeight.Normal,

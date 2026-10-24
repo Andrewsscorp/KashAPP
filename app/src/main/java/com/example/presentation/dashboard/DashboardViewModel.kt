@@ -47,21 +47,33 @@ class DashboardViewModel(
     val exchangeRateRepository: com.example.domain.repository.ExchangeRateRepository? = null,
     val settingsRepository: com.example.features.settings.domain.repository.SettingsRepository? = null,
     val fixedAssetRepository: com.example.domain.repository.FixedAssetRepository? = null,
-    val userId: String = "user_default"
+    val userSessionDao: com.example.data.local.dao.UserSessionDao? = null,
+    val userId: String = "user_default",
+    initialUserName: String = "Andrés Felipe",
+    initialUserEmail: String = "cdosuarez@gmail.com"
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(DashboardUiState())
+    private val _uiState = MutableStateFlow(
+        DashboardUiState(
+            userName = initialUserName.ifBlank { "Andrés Felipe" },
+            userEmail = initialUserEmail.ifBlank { "cdosuarez@gmail.com" }
+        )
+    )
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     private var rawNetWorthState = NetWorthState()
     private var rawKpiState = KpiState()
 
     init {
+        observeUserSession(initialUserName, initialUserEmail)
         observeSettings()
         observeDatabaseSources()
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
+                // 1. Rescate proactivo de cuentas legadas (user_default o kash_user_01) huérfanas
+                financialRepository?.migrateLegacyUserDefaultDataIfNeeded(userId)
+
                 val currentAccounts = financialRepository?.getAccounts(userId)?.firstOrNull().orEmpty()
                 val dummyIds = setOf("acc_ahorros", "acc_corriente", "acc_billetera", "acc_efectivo")
                 val hasRealAccounts = currentAccounts.any { !dummyIds.contains(it.id) || it.balance > 0.0 }
@@ -77,6 +89,22 @@ class DashboardViewModel(
                 android.util.Log.w("DashboardViewModel", "Error sincronizando datos al iniciar: ${e.message}")
             } finally {
                 _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+    private fun observeUserSession(fallbackName: String, fallbackEmail: String) {
+        val dao = userSessionDao ?: return
+        viewModelScope.launch {
+            dao.getActiveSessionFlow().collect { session ->
+                val resolvedName = session?.displayName?.takeIf { it.isNotBlank() } ?: fallbackName
+                val resolvedEmail = session?.email?.takeIf { it.isNotBlank() } ?: fallbackEmail
+                _uiState.update { current ->
+                    current.copy(
+                        userName = resolvedName,
+                        userEmail = resolvedEmail
+                    )
+                }
             }
         }
     }
@@ -708,6 +736,9 @@ class DashboardViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
+                // Primero intentamos recuperar datos legados locales si las cuentas están vacías
+                financialRepository?.migrateLegacyUserDefaultDataIfNeeded(userId)
+
                 val currentAccounts = financialRepository?.getAccounts(userId)?.firstOrNull().orEmpty()
                 val dummyIds = setOf("acc_ahorros", "acc_corriente", "acc_billetera", "acc_efectivo")
                 val hasRealAccounts = currentAccounts.any { !dummyIds.contains(it.id) || it.balance > 0.0 }

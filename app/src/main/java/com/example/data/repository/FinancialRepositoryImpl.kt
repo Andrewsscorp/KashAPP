@@ -2308,6 +2308,44 @@ class FinancialRepositoryImpl(
         }
     }
 
+    override suspend fun migrateLegacyUserDefaultDataIfNeeded(targetUserId: String): Result<Int> = withContext(ioDispatcher) {
+        runCatching {
+            if (targetUserId.isBlank() || targetUserId == "user_default") return@runCatching 0
+
+            val dummyIds = setOf("acc_ahorros", "acc_corriente", "acc_billetera", "acc_efectivo")
+            val targetAccounts = financialDao.getAccountsFlow(targetUserId).firstOrNull().orEmpty()
+            val hasCustomOrFundedAccounts = targetAccounts.any { !dummyIds.contains(it.id) || it.balance > 0.0 }
+            if (hasCustomOrFundedAccounts) {
+                return@runCatching 0
+            }
+
+            var totalMigrated = 0
+            val legacyDefaultAccounts = financialDao.getAccountsFlow("user_default").firstOrNull().orEmpty()
+            if (legacyDefaultAccounts.any { !dummyIds.contains(it.id) || it.balance > 0.0 }) {
+                totalMigrated += financialDao.migrateAccountsUserDefault(targetUserId)
+                totalMigrated += financialDao.migrateTransactionsUserDefault(targetUserId)
+                totalMigrated += financialDao.migrateGoalsUserDefault(targetUserId)
+                totalMigrated += financialDao.migrateBudgetsUserDefault(targetUserId)
+                totalMigrated += financialDao.migrateScheduledPaymentsUserDefault(targetUserId)
+                totalMigrated += financialDao.migrateIncomeSourcesUserDefault(targetUserId)
+                Log.i("FinancialRepositoryImpl", "✓ Se recuperaron y migraron $totalMigrated registros de 'user_default' a '$targetUserId'")
+            } else if (targetUserId != "kash_user_01") {
+                val legacyKash01Accounts = financialDao.getAccountsFlow("kash_user_01").firstOrNull().orEmpty()
+                if (legacyKash01Accounts.any { !dummyIds.contains(it.id) || it.balance > 0.0 }) {
+                    totalMigrated += financialDao.migrateAccountsFromUserId("kash_user_01", targetUserId)
+                    totalMigrated += financialDao.migrateTransactionsFromUserId("kash_user_01", targetUserId)
+                    totalMigrated += financialDao.migrateGoalsFromUserId("kash_user_01", targetUserId)
+                    totalMigrated += financialDao.migrateBudgetsFromUserId("kash_user_01", targetUserId)
+                    totalMigrated += financialDao.migrateScheduledPaymentsFromUserId("kash_user_01", targetUserId)
+                    totalMigrated += financialDao.migrateIncomeSourcesFromUserId("kash_user_01", targetUserId)
+                    Log.i("FinancialRepositoryImpl", "✓ Se recuperaron y migraron $totalMigrated registros de 'kash_user_01' a '$targetUserId'")
+                }
+            }
+
+            totalMigrated
+        }
+    }
+
     override suspend fun restoreFullPortfolioFromCloud(userId: String): Result<Boolean> = withContext(ioDispatcher) {
         restoreFinancialBackupInternal(userId = userId, force = true)
     }

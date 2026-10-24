@@ -157,7 +157,10 @@ class MainActivity : FragmentActivity() {
                         exchangeRateRepository = appContainer.exchangeRateRepository,
                         settingsRepository = appContainer.settingsRepository,
                         fixedAssetRepository = appContainer.fixedAssetRepository,
-                        userId = user.userId
+                        userSessionDao = appContainer.securityDatabase.userSessionDao(),
+                        userId = user.userId,
+                        initialUserName = user.displayName?.takeIf { it.isNotBlank() } ?: "Andrés Felipe",
+                        initialUserEmail = user.email?.takeIf { it.isNotBlank() } ?: "cdosuarez@gmail.com"
                     )
                 )
                 DashboardScreen(

@@ -125,6 +125,22 @@ class UserProfileSecurityManager(
                 ?: fallback
         }
 
+        /**
+         * Resuelve el nombre real activo del usuario autenticado para el Dashboard y navegación.
+         */
+        fun resolveActiveUserName(context: Context, explicitUserId: String? = null, fallback: String = "Andrés Felipe"): String {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val fbUser = try { FirebaseAuth.getInstance().currentUser } catch (_: Throwable) { null }
+            val safeUid = explicitUserId?.takeIf { it.isNotBlank() }
+                ?: fbUser?.uid?.takeIf { it.isNotBlank() }
+                ?: prefs.getString("last_active_profile_uid", null)
+                ?: "user_default"
+
+            return prefs.getString("profile_name_$safeUid", null)?.takeIf { it.isNotBlank() }
+                ?: fbUser?.displayName?.takeIf { it.isNotBlank() }
+                ?: fallback
+        }
+
         val SUPPORTED_JURISDICTIONS = listOf(
             ProfileJurisdictionOption(
                 displayLabel = "Bogotá (UTC-5) • Colombia (DIAN)",

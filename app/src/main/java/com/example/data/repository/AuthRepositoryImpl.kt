@@ -860,6 +860,46 @@ class AuthRepositoryImpl(
         )
         userSessionDao?.deactivateAllSessions()
         userSessionDao?.insertOrUpdateSession(entity)
-        // Secuestro automático de datos eliminado para preservar aislamiento estricto Punto 1.
+
+        // Rescate seguro de datos locales legados: solo si el usuario activo no posee aún cuentas personalizadas
+        if (userId.isNotBlank() && userId != "user_default") {
+            try {
+                val dummyIds = setOf("acc_ahorros", "acc_corriente", "acc_billetera", "acc_efectivo")
+                val currentAccounts = financialDao?.getAccounts(userId).orEmpty()
+                val hasUserAccounts = currentAccounts.any { !dummyIds.contains(it.id) || it.balance > 0.0 }
+                if (!hasUserAccounts) {
+                    val legacyDefault = financialDao?.getAccounts("user_default").orEmpty()
+                    if (legacyDefault.any { !dummyIds.contains(it.id) || it.balance > 0.0 }) {
+                        financialDao?.migrateAccountsUserDefault(userId)
+                        financialDao?.migrateTransactionsUserDefault(userId)
+                        financialDao?.migrateGoalsUserDefault(userId)
+                        financialDao?.migrateBudgetsUserDefault(userId)
+                        financialDao?.migrateScheduledPaymentsUserDefault(userId)
+                        financialDao?.migrateIncomeSourcesUserDefault(userId)
+                        fixedAssetDao?.migrateAssetsUserDefault(userId)
+                        fixedAssetDao?.migrateMovementsUserDefault(userId)
+                        sharedExpenseDao?.migrateExpensesUserDefault(userId)
+                        sharedExpenseDao?.migrateParticipantsUserDefault(userId)
+                        sharedExpenseDao?.migrateGroupsUserDefault(userId)
+                        thirdPartyDao?.migrateThirdPartiesUserDefault(userId)
+                        thirdPartyCategoryDao?.migrateCategoriesUserDefault(userId)
+                        Log.i("AuthRepositoryImpl", "✓ Se recuperaron datos legados de 'user_default' para $userId")
+                    } else if (userId != "kash_user_01") {
+                        val legacyKash01 = financialDao?.getAccounts("kash_user_01").orEmpty()
+                        if (legacyKash01.any { !dummyIds.contains(it.id) || it.balance > 0.0 }) {
+                            financialDao?.migrateAccountsFromUserId("kash_user_01", userId)
+                            financialDao?.migrateTransactionsFromUserId("kash_user_01", userId)
+                            financialDao?.migrateGoalsFromUserId("kash_user_01", userId)
+                            financialDao?.migrateBudgetsFromUserId("kash_user_01", userId)
+                            financialDao?.migrateScheduledPaymentsFromUserId("kash_user_01", userId)
+                            financialDao?.migrateIncomeSourcesFromUserId("kash_user_01", userId)
+                            Log.i("AuthRepositoryImpl", "✓ Se recuperaron datos legados de 'kash_user_01' para $userId")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w("AuthRepositoryImpl", "Aviso en migración segura multi-tenant: ${e.message}")
+            }
+        }
     }
 }

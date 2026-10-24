@@ -14,7 +14,10 @@ class DashboardViewModelFactory(
     private val exchangeRateRepository: ExchangeRateRepository? = null,
     private val settingsRepository: SettingsRepository? = null,
     private val fixedAssetRepository: com.example.domain.repository.FixedAssetRepository? = null,
-    private val userId: String = "user_default"
+    private val userSessionDao: com.example.data.local.dao.UserSessionDao? = null,
+    private val userId: String = "user_default",
+    private val initialUserName: String = "Andrés Felipe",
+    private val initialUserEmail: String = "cdosuarez@gmail.com"
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
@@ -25,7 +28,10 @@ class DashboardViewModelFactory(
                 exchangeRateRepository = exchangeRateRepository,
                 settingsRepository = settingsRepository,
                 fixedAssetRepository = fixedAssetRepository,
-                userId = userId
+                userSessionDao = userSessionDao,
+                userId = userId,
+                initialUserName = initialUserName,
+                initialUserEmail = initialUserEmail
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

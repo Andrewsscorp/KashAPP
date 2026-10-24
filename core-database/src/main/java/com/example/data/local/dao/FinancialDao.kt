@@ -952,6 +952,24 @@ interface FinancialDao {
     @Query("UPDATE income_sources SET userId = :targetUserId WHERE (userId = 'user_default' OR userId = '') AND :targetUserId != ''")
     suspend fun migrateIncomeSourcesUserDefault(targetUserId: String): Int
 
+    @Query("UPDATE accounts SET userId = :targetUserId WHERE userId = :sourceUserId AND :targetUserId != ''")
+    suspend fun migrateAccountsFromUserId(sourceUserId: String, targetUserId: String): Int
+
+    @Query("UPDATE transactions SET userId = :targetUserId WHERE userId = :sourceUserId AND :targetUserId != ''")
+    suspend fun migrateTransactionsFromUserId(sourceUserId: String, targetUserId: String): Int
+
+    @Query("UPDATE financial_goals SET userId = :targetUserId WHERE userId = :sourceUserId AND :targetUserId != ''")
+    suspend fun migrateGoalsFromUserId(sourceUserId: String, targetUserId: String): Int
+
+    @Query("UPDATE budgets SET userId = :targetUserId WHERE userId = :sourceUserId AND :targetUserId != ''")
+    suspend fun migrateBudgetsFromUserId(sourceUserId: String, targetUserId: String): Int
+
+    @Query("UPDATE scheduled_payments SET user_id = :targetUserId WHERE user_id = :sourceUserId AND :targetUserId != ''")
+    suspend fun migrateScheduledPaymentsFromUserId(sourceUserId: String, targetUserId: String): Int
+
+    @Query("UPDATE income_sources SET userId = :targetUserId WHERE userId = :sourceUserId AND :targetUserId != ''")
+    suspend fun migrateIncomeSourcesFromUserId(sourceUserId: String, targetUserId: String): Int
+
     // ==========================================
     // TAX EXEMPTION (4x1000 GMF / ITF / INTERNATIONAL)
     // ==========================================

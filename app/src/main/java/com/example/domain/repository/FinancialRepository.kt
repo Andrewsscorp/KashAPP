@@ -293,6 +293,7 @@ interface FinancialRepository {
     suspend fun setScheduledPaymentPaid(id: String, isPaid: Boolean, paidDate: String? = null): Result<Unit>
 
     suspend fun seedDefaultsIfNeeded(userId: String)
+    suspend fun migrateLegacyUserDefaultDataIfNeeded(targetUserId: String): Result<Int> = Result.success(0)
     suspend fun restoreFinancialBackupFromCloudIfNeeded(userId: String): Result<Boolean> = Result.success(false)
     suspend fun restoreFullPortfolioFromCloud(userId: String): Result<Boolean> = Result.success(false)
     suspend fun backupFullPortfolioToCloud(userId: String): Result<Boolean> = Result.success(false)

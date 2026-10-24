@@ -111,6 +111,13 @@ fun DashboardDrawerContent(
     val context = LocalContext.current
     val avatarTrigger by UserProfileSecurityManager.avatarUpdateTrigger.collectAsState()
     var avatarBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    val activeUserName = remember(avatarTrigger, uiState.userName) {
+        if (uiState.userName.isNotBlank() && uiState.userName != "Usuario") {
+            uiState.userName
+        } else {
+            UserProfileSecurityManager.resolveActiveUserName(context, fallback = "Andrés Felipe")
+        }
+    }
     val activeEmail = remember(avatarTrigger, uiState.userName) {
         UserProfileSecurityManager.resolveActiveUserEmail(context, fallback = "Cuenta verificada KashApp")
     }
@@ -237,18 +244,18 @@ fun DashboardDrawerContent(
                                     if (bmp != null) {
                                         Image(
                                             bitmap = bmp.asImageBitmap(),
-                                            contentDescription = "Foto de perfil de ${uiState.userName}",
+                                            contentDescription = "Foto de perfil de $activeUserName",
                                             contentScale = ContentScale.Crop,
                                             modifier = Modifier
                                                 .fillMaxSize()
                                                 .clip(CircleShape)
                                         )
                                     } else {
-                                        val initials = uiState.userName.split(" ")
+                                        val initials = activeUserName.split(" ")
                                             .mapNotNull { it.firstOrNull()?.uppercaseChar()?.toString() }
                                             .take(2)
                                             .joinToString("")
-                                            .ifEmpty { "KA" }
+                                            .ifEmpty { "AF" }
                                         Text(
                                             text = initials,
                                             fontSize = 16.sp,
@@ -264,7 +271,7 @@ fun DashboardDrawerContent(
                             Column(modifier = Modifier.weight(1f)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = if (uiState.userName.isNotBlank()) uiState.userName else "Titular KashApp",
+                                        text = if (activeUserName.isNotBlank()) activeUserName else "Titular KashApp",
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White,
