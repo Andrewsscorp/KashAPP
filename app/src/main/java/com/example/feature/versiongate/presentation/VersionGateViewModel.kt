@@ -29,17 +29,23 @@ class VersionGateViewModel(
     val gateStatus: StateFlow<VersionGateStatus> = _gateStatus.asStateFlow()
 
     fun verifyVersionAndRecordIngress(context: Context, userId: String) {
+        val currentVersionCode = BuildConfig.VERSION_CODE
+        val currentVersionName = BuildConfig.VERSION_NAME
+
+        // Observe real-time changes from Firebase Firestore
         viewModelScope.launch {
             try {
-                val currentVersionCode = BuildConfig.VERSION_CODE
-                val currentVersionName = BuildConfig.VERSION_NAME
+                checkAppVersionUseCase.observeStatus(currentVersionCode, currentVersionName).collect { status ->
+                    _gateStatus.value = status
+                }
+            } catch (e: Exception) {
+                Log.w("VersionGateViewModel", "Notice observing real-time version status: ${e.message}")
+            }
+        }
 
-                val status = checkAppVersionUseCase(
-                    currentVersionCode = currentVersionCode,
-                    currentVersionName = currentVersionName
-                )
-                _gateStatus.value = status
-
+        // Record ingress telemetry
+        viewModelScope.launch {
+            try {
                 val rawAndroidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID).orEmpty()
                 val secureDeviceId = hashSha256(rawAndroidId.ifBlank { "kashapp_device_${Build.SERIAL}" })
 
@@ -56,7 +62,7 @@ class VersionGateViewModel(
 
                 recordIngressTelemetryUseCase(telemetry)
             } catch (e: Exception) {
-                Log.w("VersionGateViewModel", "Notice evaluating version gate: ${e.message}")
+                Log.w("VersionGateViewModel", "Notice recording ingress telemetry: ${e.message}")
             }
         }
     }

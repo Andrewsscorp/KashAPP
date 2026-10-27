@@ -6,6 +6,9 @@ import com.example.feature.versiongate.model.DeviceIngressTelemetry
 import com.example.feature.versiongate.model.VersionGatePolicy
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
 /**
@@ -78,6 +81,32 @@ class FirebaseVersionDataSource(
             Log.w(TAG, "Error fetching remote version policy, using cached: ${e.message}")
             getCachedPolicy() ?: VersionGatePolicy()
         }
+    }
+
+    override fun observeRemotePolicy(): Flow<VersionGatePolicy> = callbackFlow {
+        val listener = firestore.collection(CONFIG_COLLECTION)
+            .document(CONFIG_DOC)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(getCachedPolicy() ?: VersionGatePolicy())
+                    return@addSnapshotListener
+                }
+                if (snapshot != null && snapshot.exists()) {
+                    val policy = VersionGatePolicy(
+                        minSupportedVersionCode = snapshot.getLong("minSupportedVersionCode")?.toInt() ?: 936,
+                        latestVersionCode = snapshot.getLong("latestVersionCode")?.toInt() ?: 936,
+                        latestVersionName = snapshot.getString("latestVersionName") ?: "9.3.6",
+                        forceUpdateTitle = snapshot.getString("forceUpdateTitle") ?: "Actualización Obligatoria de Seguridad",
+                        forceUpdateMessage = snapshot.getString("forceUpdateMessage") ?: "Tu versión actual ya no es compatible. Por favor actualiza la aplicación.",
+                        updateUrl = snapshot.getString("updateUrl") ?: "https://github.com/Andrewsscorp/KashAPP/releases",
+                        isMaintenanceMode = snapshot.getBoolean("isMaintenanceMode") ?: false,
+                        maintenanceMessage = snapshot.getString("maintenanceMessage") ?: "El sistema se encuentra en mantenimiento preventivo."
+                    )
+                    saveCachedPolicy(policy)
+                    trySend(policy)
+                }
+            }
+        awaitClose { listener.remove() }
     }
 
     override suspend fun recordIngressTelemetry(telemetry: DeviceIngressTelemetry): Result<Unit> {

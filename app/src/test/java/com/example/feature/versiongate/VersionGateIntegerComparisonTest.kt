@@ -18,6 +18,7 @@ class VersionGateIntegerComparisonTest {
 
     private class FakeVersionDataSource(val policy: VersionGatePolicy) : VersionDataSource {
         override suspend fun fetchRemotePolicy(): VersionGatePolicy = policy
+        override fun observeRemotePolicy(): kotlinx.coroutines.flow.Flow<VersionGatePolicy> = kotlinx.coroutines.flow.flowOf(policy)
         override suspend fun recordIngressTelemetry(telemetry: DeviceIngressTelemetry): Result<Unit> = Result.success(Unit)
         override fun getCachedPolicy(): VersionGatePolicy? = policy
         override fun saveCachedPolicy(policy: VersionGatePolicy) {}
