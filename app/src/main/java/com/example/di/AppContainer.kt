@@ -145,6 +145,38 @@ class AppContainer(private val context: Context) {
         com.example.domain.usecase.ValidateCreditLimitsUseCase()
     }
 
+    val reconciliationRepository: com.example.feature.reconciliation.data.repository.ReconciliationRepository by lazy {
+        com.example.feature.reconciliation.data.repository.ReconciliationRepositoryImpl(
+            reconciliationDao = securityDatabase.reconciliationDao(),
+            financialDao = securityDatabase.financialDao(),
+            outboxSyncEngine = outboxSyncEngine
+        )
+    }
+
+    val calculateDiscrepancyUseCase: com.example.feature.reconciliation.domain.CalculateDiscrepancyUseCase by lazy {
+        com.example.feature.reconciliation.domain.CalculateDiscrepancyUseCase()
+    }
+
+    val executeReconciliationUseCase: com.example.feature.reconciliation.domain.ExecuteReconciliationUseCase by lazy {
+        com.example.feature.reconciliation.domain.ExecuteReconciliationUseCase(reconciliationRepository)
+    }
+
+    val getReconciliationHistoryUseCase: com.example.feature.reconciliation.domain.GetReconciliationHistoryUseCase by lazy {
+        com.example.feature.reconciliation.domain.GetReconciliationHistoryUseCase(reconciliationRepository)
+    }
+
+    val versionDataSource: com.example.feature.versiongate.data.VersionDataSource by lazy {
+        com.example.feature.versiongate.data.FirebaseVersionDataSource(context)
+    }
+
+    val checkAppVersionUseCase: com.example.feature.versiongate.domain.CheckAppVersionUseCase by lazy {
+        com.example.feature.versiongate.domain.CheckAppVersionUseCase(versionDataSource)
+    }
+
+    val recordIngressTelemetryUseCase: com.example.feature.versiongate.domain.RecordIngressTelemetryUseCase by lazy {
+        com.example.feature.versiongate.domain.RecordIngressTelemetryUseCase(versionDataSource)
+    }
+
     val calculateNextBillingDatesUseCase: com.example.domain.usecase.CalculateNextBillingDatesUseCase by lazy {
         com.example.domain.usecase.CalculateNextBillingDatesUseCase()
     }

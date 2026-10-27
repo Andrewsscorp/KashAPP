@@ -77,6 +77,9 @@ interface FinancialDao {
     @Query("UPDATE accounts SET balance = COALESCE(balance, 0.0) + :amount, availableBalance = CASE WHEN availableBalance IS NOT NULL THEN (CASE WHEN overdraftLimit > 0 AND (availableBalance + :amount) > overdraftLimit THEN overdraftLimit ELSE (availableBalance + :amount) END) ELSE COALESCE(balance, 0.0) + :amount END WHERE id = :accountId")
     suspend fun addAccountBalance(accountId: String, amount: Double): Int
 
+    @Query("UPDATE accounts SET balance = :newBalance, availableBalance = :newBalance WHERE id = :accountId")
+    suspend fun setAccountBalanceDirectly(accountId: String, newBalance: Double): Int
+
     @Query("UPDATE accounts SET hasOverdraft = :allowNegative WHERE id = :accountId")
     suspend fun updateAccountAllowNegative(accountId: String, allowNegative: Boolean)
 

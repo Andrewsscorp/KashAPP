@@ -21,7 +21,8 @@ enum class SyncEntityType(val value: String) {
     FIXED_ASSET("FIXED_ASSET"),
     CATEGORY("CATEGORY"),
     BUDGET("BUDGET"),
-    GOAL("GOAL");
+    GOAL("GOAL"),
+    RECONCILIATION_LOG("RECONCILIATION_LOG");
 
     companion object {
         fun fromString(value: String): SyncEntityType =

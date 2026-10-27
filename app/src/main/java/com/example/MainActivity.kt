@@ -31,6 +31,13 @@ import android.view.WindowManager
 import com.example.presentation.login.LoginViewModelFactory
 import com.example.ui.theme.KashAppTheme
 import com.example.util.SharedExportSecurityUtil
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.example.BuildConfig
+import com.example.feature.versiongate.model.VersionGatePolicy
+import com.example.feature.versiongate.model.VersionGateStatus
+import com.example.feature.versiongate.presentation.ForceUpdateScreen
+import com.example.feature.versiongate.presentation.VersionGateViewModel
 
 class MainActivity : FragmentActivity() {
 
@@ -81,6 +88,53 @@ class MainActivity : FragmentActivity() {
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
         val snackbarHostState = remember { SnackbarHostState() }
         val activeUserId = uiState.authenticatedUser?.userId ?: "user_default"
+
+        val versionGateViewModel: VersionGateViewModel = viewModel(
+            factory = object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    return VersionGateViewModel(
+                        checkAppVersionUseCase = appContainer.checkAppVersionUseCase,
+                        recordIngressTelemetryUseCase = appContainer.recordIngressTelemetryUseCase
+                    ) as T
+                }
+            }
+        )
+        val gateStatus by versionGateViewModel.gateStatus.collectAsStateWithLifecycle()
+
+        LaunchedEffect(uiState.authenticatedUser) {
+            versionGateViewModel.verifyVersionAndRecordIngress(
+                context = this@MainActivity,
+                userId = uiState.authenticatedUser?.userId.orEmpty()
+            )
+        }
+
+        when (val currentGate = gateStatus) {
+            is VersionGateStatus.Blocked -> {
+                ForceUpdateScreen(
+                    policy = currentGate.policy,
+                    currentVersionCode = currentGate.currentVersionCode,
+                    currentVersionName = currentGate.currentVersionName
+                )
+                return
+            }
+            is VersionGateStatus.Maintenance -> {
+                ForceUpdateScreen(
+                    policy = VersionGatePolicy(
+                        forceUpdateTitle = "Sistema en Mantenimiento",
+                        forceUpdateMessage = currentGate.message,
+                        isMaintenanceMode = true
+                    ),
+                    currentVersionCode = BuildConfig.VERSION_CODE,
+                    currentVersionName = BuildConfig.VERSION_NAME
+                )
+                return
+            }
+            else -> {
+                // Proceed to standard UI
+            }
+        }
+
         val userPreferences by remember(activeUserId) {
             appContainer.settingsRepository.observePreferences(activeUserId)
         }.collectAsStateWithLifecycle(initialValue = com.example.features.settings.domain.model.UserPreferencesDomain(userId = activeUserId))

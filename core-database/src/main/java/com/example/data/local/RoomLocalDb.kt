@@ -883,6 +883,41 @@ object RoomLocalDb {
         }
     }
 
+    val MIGRATION_40_41 = object : androidx.room.migration.Migration(40, 41) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+            try {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `account_reconciliation_logs` (
+                        `id` TEXT NOT NULL,
+                        `userId` TEXT NOT NULL,
+                        `accountId` TEXT NOT NULL,
+                        `accountName` TEXT NOT NULL,
+                        `previousSystemBalance` REAL NOT NULL,
+                        `reconciledRealBalance` REAL NOT NULL,
+                        `discrepancyAmount` REAL NOT NULL,
+                        `adjustmentTransactionId` TEXT,
+                        `reconciliationDate` TEXT NOT NULL,
+                        `reconciliationTime` TEXT NOT NULL,
+                        `reconciledByUserId` TEXT NOT NULL,
+                        `reconciledByUserName` TEXT NOT NULL,
+                        `notes` TEXT,
+                        `status` TEXT NOT NULL,
+                        `deviceModel` TEXT NOT NULL,
+                        `syncStatus` TEXT NOT NULL DEFAULT 'PENDING',
+                        `reconciliationTimestamp` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_account_reconciliation_logs_userId_accountId` ON `account_reconciliation_logs` (`userId`, `accountId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_account_reconciliation_logs_reconciliationTimestamp` ON `account_reconciliation_logs` (`reconciliationTimestamp`)")
+            } catch (e: Throwable) {
+                Log.w(TAG, "Notice running MIGRATION_40_41: ${e.message}")
+            }
+        }
+    }
+
     private fun tryCreateEncryptedDb(context: Context, passphraseBytes: ByteArray): SecurityDatabase? {
         return try {
             // Attempt to load native SQLCipher library if available
@@ -897,7 +932,7 @@ object RoomLocalDb {
                 ENCRYPTED_DB_NAME
             )
                 .openHelperFactory(openHelperFactory)
-                .addMigrations(MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33, MIGRATION_33_34, MIGRATION_34_35, MIGRATION_35_36, MIGRATION_36_37, MIGRATION_37_38, MIGRATION_38_39, MIGRATION_39_40)
+                .addMigrations(MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33, MIGRATION_33_34, MIGRATION_34_35, MIGRATION_35_36, MIGRATION_36_37, MIGRATION_37_38, MIGRATION_38_39, MIGRATION_39_40, MIGRATION_40_41)
                 .addCallback(foreignKeyCallback)
                 .build()
 

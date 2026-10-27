@@ -397,4 +397,6 @@ private class FakeAuditLogDao : AuditSecurityLogDao {
     override fun getAllLogs(): Flow<List<AuditSecurityLog>> = flowOf(logs)
     override suspend fun getAllLogsList(): List<AuditSecurityLog> = logs
     override fun getRecentLogs(limit: Int): Flow<List<AuditSecurityLog>> = flowOf(logs.takeLast(limit))
+    override fun getAllLogsByUser(userId: String): Flow<List<AuditSecurityLog>> = flowOf(logs.filter { it.userId == userId })
+    override fun getRecentLogsByUser(userId: String, limit: Int): Flow<List<AuditSecurityLog>> = flowOf(logs.filter { it.userId == userId }.takeLast(limit))
 }

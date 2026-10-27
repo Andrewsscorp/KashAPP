@@ -38,6 +38,10 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import com.example.feature.reconciliation.presentation.ReconciliationDialog
+import com.example.feature.reconciliation.presentation.ReconciliationHistoryDialog
+import com.example.feature.reconciliation.presentation.ReconciliationViewModel
+import androidx.compose.material.icons.filled.FactCheck
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -157,6 +161,21 @@ fun BankAccountsManagementScreen(
     var accountForStats by remember { mutableStateOf<AccountEntity?>(null) }
     var accountForTransactions by remember { mutableStateOf<AccountEntity?>(null) }
     var accountToDelete by remember { mutableStateOf<AccountEntity?>(null) }
+    var accountToReconcile by remember { mutableStateOf<AccountEntity?>(null) }
+    var showReconciliationHistory by remember { mutableStateOf(false) }
+
+    val reconciliationViewModel = remember(context, userId) {
+        val appContainer = (context.applicationContext as? com.example.KashAppApplication)?.appContainer
+        appContainer?.let { container ->
+            ReconciliationViewModel(
+                calculateDiscrepancyUseCase = container.calculateDiscrepancyUseCase,
+                executeReconciliationUseCase = container.executeReconciliationUseCase,
+                getReconciliationHistoryUseCase = container.getReconciliationHistoryUseCase,
+                userId = userId,
+                userName = "Usuario"
+            )
+        }
+    }
 
     // Computed totals
     val totalBalance = remember(accounts) {
@@ -528,6 +547,10 @@ fun BankAccountsManagementScreen(
                                         onEditClick = { accountToEdit = account },
                                         onStatsClick = { accountForStats = account },
                                         onTransactionsClick = { accountForTransactions = account },
+                                        onReconcileClick = {
+                                            reconciliationViewModel?.selectAccount(account)
+                                            accountToReconcile = account
+                                        },
                                         onDeleteClick = { accountToDelete = account }
                                     )
                                 }
@@ -597,6 +620,31 @@ fun BankAccountsManagementScreen(
             transactions = allTransactions.filter { it.accountId == targetAcc.id },
             onDismiss = { accountForTransactions = null }
         )
+    }
+
+    // ==========================================
+    // DIALOG: CONCILIACIÓN DE CUENTA & HISTORIAL
+    // ==========================================
+    accountToReconcile?.let { acc ->
+        reconciliationViewModel?.let { vm ->
+            if (showReconciliationHistory) {
+                ReconciliationHistoryDialog(
+                    account = acc,
+                    viewModel = vm,
+                    onDismiss = {
+                        showReconciliationHistory = false
+                        accountToReconcile = null
+                    }
+                )
+            } else {
+                ReconciliationDialog(
+                    account = acc,
+                    viewModel = vm,
+                    onDismiss = { accountToReconcile = null },
+                    onViewHistory = { showReconciliationHistory = true }
+                )
+            }
+        }
     }
 
     // ==========================================
@@ -790,6 +838,7 @@ private fun BankAccountManagementCard(
     onEditClick: () -> Unit,
     onStatsClick: () -> Unit,
     onTransactionsClick: () -> Unit,
+    onReconcileClick: () -> Unit = {},
     onDeleteClick: () -> Unit
 ) {
     val cardBg = Color(0xFF1E293B)
@@ -1073,6 +1122,25 @@ private fun BankAccountManagementCard(
                         Icon(imageVector = Icons.Default.ReceiptLong, contentDescription = null, tint = Color(0xFF34D399), modifier = Modifier.size(13.dp))
                         Spacer(modifier = Modifier.width(3.dp))
                         Text("Movs", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF34D399), maxLines = 1, softWrap = false)
+                    }
+                }
+
+                // Conciliar
+                Surface(
+                    onClick = onReconcileClick,
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color(0xFFF59E0B).copy(alpha = 0.2f),
+                    border = BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.4f)),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(imageVector = Icons.Default.FactCheck, contentDescription = null, tint = Color(0xFFFBBF24), modifier = Modifier.size(13.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("Conciliar", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFBBF24), maxLines = 1, softWrap = false)
                     }
                 }
 
