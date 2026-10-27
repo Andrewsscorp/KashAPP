@@ -52,6 +52,8 @@ class KashAppApplication : Application() {
         // 4. Programar sincronización Outbox y Worker de Gastos Compartidos Recurrentes + Quincenas (15 y 30)
         try {
             OutboxSyncWorker.schedulePeriodicSync(this)
+            com.example.feature.sync.worker.DurableOutboxWorker.schedulePeriodic(this)
+            appContainer.networkConnectivityMonitor
             SharedExpenseRecurrenceWorker.schedulePeriodicRecurrenceAndReminders(this)
         } catch (t: Throwable) {
             Log.w("KashAppApplication", "Workers schedule notice: ${t.message}")

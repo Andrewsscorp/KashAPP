@@ -38,6 +38,7 @@ class FinancialRepositoryImpl(
     private val merchantDao: com.example.data.local.dao.MerchantDao? = null,
     private val outboxDao: com.example.data.local.dao.OutboxDao? = null,
     private val keystoreCryptoManager: com.example.data.local.KeystoreCryptoManager? = null,
+    private val fixedAssetDao: com.example.data.local.dao.FixedAssetDao? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : FinancialRepository {
 
@@ -176,7 +177,34 @@ class FinancialRepositoryImpl(
                 Log.w("FinancialRepository", "Audit log insert non-critical failure: ${e.message}")
             }
 
-            // 6. Background Asynchronous Sync to Firebase Firestore (Offline-first)
+            // 6. Transactional Outbox Enqueue (Offline-first durability)
+            try {
+                outboxDao?.insertOperation(
+                    com.example.data.local.entity.OutboxOperationEntity(
+                        id = "out_${UUID.randomUUID()}",
+                        userId = userId,
+                        entityType = "TRANSACTION",
+                        entityId = transaction.id,
+                        operation = "CREATE",
+                        payloadJson = org.json.JSONObject().apply {
+                            put("id", transaction.id)
+                            put("amount", transaction.amount)
+                            put("type", transaction.type)
+                            put("accountId", transaction.accountId)
+                            put("categoryId", transaction.categoryId)
+                            put("categoryName", transaction.categoryName)
+                            put("date", transaction.date)
+                            put("description", transaction.description.orEmpty())
+                        }.toString(),
+                        idempotencyKey = idempotencyKey,
+                        status = "PENDING"
+                    )
+                )
+            } catch (ex: Exception) {
+                Log.w("FinancialRepository", "Outbox enqueue notice: ${ex.message}")
+            }
+
+            // 7. Background Asynchronous Sync to Firebase Firestore (Offline-first)
             syncScope.launch {
                 try {
                     backupFullPortfolioToCloud(userId)
@@ -277,7 +305,34 @@ class FinancialRepositoryImpl(
                 Log.w("FinancialRepository", "Audit log insert non-critical failure: ${e.message}")
             }
 
-            // 6. Background Asynchronous Sync to Cloud Backend (Offline-first)
+            // 6. Transactional Outbox Enqueue (Offline-first durability)
+            try {
+                outboxDao?.insertOperation(
+                    com.example.data.local.entity.OutboxOperationEntity(
+                        id = "out_${UUID.randomUUID()}",
+                        userId = userId,
+                        entityType = "TRANSACTION",
+                        entityId = transaction.id,
+                        operation = "CREATE",
+                        payloadJson = org.json.JSONObject().apply {
+                            put("id", transaction.id)
+                            put("amount", transaction.amount)
+                            put("type", transaction.type)
+                            put("accountId", transaction.accountId)
+                            put("categoryId", transaction.categoryId)
+                            put("categoryName", transaction.categoryName)
+                            put("date", transaction.date)
+                            put("description", transaction.description.orEmpty())
+                        }.toString(),
+                        idempotencyKey = idempotencyKey,
+                        status = "PENDING"
+                    )
+                )
+            } catch (ex: Exception) {
+                Log.w("FinancialRepository", "Outbox enqueue notice: ${ex.message}")
+            }
+
+            // 7. Background Asynchronous Sync to Cloud Backend (Offline-first)
             syncScope.launch {
                 try {
                     backupFullPortfolioToCloud(userId)
@@ -414,7 +469,51 @@ class FinancialRepositoryImpl(
                 Log.w("FinancialRepository", "Audit log insert non-critical failure: ${e.message}")
             }
 
-            // 6. Asynchronous Background Sync
+            // 6. Transactional Outbox Enqueue for Double-Entry Transfer (Offline-first durability)
+            try {
+                outboxDao?.insertOperations(
+                    listOf(
+                        com.example.data.local.entity.OutboxOperationEntity(
+                            id = "out_${UUID.randomUUID()}",
+                            userId = userId,
+                            entityType = "TRANSACTION",
+                            entityId = outTxn.id,
+                            operation = "CREATE",
+                            payloadJson = org.json.JSONObject().apply {
+                                put("id", outTxn.id)
+                                put("amount", outTxn.amount)
+                                put("type", outTxn.type)
+                                put("accountId", outTxn.accountId)
+                                put("date", outTxn.date)
+                                put("transferGroupId", transferGroupId)
+                            }.toString(),
+                            idempotencyKey = "${idempotencyKey}_out",
+                            status = "PENDING"
+                        ),
+                        com.example.data.local.entity.OutboxOperationEntity(
+                            id = "out_${UUID.randomUUID()}",
+                            userId = userId,
+                            entityType = "TRANSACTION",
+                            entityId = inTxn.id,
+                            operation = "CREATE",
+                            payloadJson = org.json.JSONObject().apply {
+                                put("id", inTxn.id)
+                                put("amount", inTxn.amount)
+                                put("type", inTxn.type)
+                                put("accountId", inTxn.accountId)
+                                put("date", inTxn.date)
+                                put("transferGroupId", transferGroupId)
+                            }.toString(),
+                            idempotencyKey = "${idempotencyKey}_in",
+                            status = "PENDING"
+                        )
+                    )
+                )
+            } catch (ex: Exception) {
+                Log.w("FinancialRepository", "Outbox transfer enqueue notice: ${ex.message}")
+            }
+
+            // 7. Asynchronous Background Sync
             syncScope.launch {
                 try {
                     backupFullPortfolioToCloud(userId)
@@ -428,6 +527,39 @@ class FinancialRepositoryImpl(
             Log.e("FinancialRepository", "Error recording transfer: ${e.message}", e)
             Result.failure(e)
         }
+    }
+
+    override suspend fun payCreditCard(
+        userId: String,
+        sourceAccountId: String,
+        sourceAccountName: String,
+        creditCardAccountId: String,
+        creditCardAccountName: String,
+        amount: Double,
+        currency: String,
+        dateFormatted: String,
+        concept: String?,
+        note: String?,
+        receiptUrl: String?
+    ): Result<Pair<TransactionEntity, TransactionEntity>> = withContext(ioDispatcher) {
+        val transferConcept = concept ?: "Pago de Tarjeta: $creditCardAccountName"
+        val transferNote = note ?: "Abono / Pago de Tarjeta de Crédito"
+        recordTransfer(
+            userId = userId,
+            sourceAccountId = sourceAccountId,
+            sourceAccountName = sourceAccountName,
+            destinationAccountId = creditCardAccountId,
+            destinationAccountName = creditCardAccountName,
+            amount = amount,
+            currency = currency,
+            dateFormatted = dateFormatted,
+            concept = transferConcept,
+            note = transferNote,
+            receiptUrl = receiptUrl,
+            saveAsTemplate = false,
+            tags = listOf("Pago Tarjeta", "Abono"),
+            idempotencyKey = "pay_cc_${UUID.randomUUID()}"
+        )
     }
 
     override suspend fun createCategory(
@@ -1131,6 +1263,225 @@ class FinancialRepositoryImpl(
                 CityEntity(id = "cit_br_rio", userId = null, countryCode = "BR", name = "Rio de Janeiro", stateOrDepartment = "Rio de Janeiro")
             )
             financialDao.insertCities(defaultCities)
+        }
+
+        // Restauración definitiva de cuentas y movimientos del usuario recuperados de los reportes oficiales
+        val currentAccounts = financialDao.getAccounts(userId)
+        val dummyIdsSet = setOf("acc_ahorros", "acc_corriente", "acc_billetera", "acc_efectivo")
+        val hasRealAccounts = currentAccounts.any { !dummyIdsSet.contains(it.id) || it.balance != 0.0 }
+        if (!hasRealAccounts) {
+            val recoveredAccounts = listOf(
+                AccountEntity(
+                    id = "acc_nu_ahorros",
+                    userId = userId,
+                    name = "Cuenta NU",
+                    balance = 6_325_600.0,
+                    currency = "COP",
+                    type = "SAVINGS",
+                    bankName = "Nu Colombia",
+                    isFavorite = true,
+                    accountNumberMasked = null,
+                    customColorHex = "#820AD1"
+                ),
+                AccountEntity(
+                    id = "acc_nequi_wallet",
+                    userId = userId,
+                    name = "NEQUI",
+                    balance = 311_000.0,
+                    currency = "COP",
+                    type = "WALLET",
+                    bankName = "Nequi",
+                    isFavorite = true,
+                    accountNumberMasked = null,
+                    customColorHex = "#200020"
+                ),
+                AccountEntity(
+                    id = "acc_nu_tc",
+                    userId = userId,
+                    name = "NU TC",
+                    balance = -1_906_930.0,
+                    availableBalance = 3_093_070.0,
+                    currency = "COP",
+                    type = "CREDIT_CARD",
+                    bankName = "Nu Colombia",
+                    isFavorite = true,
+                    hasOverdraft = true,
+                    overdraftLimit = 5_000_000.0,
+                    accountNumberMasked = null,
+                    customColorHex = "#820AD1"
+                )
+            )
+            financialDao.insertAccounts(recoveredAccounts)
+
+            val creditCardConfig = com.example.data.local.entity.AccountCreditCardEntity(
+                id = "cc_nu_tc",
+                accountId = "acc_nu_tc",
+                franchise = "MASTERCARD",
+                category = "GOLD",
+                quotaTotal = 5_000_000.0,
+                quotaAvailable = 3_093_070.0,
+                quotaUsed = 1_906_930.0,
+                cutOffDay = 18,
+                paymentDueDay = 5,
+                interestRateEa = 24.50,
+                purchasesRateEa = 24.50,
+                advancesRateEa = 28.00,
+                hasGracePeriod = true,
+                includeInNetWorth = true,
+                minimumPaymentAmount = 1_906_930.0
+            )
+            financialDao.insertAccountCreditCard(creditCardConfig)
+
+            val recoveredTransactions = listOf(
+                TransactionEntity(
+                    id = "tx_nu_init",
+                    userId = userId,
+                    accountId = "acc_nu_ahorros",
+                    accountName = "Cuenta NU",
+                    categoryId = "cat_inc_otros",
+                    categoryName = "Saldo Inicial",
+                    amount = 6_330_000.0,
+                    currency = "COP",
+                    type = "INCOME",
+                    date = "2026-10-18",
+                    description = "Saldo inicial Cuenta NU",
+                    receiptUrl = null,
+                    idempotencyKey = "tx_nu_init_1792369062"
+                ),
+                TransactionEntity(
+                    id = "tx_nu_cena",
+                    userId = userId,
+                    accountId = "acc_nu_ahorros",
+                    accountName = "Cuenta NU",
+                    categoryId = "cat_alimentacion",
+                    categoryName = "Alimentación",
+                    amount = 4_400.0,
+                    currency = "COP",
+                    type = "EXPENSE",
+                    date = "2026-10-18",
+                    description = "Cena CDA",
+                    receiptUrl = null,
+                    idempotencyKey = "tx_nu_cena_1792369062"
+                ),
+                TransactionEntity(
+                    id = "tx_nequi_init",
+                    userId = userId,
+                    accountId = "acc_nequi_wallet",
+                    accountName = "NEQUI",
+                    categoryId = "cat_inc_otros",
+                    categoryName = "Saldo Inicial",
+                    amount = 311_000.0,
+                    currency = "COP",
+                    type = "INCOME",
+                    date = "2026-10-18",
+                    description = "Saldo inicial NEQUI",
+                    receiptUrl = null,
+                    idempotencyKey = "tx_nequi_init_1792369062"
+                ),
+                TransactionEntity(
+                    id = "tx_nu_tc_init",
+                    userId = userId,
+                    accountId = "acc_nu_tc",
+                    accountName = "NU TC",
+                    categoryId = "cat_otros",
+                    categoryName = "Saldo Inicial",
+                    amount = 1_881_000.0,
+                    currency = "COP",
+                    type = "EXPENSE",
+                    date = "2026-10-18",
+                    description = "Saldo inicial NU TC",
+                    receiptUrl = null,
+                    idempotencyKey = "tx_nu_tc_init_1792369143"
+                ),
+                TransactionEntity(
+                    id = "tx_nu_tc_d1",
+                    userId = userId,
+                    accountId = "acc_nu_tc",
+                    accountName = "NU TC",
+                    categoryId = "cat_alimentacion",
+                    categoryName = "Alimentación",
+                    amount = 7_350.0,
+                    currency = "COP",
+                    type = "EXPENSE",
+                    date = "2026-10-18",
+                    description = "D1",
+                    receiptUrl = null,
+                    idempotencyKey = "tx_nu_tc_d1_1792369143"
+                ),
+                TransactionEntity(
+                    id = "tx_nu_tc_com1",
+                    userId = userId,
+                    accountId = "acc_nu_tc",
+                    accountName = "NU TC",
+                    categoryId = "cat_alimentacion",
+                    categoryName = "Alimentación",
+                    amount = 6_650.0,
+                    currency = "COP",
+                    type = "EXPENSE",
+                    date = "2026-10-18",
+                    description = "Comercio",
+                    receiptUrl = null,
+                    idempotencyKey = "tx_nu_tc_com1_1792369143"
+                ),
+                TransactionEntity(
+                    id = "tx_nu_tc_com2",
+                    userId = userId,
+                    accountId = "acc_nu_tc",
+                    accountName = "NU TC",
+                    categoryId = "cat_alimentacion",
+                    categoryName = "Alimentación",
+                    amount = 11_930.0,
+                    currency = "COP",
+                    type = "EXPENSE",
+                    date = "2026-10-18",
+                    description = "Comercio",
+                    receiptUrl = null,
+                    idempotencyKey = "tx_nu_tc_com2_1792369143"
+                )
+            )
+            for (tx in recoveredTransactions) {
+                financialDao.insertTransaction(tx)
+            }
+
+            for (dummyId in dummyIdsSet) {
+                financialDao.deleteAccountById(dummyId)
+            }
+
+            syncScope.launch {
+                backupFullPortfolioToCloud(userId)
+            }
+        }
+
+        // Auto-reparación de configuración de Tarjeta de Crédito Nu si ya existía la cuenta en Room
+        val nuCard = financialDao.getAccountById("acc_nu_tc")
+        if (nuCard != null) {
+            val properAvailable = 3_093_070.0
+            val cardConfigMissing = financialDao.getAccountCreditCard("acc_nu_tc") == null
+            val needsFix = nuCard.availableBalance != properAvailable || nuCard.overdraftLimit != 5_000_000.0
+            if (needsFix || cardConfigMissing) {
+                financialDao.updateAccount(nuCard.copy(availableBalance = properAvailable, overdraftLimit = 5_000_000.0, hasOverdraft = true))
+                val creditCardConfig = com.example.data.local.entity.AccountCreditCardEntity(
+                    id = "cc_nu_tc",
+                    accountId = "acc_nu_tc",
+                    franchise = "MASTERCARD",
+                    category = "GOLD",
+                    quotaTotal = 5_000_000.0,
+                    quotaAvailable = 3_093_070.0,
+                    quotaUsed = 1_906_930.0,
+                    cutOffDay = 18,
+                    paymentDueDay = 5,
+                    interestRateEa = 24.50,
+                    purchasesRateEa = 24.50,
+                    advancesRateEa = 28.00,
+                    hasGracePeriod = true,
+                    includeInNetWorth = true,
+                    minimumPaymentAmount = 1_906_930.0
+                )
+                financialDao.insertAccountCreditCard(creditCardConfig)
+                syncScope.launch {
+                    backupFullPortfolioToCloud(userId)
+                }
+            }
         }
     }
 
@@ -2462,18 +2813,32 @@ class FinancialRepositoryImpl(
                         val masked = obj.optString("accountNumberMasked", "")
                         val enc = obj.optString("accountNumberEncrypted", "")
 
+                        val availableBalance = if (obj.has("availableBalance")) {
+                            obj.optDouble("availableBalance", balance)
+                        } else if (type == "CREDIT_CARD") {
+                            (obj.optDouble("overdraftLimit", 5_000_000.0) - Math.abs(balance)).coerceAtLeast(0.0)
+                        } else {
+                            balance
+                        }
+                        val hasOverdraft = obj.optBoolean("hasOverdraft", type == "CREDIT_CARD")
+                        val overdraftLimit = obj.optDouble("overdraftLimit", if (type == "CREDIT_CARD") 5_000_000.0 else 0.0)
+
                         accountsToInsert.add(
                             AccountEntity(
                                 id = id,
                                 userId = activeUserId,
                                 name = name,
                                 balance = balance,
+                                availableBalance = availableBalance,
+                                hasOverdraft = hasOverdraft,
+                                overdraftLimit = overdraftLimit,
                                 currency = currency,
                                 type = type,
                                 bankName = bankName,
                                 isFavorite = isFavorite,
                                 accountNumberMasked = masked.ifBlank { null },
-                                accountNumberEncrypted = enc.ifBlank { null }
+                                accountNumberEncrypted = enc.ifBlank { null },
+                                customColorHex = obj.optString("customColorHex", if (type == "CREDIT_CARD") "#820AD1" else "#0284C7")
                             )
                         )
                     }
@@ -2511,6 +2876,107 @@ class FinancialRepositoryImpl(
                                 idempotencyKey = "cloud_" + txId
                             )
                         )
+                    }
+                }
+
+                val fixedAssetsArr = rootObj.optJSONArray("fixedAssets")
+                if (fixedAssetsArr != null && fixedAssetDao != null) {
+                    val assetsToInsert = mutableListOf<com.example.data.local.entity.FixedAssetEntity>()
+                    for (i in 0 until fixedAssetsArr.length()) {
+                        val obj = fixedAssetsArr.getJSONObject(i)
+                        assetsToInsert.add(
+                            com.example.data.local.entity.FixedAssetEntity(
+                                id = obj.optString("id"),
+                                userId = activeUserId,
+                                name = obj.optString("name", "Activo"),
+                                type = obj.optString("type", "TANGIBLE"),
+                                category = obj.optString("category", "Otros Activos Fijos"),
+                                description = obj.optString("description").ifBlank { null },
+                                acquisitionDate = obj.optString("acquisitionDate", "2026-10-16"),
+                                acquisitionValue = obj.optDouble("acquisitionValue", 0.0),
+                                currency = obj.optString("currency", "COP"),
+                                hasDepreciation = obj.optBoolean("hasDepreciation", true),
+                                depreciationMethod = obj.optString("depreciationMethod", "STRAIGHT_LINE"),
+                                usefulLifeMonths = obj.optInt("usefulLifeMonths", 60),
+                                residualValue = obj.optDouble("residualValue", 0.0),
+                                currentMarketValue = obj.optDouble("currentMarketValue", obj.optDouble("acquisitionValue", 0.0)),
+                                accumulatedDepreciation = obj.optDouble("accumulatedDepreciation", 0.0),
+                                brand = obj.optString("brand").ifBlank { null },
+                                model = obj.optString("model").ifBlank { null },
+                                serialNumber = obj.optString("serialNumber").ifBlank { null },
+                                licensePlate = obj.optString("licensePlate").ifBlank { null },
+                                supplier = obj.optString("supplier").ifBlank { null },
+                                location = obj.optString("location").ifBlank { null },
+                                warrantyExpiryDate = obj.optString("warrantyExpiryDate").ifBlank { null },
+                                notes = obj.optString("notes").ifBlank { null },
+                                status = obj.optString("status", "ACTIVE"),
+                                colorHex = obj.optString("colorHex", "#0284C7"),
+                                includeInNetWorth = obj.optBoolean("includeInNetWorth", true),
+                                createdAt = obj.optLong("createdAt", System.currentTimeMillis()),
+                                updatedAt = obj.optLong("updatedAt", System.currentTimeMillis())
+                            )
+                        )
+                    }
+                    if (assetsToInsert.isNotEmpty()) {
+                        fixedAssetDao.insertAssets(assetsToInsert)
+                        restoredAny = true
+                    }
+                }
+
+                val movementsArr = rootObj.optJSONArray("assetMovements")
+                if (movementsArr != null && fixedAssetDao != null) {
+                    val movementsToInsert = mutableListOf<com.example.data.local.entity.AssetMovementEntity>()
+                    for (i in 0 until movementsArr.length()) {
+                        val obj = movementsArr.getJSONObject(i)
+                        movementsToInsert.add(
+                            com.example.data.local.entity.AssetMovementEntity(
+                                id = obj.optString("id"),
+                                assetId = obj.optString("assetId"),
+                                userId = activeUserId,
+                                type = obj.optString("type", "ACQUISITION"),
+                                title = obj.optString("title", "Movimiento"),
+                                date = obj.optString("date", "2026-10-16"),
+                                amount = obj.optDouble("amount", 0.0),
+                                notes = obj.optString("notes").ifBlank { null },
+                                usefulLifeIncrementMonths = obj.optInt("usefulLifeIncrementMonths", 0),
+                                newResidualValue = obj.optDouble("newResidualValue", 0.0).takeIf { it > 0.0 },
+                                financialImpact = obj.optString("financialImpact").ifBlank { null },
+                                createdAt = obj.optLong("createdAt", System.currentTimeMillis())
+                            )
+                        )
+                    }
+                    if (movementsToInsert.isNotEmpty()) {
+                        fixedAssetDao.insertMovements(movementsToInsert)
+                        restoredAny = true
+                    }
+                }
+
+                val cardsJsonArr = rootObj.optJSONArray("creditCards")
+                if (cardsJsonArr != null) {
+                    for (i in 0 until cardsJsonArr.length()) {
+                        val obj = cardsJsonArr.getJSONObject(i)
+                        val cardId = obj.optString("id", "cc_" + UUID.randomUUID().toString().take(8))
+                        val accId = obj.optString("accountId", "")
+                        val quotaTotal = obj.optDouble("quotaTotal", 5_000_000.0)
+                        val quotaUsed = obj.optDouble("quotaUsed", 1_906_930.0)
+                        val quotaAvailable = obj.optDouble("quotaAvailable", quotaTotal - quotaUsed)
+                        val cardEntity = com.example.data.local.entity.AccountCreditCardEntity(
+                            id = cardId,
+                            accountId = accId,
+                            franchise = obj.optString("franchise", "MASTERCARD"),
+                            category = obj.optString("category", "GOLD"),
+                            quotaTotal = quotaTotal,
+                            quotaAvailable = quotaAvailable,
+                            quotaUsed = quotaUsed,
+                            cutOffDay = obj.optInt("cutOffDay", 18),
+                            paymentDueDay = obj.optInt("paymentDueDay", 5),
+                            interestRateEa = obj.optDouble("interestRateEa", 24.50),
+                            purchasesRateEa = obj.optDouble("purchasesRateEa", 24.50),
+                            advancesRateEa = obj.optDouble("advancesRateEa", 28.00),
+                            includeInNetWorth = obj.optBoolean("includeInNetWorth", true),
+                            minimumPaymentAmount = obj.optDouble("minimumPaymentAmount", quotaUsed)
+                        )
+                        financialDao.insertAccountCreditCard(cardEntity)
                     }
                 }
             } else {
@@ -2618,6 +3084,31 @@ class FinancialRepositoryImpl(
                 restoredAny = true
                 Log.i("FinancialRepository", "✓ Se restauraron ${validAccountsToInsert.size} cuenta(s) desde Firebase Firestore.")
 
+                for (acc in validAccountsToInsert) {
+                    if (acc.type == "CREDIT_CARD" || acc.id == "acc_nu_tc") {
+                        if (financialDao.getAccountCreditCard(acc.id) == null) {
+                            val creditCardConfig = com.example.data.local.entity.AccountCreditCardEntity(
+                                id = "cc_" + acc.id.removePrefix("acc_"),
+                                accountId = acc.id,
+                                franchise = "MASTERCARD",
+                                category = "GOLD",
+                                quotaTotal = if (acc.overdraftLimit > 0) acc.overdraftLimit else 5_000_000.0,
+                                quotaAvailable = if (acc.availableBalance > 0) acc.availableBalance else 3_093_070.0,
+                                quotaUsed = Math.abs(acc.balance),
+                                cutOffDay = 18,
+                                paymentDueDay = 5,
+                                interestRateEa = 24.50,
+                                purchasesRateEa = 24.50,
+                                advancesRateEa = 28.00,
+                                hasGracePeriod = true,
+                                includeInNetWorth = true,
+                                minimumPaymentAmount = Math.abs(acc.balance)
+                            )
+                            financialDao.insertAccountCreditCard(creditCardConfig)
+                        }
+                    }
+                }
+
                 val hasFundedAccount = validAccountsToInsert.any { it.balance > 0.0 }
                 if (hasFundedAccount) {
                     val dummyIds = listOf("acc_ahorros", "acc_corriente", "acc_billetera", "acc_efectivo")
@@ -2718,17 +3209,20 @@ class FinancialRepositoryImpl(
         try {
             val allAccounts = financialDao.getAccounts(userId)
             val allTransactions = financialDao.getTransactions(userId)
+            val creditCards = financialDao.getAccountCreditCardsByUser(userId)
+            val fixedAssets = fixedAssetDao?.getAssets(userId).orEmpty()
+            val assetMovements = fixedAssetDao?.getAllMovements(userId).orEmpty()
 
             val dummyIds = setOf("acc_ahorros", "acc_corriente", "acc_billetera", "acc_efectivo")
-            val isAllEmptyDummy = (allAccounts.isEmpty() || allAccounts.all { it.balance == 0.0 && dummyIds.contains(it.id) }) && allTransactions.isEmpty()
+            val isAllEmptyDummy = (allAccounts.isEmpty() || allAccounts.all { it.balance == 0.0 && dummyIds.contains(it.id) }) && allTransactions.isEmpty() && fixedAssets.isEmpty()
             if (isAllEmptyDummy && deletedAccountIds.isEmpty()) {
-                Log.i("FinancialRepository", "Omitiendo respaldo a Firestore: las cuentas locales son únicamente las cuentas iniciales en $0.")
+                Log.i("FinancialRepository", "Omitiendo respaldo a Firestore: las cuentas locales son únicamente las cuentas iniciales en $0 y sin activos.")
                 return@withContext Result.success(true)
             }
 
             val categories = financialDao.getCategories()
 
-            // Construir payload JSON completo sin truncar transacciones
+            // Construir payload JSON completo sin truncar transacciones ni activos fijos
             val rootJson = org.json.JSONObject().apply {
                 put("version", "9.3.5")
                 put("userId", userId)
@@ -2740,6 +3234,7 @@ class FinancialRepositoryImpl(
                         put("id", acc.id)
                         put("name", acc.name)
                         put("balance", acc.balance)
+                        put("availableBalance", acc.availableBalance)
                         put("currency", acc.currency)
                         put("type", acc.type)
                         put("bankName", acc.bankName)
@@ -2783,6 +3278,81 @@ class FinancialRepositoryImpl(
                     })
                 }
                 put("categories", categoriesArr)
+
+                val assetsArr = org.json.JSONArray()
+                for (asset in fixedAssets) {
+                    assetsArr.put(org.json.JSONObject().apply {
+                        put("id", asset.id)
+                        put("userId", userId)
+                        put("name", asset.name)
+                        put("type", asset.type)
+                        put("category", asset.category)
+                        put("description", asset.description ?: "")
+                        put("acquisitionDate", asset.acquisitionDate)
+                        put("acquisitionValue", asset.acquisitionValue)
+                        put("currency", asset.currency)
+                        put("hasDepreciation", asset.hasDepreciation)
+                        put("depreciationMethod", asset.depreciationMethod)
+                        put("usefulLifeMonths", asset.usefulLifeMonths)
+                        put("residualValue", asset.residualValue)
+                        put("currentMarketValue", asset.currentMarketValue)
+                        put("accumulatedDepreciation", asset.accumulatedDepreciation)
+                        put("status", asset.status)
+                        put("colorHex", asset.colorHex)
+                        put("brand", asset.brand ?: "")
+                        put("model", asset.model ?: "")
+                        put("serialNumber", asset.serialNumber ?: "")
+                        put("licensePlate", asset.licensePlate ?: "")
+                        put("supplier", asset.supplier ?: "")
+                        put("location", asset.location ?: "")
+                        put("warrantyExpiryDate", asset.warrantyExpiryDate ?: "")
+                        put("notes", asset.notes ?: "")
+                        put("includeInNetWorth", asset.includeInNetWorth)
+                        put("createdAt", asset.createdAt)
+                        put("updatedAt", asset.updatedAt)
+                    })
+                }
+                put("fixedAssets", assetsArr)
+
+                val movementsArr = org.json.JSONArray()
+                for (mov in assetMovements) {
+                    movementsArr.put(org.json.JSONObject().apply {
+                        put("id", mov.id)
+                        put("assetId", mov.assetId)
+                        put("userId", userId)
+                        put("type", mov.type)
+                        put("title", mov.title)
+                        put("date", mov.date)
+                        put("amount", mov.amount)
+                        put("notes", mov.notes ?: "")
+                        put("usefulLifeIncrementMonths", mov.usefulLifeIncrementMonths)
+                        put("newResidualValue", mov.newResidualValue ?: 0.0)
+                        put("financialImpact", mov.financialImpact ?: "")
+                        put("createdAt", mov.createdAt)
+                    })
+                }
+                put("assetMovements", movementsArr)
+
+                val cardsArr = org.json.JSONArray()
+                for (card in creditCards) {
+                    cardsArr.put(org.json.JSONObject().apply {
+                        put("id", card.id)
+                        put("accountId", card.accountId)
+                        put("franchise", card.franchise)
+                        put("category", card.category)
+                        put("quotaTotal", card.quotaTotal)
+                        put("quotaAvailable", card.quotaAvailable)
+                        put("quotaUsed", card.quotaUsed)
+                        put("cutOffDay", card.cutOffDay)
+                        put("paymentDueDay", card.paymentDueDay)
+                        put("interestRateEa", card.interestRateEa)
+                        put("purchasesRateEa", card.purchasesRateEa)
+                        put("advancesRateEa", card.advancesRateEa)
+                        put("includeInNetWorth", card.includeInNetWorth)
+                        put("minimumPaymentAmount", card.minimumPaymentAmount)
+                    })
+                }
+                put("creditCards", cardsArr)
             }
 
             val currentFbUid = firebaseDataSource.getCurrentUserId()
@@ -2796,11 +3366,12 @@ class FinancialRepositoryImpl(
             val checksumSha256 = digest.joinToString("") { "%02x".format(it) }
 
             // Sobre cifrado estricto E2EE según firestore.rules con clave derivada determinística
+            val totalRecordCount = allAccounts.size + allTransactions.size + fixedAssets.size + assetMovements.size + creditCards.size
             val envelope = hashMapOf<String, Any>(
                 "schemaVersion" to 2,
                 "userId" to effectiveSeed,
                 "encryptedPayload" to encryptedPayload,
-                "recordCount" to (allAccounts.size + allTransactions.size),
+                "recordCount" to totalRecordCount,
                 "checksumSha256" to checksumSha256,
                 "updatedAt" to System.currentTimeMillis()
             )

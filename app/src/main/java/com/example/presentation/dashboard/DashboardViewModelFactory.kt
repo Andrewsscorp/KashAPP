@@ -15,6 +15,7 @@ class DashboardViewModelFactory(
     private val settingsRepository: SettingsRepository? = null,
     private val fixedAssetRepository: com.example.domain.repository.FixedAssetRepository? = null,
     private val userSessionDao: com.example.data.local.dao.UserSessionDao? = null,
+    private val outboxSyncEngine: com.example.feature.sync.engine.OutboxSyncEngine? = null,
     private val userId: String = "user_default",
     private val initialUserName: String = "Andrés Felipe",
     private val initialUserEmail: String = "cdosuarez@gmail.com"
@@ -29,6 +30,7 @@ class DashboardViewModelFactory(
                 settingsRepository = settingsRepository,
                 fixedAssetRepository = fixedAssetRepository,
                 userSessionDao = userSessionDao,
+                outboxSyncEngine = outboxSyncEngine,
                 userId = userId,
                 initialUserName = initialUserName,
                 initialUserEmail = initialUserEmail

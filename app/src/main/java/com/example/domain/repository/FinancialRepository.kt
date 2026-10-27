@@ -76,6 +76,19 @@ interface FinancialRepository {
         tags: List<String>,
         idempotencyKey: String = UUID.randomUUID().toString()
     ): Result<Pair<TransactionEntity, TransactionEntity>>
+    suspend fun payCreditCard(
+        userId: String,
+        sourceAccountId: String,
+        sourceAccountName: String,
+        creditCardAccountId: String,
+        creditCardAccountName: String,
+        amount: Double,
+        currency: String = "COP",
+        dateFormatted: String = java.time.LocalDate.now().toString(),
+        concept: String? = null,
+        note: String? = null,
+        receiptUrl: String? = null
+    ): Result<Pair<TransactionEntity, TransactionEntity>>
     suspend fun createCategory(
         name: String,
         colorHex: String = "#0284C7",

@@ -158,6 +158,7 @@ class MainActivity : FragmentActivity() {
                         settingsRepository = appContainer.settingsRepository,
                         fixedAssetRepository = appContainer.fixedAssetRepository,
                         userSessionDao = appContainer.securityDatabase.userSessionDao(),
+                        outboxSyncEngine = appContainer.outboxSyncEngine,
                         userId = user.userId,
                         initialUserName = user.displayName?.takeIf { it.isNotBlank() } ?: "Andrés Felipe",
                         initialUserEmail = user.email?.takeIf { it.isNotBlank() } ?: "cdosuarez@gmail.com"

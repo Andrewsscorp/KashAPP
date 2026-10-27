@@ -286,6 +286,37 @@ class FakeFinancialRepository : FinancialRepository {
         return Result.success(Pair(txOut, txIn))
     }
 
+    override suspend fun payCreditCard(
+        userId: String,
+        sourceAccountId: String,
+        sourceAccountName: String,
+        creditCardAccountId: String,
+        creditCardAccountName: String,
+        amount: Double,
+        currency: String,
+        dateFormatted: String,
+        concept: String?,
+        note: String?,
+        receiptUrl: String?
+    ): Result<Pair<TransactionEntity, TransactionEntity>> {
+        return recordTransfer(
+            userId = userId,
+            sourceAccountId = sourceAccountId,
+            sourceAccountName = sourceAccountName,
+            destinationAccountId = creditCardAccountId,
+            destinationAccountName = creditCardAccountName,
+            amount = amount,
+            currency = currency,
+            dateFormatted = dateFormatted,
+            concept = concept,
+            note = note,
+            receiptUrl = receiptUrl,
+            saveAsTemplate = false,
+            tags = listOf("Pago Tarjeta", "Abono"),
+            idempotencyKey = "pay_test"
+        )
+    }
+
     override suspend fun createCategory(name: String, colorHex: String, icon: String, userId: String?, type: String): CategoryEntity {
         val cat = CategoryEntity(id = "cat_${System.currentTimeMillis()}", userId = userId, name = name, icon = icon, colorHex = colorHex, type = type)
         categoriesState.value = categoriesState.value + cat

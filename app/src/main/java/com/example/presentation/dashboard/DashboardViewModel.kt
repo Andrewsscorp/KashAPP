@@ -48,6 +48,7 @@ class DashboardViewModel(
     val settingsRepository: com.example.features.settings.domain.repository.SettingsRepository? = null,
     val fixedAssetRepository: com.example.domain.repository.FixedAssetRepository? = null,
     val userSessionDao: com.example.data.local.dao.UserSessionDao? = null,
+    val outboxSyncEngine: com.example.feature.sync.engine.OutboxSyncEngine? = null,
     val userId: String = "user_default",
     initialUserName: String = "Andrés Felipe",
     initialUserEmail: String = "cdosuarez@gmail.com"
@@ -85,6 +86,8 @@ class DashboardViewModel(
                     if (!restored) {
                         financialRepository?.seedDefaultsIfNeeded(targetUid)
                     }
+                } else {
+                    financialRepository?.seedDefaultsIfNeeded(targetUid)
                 }
                 fixedAssetRepository?.seedDefaultCategoriesIfNeeded(targetUid)
                 fixedAssetRepository?.seedDefaultAssetsIfNeeded(targetUid)
@@ -250,7 +253,7 @@ class DashboardViewModel(
                             } else {
                                 val debtAmount = if (cardConfig != null) {
                                     cardConfig.quotaUsed
-                                } else if (item.overdraftLimit > 0 && item.availableBalance != null) {
+                                } else if (item.overdraftLimit > 0 && item.availableBalance != null && item.availableBalance >= 0.0) {
                                     (item.overdraftLimit - item.availableBalance).coerceAtLeast(0.0)
                                 } else if (item.balance < 0) {
                                     kotlin.math.abs(item.balance)
@@ -400,7 +403,7 @@ class DashboardViewModel(
                 }.map { c ->
                     val cardConfig = creditCardConfigs.find { it.accountId == c.id }
                     val totalLimit = cardConfig?.quotaTotal ?: if (c.overdraftLimit > 0) c.overdraftLimit else 2_000_000.0
-                    val usedQuotaValue = cardConfig?.quotaUsed ?: if (c.overdraftLimit > 0 && c.availableBalance != null) {
+                    val usedQuotaValue = cardConfig?.quotaUsed ?: if (c.overdraftLimit > 0 && c.availableBalance != null && c.availableBalance >= 0.0) {
                         (c.overdraftLimit - c.availableBalance).coerceAtLeast(0.0)
                     } else if (c.balance < 0) {
                         kotlin.math.abs(c.balance)
@@ -754,8 +757,12 @@ class DashboardViewModel(
                         android.util.Log.i("DashboardViewModel", "✓ Cuentas restauradas de la nube")
                     }
                 } else {
-                    financialRepository?.backupFullPortfolioToCloud(targetUid)
-                    android.util.Log.i("DashboardViewModel", "✓ Portafolio respaldado en la nube exitosamente")
+                    if (outboxSyncEngine != null) {
+                        outboxSyncEngine.syncBidirectional(targetUid)
+                    } else {
+                        financialRepository?.backupFullPortfolioToCloud(targetUid)
+                    }
+                    android.util.Log.i("DashboardViewModel", "✓ Sincronización bidireccional y outbox ejecutada exitosamente")
                 }
             } catch (e: Exception) {
                 android.util.Log.w("DashboardViewModel", "Sync notice: ${e.message}")

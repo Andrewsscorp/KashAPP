@@ -578,6 +578,34 @@ class UpcomingPaymentsViewModel(
     ) {
         viewModelScope.launch {
             try {
+                if (item.isCreditCard && !item.creditCardAccountId.isNullOrBlank()) {
+                    val destCard = financialRepository.getAccountById(item.creditCardAccountId)
+                    val cardName = destCard?.name ?: item.title
+                    val result = financialRepository.payCreditCard(
+                        userId = userId,
+                        sourceAccountId = sourceAccountId,
+                        sourceAccountName = sourceAccountName,
+                        creditCardAccountId = item.creditCardAccountId,
+                        creditCardAccountName = cardName,
+                        amount = payAmount,
+                        currency = item.currency,
+                        dateFormatted = LocalDate.now().toString(),
+                        concept = "Pago de Tarjeta: $cardName"
+                    )
+                    if (result.isSuccess) {
+                        _uiState.update {
+                            it.copy(
+                                selectedItemForPayment = null,
+                                showCcSimulatorDialog = false,
+                                notificationMessage = "Pago de $${"%,.0f".format(payAmount)} a $cardName realizado exitosamente."
+                            )
+                        }
+                    } else {
+                        _uiState.update { it.copy(errorMessage = "No se pudo procesar el pago de la tarjeta de crédito.") }
+                    }
+                    return@launch
+                }
+
                 val result = financialRepository.recordExpense(
                     userId = userId,
                     accountId = sourceAccountId,

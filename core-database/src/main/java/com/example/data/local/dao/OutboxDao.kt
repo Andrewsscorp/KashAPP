@@ -46,6 +46,21 @@ interface OutboxDao {
     @Query("DELETE FROM outbox_operations WHERE status = 'DELIVERED'")
     suspend fun purgeDelivered()
 
+    @Query("DELETE FROM outbox_operations WHERE status = 'DELIVERED' AND createdAt <= :thresholdMillis")
+    suspend fun purgeDeliveredOlderThan(thresholdMillis: Long): Int
+
+    @Query("SELECT * FROM outbox_operations WHERE status = 'DELIVERED' AND createdAt <= :thresholdMillis")
+    suspend fun getDeliveredOlderThan(thresholdMillis: Long): List<OutboxOperationEntity>
+
+    @Query("SELECT * FROM outbox_operations WHERE status = 'DELIVERED' AND createdAt > :thresholdMillis")
+    suspend fun getRetainedDeliveredOperations(thresholdMillis: Long): List<OutboxOperationEntity>
+
+    suspend fun purgeDeliveredOlderThanSevenDays(currentTimeMillis: Long = System.currentTimeMillis()): Int {
+        val sevenDaysMillis = 7L * 24L * 60L * 60L * 1000L
+        val threshold = currentTimeMillis - sevenDaysMillis
+        return purgeDeliveredOlderThan(threshold)
+    }
+
     @Query("DELETE FROM outbox_operations WHERE userId = :userId AND :userId != ''")
     suspend fun deleteOperationsByUserId(userId: String): Int
 }

@@ -10,6 +10,7 @@ import com.example.data.local.entity.FixedAssetEntity
 import com.example.domain.model.fixedassets.AssetCategory
 import com.example.domain.model.fixedassets.AssetMovementType
 import com.example.domain.model.fixedassets.DepreciationRunSummary
+import com.example.domain.repository.FinancialRepository
 import com.example.domain.repository.FixedAssetRepository
 import com.example.domain.usecase.fixedassets.CalculateAssetDepreciationUseCase
 import kotlinx.coroutines.flow.Flow
@@ -25,7 +26,8 @@ class FixedAssetRepositoryImpl(
     private val fixedAssetDao: FixedAssetDao,
     private val assetCategoryDao: AssetCategoryDao? = null,
     private val assetAuditLogDao: AssetAuditLogDao? = null,
-    private val calculateDepreciationUseCase: CalculateAssetDepreciationUseCase = CalculateAssetDepreciationUseCase()
+    private val calculateDepreciationUseCase: CalculateAssetDepreciationUseCase = CalculateAssetDepreciationUseCase(),
+    private val financialRepository: FinancialRepository? = null
 ) : FixedAssetRepository {
 
     private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -90,6 +92,7 @@ class FixedAssetRepositoryImpl(
             formattedDate = formattedDate
         )
         assetAuditLogDao?.insertAuditLog(auditLog)
+        financialRepository?.backupFullPortfolioToCloud(asset.userId)
     }
 
     override suspend fun deleteAsset(assetId: String): Result<Unit> = runCatching {
@@ -113,6 +116,9 @@ class FixedAssetRepositoryImpl(
         }
         fixedAssetDao.deleteMovementsByAssetId(assetId)
         fixedAssetDao.deleteAssetById(assetId)
+        if (asset != null) {
+            financialRepository?.backupFullPortfolioToCloud(asset.userId)
+        }
     }
 
     override fun observeMovements(assetId: String): Flow<List<AssetMovementEntity>> {
@@ -396,8 +402,168 @@ class FixedAssetRepositoryImpl(
     }
 
     override suspend fun seedDefaultAssetsIfNeeded(userId: String) {
-        // En producción 9.2.1: Base de datos limpia sin mock data.
-        // Nunca se eliminan activos creados por el usuario en el arranque.
+        val existing = fixedAssetDao.observeAssets(userId).firstOrNull().orEmpty()
+        if (existing.isNotEmpty()) return
+
+        val recoveredAssets = listOf(
+            FixedAssetEntity(
+                id = "AF-24462",
+                userId = userId,
+                name = "CF 250 SR LITE",
+                type = "TANGIBLE",
+                category = "Vehículos y Transporte",
+                description = "Motocicleta deportiva CF Moto 250 SR Lite",
+                acquisitionDate = "2026-10-16",
+                acquisitionValue = 20_000_000.0,
+                currency = "COP",
+                hasDepreciation = true,
+                depreciationMethod = "STRAIGHT_LINE",
+                usefulLifeMonths = 60,
+                residualValue = 0.0,
+                currentMarketValue = 20_000_000.0,
+                accumulatedDepreciation = 0.0,
+                status = "ACTIVE",
+                colorHex = "#0284C7"
+            ),
+            FixedAssetEntity(
+                id = "AF-04771",
+                userId = userId,
+                name = "TV HISENSE 57\"",
+                type = "TANGIBLE",
+                category = "Muebles y Enseres",
+                description = "Televisor Smart TV Hisense 57 pulgadas",
+                acquisitionDate = "2026-10-16",
+                acquisitionValue = 1_850_000.0,
+                currency = "COP",
+                hasDepreciation = true,
+                depreciationMethod = "STRAIGHT_LINE",
+                usefulLifeMonths = 60,
+                residualValue = 0.0,
+                currentMarketValue = 1_850_000.0,
+                accumulatedDepreciation = 0.0,
+                status = "ACTIVE",
+                colorHex = "#EC4899"
+            ),
+            FixedAssetEntity(
+                id = "AF-44557",
+                userId = userId,
+                name = "PORTÁTIL HP VICTUS",
+                type = "TANGIBLE",
+                category = "Tecnología y Cómputo",
+                description = "Computador portátil Gaming HP Victus",
+                acquisitionDate = "2026-10-16",
+                acquisitionValue = 1_500_000.0,
+                currency = "COP",
+                hasDepreciation = true,
+                depreciationMethod = "STRAIGHT_LINE",
+                usefulLifeMonths = 36,
+                residualValue = 0.0,
+                currentMarketValue = 1_500_000.0,
+                accumulatedDepreciation = 0.0,
+                status = "ACTIVE",
+                colorHex = "#6366F1"
+            ),
+            FixedAssetEntity(
+                id = "AF-57433",
+                userId = userId,
+                name = "TABLE HONOR PAD 9",
+                type = "TANGIBLE",
+                category = "Tecnología y Cómputo",
+                description = "Tablet Honor Pad 9 con pantalla 12 pulgadas",
+                acquisitionDate = "2026-10-16",
+                acquisitionValue = 1_500_000.0,
+                currency = "COP",
+                hasDepreciation = true,
+                depreciationMethod = "STRAIGHT_LINE",
+                usefulLifeMonths = 36,
+                residualValue = 0.0,
+                currentMarketValue = 1_500_000.0,
+                accumulatedDepreciation = 0.0,
+                status = "ACTIVE",
+                colorHex = "#6366F1"
+            ),
+            FixedAssetEntity(
+                id = "AF-38755",
+                userId = userId,
+                name = "INFINIX NOTE 40",
+                type = "TANGIBLE",
+                category = "Tecnología y Cómputo",
+                description = "Smartphone Infinix Note 40 Pro",
+                acquisitionDate = "2026-10-16",
+                acquisitionValue = 1_000_000.0,
+                currency = "COP",
+                hasDepreciation = true,
+                depreciationMethod = "STRAIGHT_LINE",
+                usefulLifeMonths = 36,
+                residualValue = 0.0,
+                currentMarketValue = 1_000_000.0,
+                accumulatedDepreciation = 0.0,
+                status = "ACTIVE",
+                colorHex = "#6366F1"
+            ),
+            FixedAssetEntity(
+                id = "AF-01328",
+                userId = userId,
+                name = "ASUS VIVABOOK",
+                type = "TANGIBLE",
+                category = "Tecnología y Cómputo",
+                description = "Computador portátil Asus Vivabook",
+                acquisitionDate = "2026-10-16",
+                acquisitionValue = 800_000.0,
+                currency = "COP",
+                hasDepreciation = true,
+                depreciationMethod = "STRAIGHT_LINE",
+                usefulLifeMonths = 36,
+                residualValue = 0.0,
+                currentMarketValue = 800_000.0,
+                accumulatedDepreciation = 0.0,
+                status = "ACTIVE",
+                colorHex = "#6366F1"
+            ),
+            FixedAssetEntity(
+                id = "AF-02112",
+                userId = userId,
+                name = "DISCO DURO PORTÁTIL",
+                type = "TANGIBLE",
+                category = "Tecnología y Cómputo",
+                description = "Disco duro externo de respaldo portátil",
+                acquisitionDate = "2026-10-16",
+                acquisitionValue = 650_000.0,
+                currency = "COP",
+                hasDepreciation = true,
+                depreciationMethod = "STRAIGHT_LINE",
+                usefulLifeMonths = 36,
+                residualValue = 0.0,
+                currentMarketValue = 650_000.0,
+                accumulatedDepreciation = 0.0,
+                status = "ACTIVE",
+                colorHex = "#6366F1"
+            ),
+            FixedAssetEntity(
+                id = "AF-64695",
+                userId = userId,
+                name = "CASCO MOTO",
+                type = "TANGIBLE",
+                category = "Otros Activos Fijos",
+                description = "Casco integral de protección para motocicleta",
+                acquisitionDate = "2026-10-16",
+                acquisitionValue = 340_000.0,
+                currency = "COP",
+                hasDepreciation = true,
+                depreciationMethod = "STRAIGHT_LINE",
+                usefulLifeMonths = 24,
+                residualValue = 0.0,
+                currentMarketValue = 340_000.0,
+                accumulatedDepreciation = 0.0,
+                status = "ACTIVE",
+                colorHex = "#64748B"
+            )
+        )
+
+        for (asset in recoveredAssets) {
+            saveAsset(asset)
+        }
+        financialRepository?.backupFullPortfolioToCloud(userId)
     }
 
     override fun observeCategories(userId: String): Flow<List<AssetCategoryEntity>> {

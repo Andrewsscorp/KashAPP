@@ -20,7 +20,7 @@ import kotlinx.coroutines.tasks.await
  * Data source for Firebase services with Offline-First Firestore persistence
  * and full Firebase Authentication bridging.
  */
-open class FirebaseDataSource(private val context: Context) {
+open class FirebaseDataSource(private val context: Context? = null) {
 
     data class FirebaseConnectionInfo(
         val isInitialized: Boolean,
@@ -47,7 +47,7 @@ open class FirebaseDataSource(private val context: Context) {
 
     fun initFirebaseIfNeeded() {
         try {
-            if (FirebaseApp.getApps(context).isEmpty()) {
+            if (context != null && FirebaseApp.getApps(context).isEmpty()) {
                 FirebaseApp.initializeApp(context)
             }
         } catch (e: Throwable) {

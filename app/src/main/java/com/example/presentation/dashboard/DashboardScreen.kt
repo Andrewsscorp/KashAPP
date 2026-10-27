@@ -117,6 +117,7 @@ fun DashboardScreen(
     // Navigation and sub-flow dialog states (persisted across orientation and process recreation)
     var showQuickAddModal by rememberSaveable { mutableStateOf(false) }
     var showCreateExpense by rememberSaveable { mutableStateOf(false) }
+    var isExpenseCreditCardMode by rememberSaveable { mutableStateOf(false) }
     var showCreateIncome by rememberSaveable { mutableStateOf(false) }
     var showCreateTransfer by rememberSaveable { mutableStateOf(false) }
     var showSelectAccountTypeModal by rememberSaveable { mutableStateOf(false) }
@@ -365,10 +366,16 @@ fun DashboardScreen(
                     onProfileClick = {
                         viewModel.onEvent(DashboardEvent.OpenSettingsClick)
                     },
-                    onExpenseClick = { showCreateExpense = true },
+                    onExpenseClick = {
+                        isExpenseCreditCardMode = false
+                        showCreateExpense = true
+                    },
                     onIncomeClick = { showCreateIncome = true },
                     onTransferClick = { showCreateTransfer = true },
-                    onCardPaymentClick = { showCreateExpense = true },
+                    onCardPaymentClick = {
+                        isExpenseCreditCardMode = true
+                        showCreateExpense = true
+                    },
                     onCardPurchaseClick = { showCreateCardPurchase = true },
                     onCreateAccountClick = { showSelectAccountTypeModal = true },
                     onGoalClick = { showCreateGoal = true },
@@ -604,15 +611,21 @@ fun DashboardScreen(
     // Flow: Create Expense
     if (showCreateExpense) {
         CreateExpenseScreen(
-            onDismiss = { showCreateExpense = false },
+            onDismiss = {
+                showCreateExpense = false
+                isExpenseCreditCardMode = false
+            },
             onSaveExpense = { _, _, _, _, _, _, _, _, _, _, _, _ ->
                 showCreateExpense = false
+                isExpenseCreditCardMode = false
                 viewModel.onEvent(DashboardEvent.Refresh)
             },
             financialRepository = viewModel.financialRepository,
             userId = viewModel.userId,
+            isInitialCreditCardPaymentMode = isExpenseCreditCardMode,
             onOpenSharedExpenseSplitter = { _ ->
                 showCreateExpense = false
+                isExpenseCreditCardMode = false
                 showSharedExpensesModule = true
                 showCreateSharedExpenseScreen = true
             }

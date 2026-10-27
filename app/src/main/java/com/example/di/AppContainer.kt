@@ -88,7 +88,28 @@ class AppContainer(private val context: Context) {
             firebaseDataSource = firebaseDataSource,
             merchantDao = securityDatabase.merchantDao(),
             outboxDao = securityDatabase.outboxDao(),
-            keystoreCryptoManager = keystoreCryptoManager
+            keystoreCryptoManager = keystoreCryptoManager,
+            fixedAssetDao = securityDatabase.fixedAssetDao()
+        )
+    }
+
+    val outboxSyncEngine: com.example.feature.sync.engine.OutboxSyncEngine by lazy {
+        com.example.feature.sync.engine.OutboxSyncEngine(
+            outboxDao = securityDatabase.outboxDao(),
+            financialDao = securityDatabase.financialDao(),
+            fixedAssetDao = securityDatabase.fixedAssetDao(),
+            firebaseDataSource = firebaseDataSource,
+            cryptoManager = keystoreCryptoManager
+        )
+    }
+
+    val networkConnectivityMonitor: com.example.feature.sync.network.NetworkConnectivityMonitor by lazy {
+        com.example.feature.sync.network.NetworkConnectivityMonitor(
+            context = context,
+            onReconnected = {
+                val currentFbUid = firebaseDataSource.getCurrentUserId().orEmpty()
+                outboxSyncEngine.syncBidirectional(currentFbUid)
+            }
         )
     }
 
@@ -210,7 +231,8 @@ class AppContainer(private val context: Context) {
             fixedAssetDao = fixedAssetDao,
             assetCategoryDao = assetCategoryDao,
             assetAuditLogDao = assetAuditLogDao,
-            calculateDepreciationUseCase = calculateAssetDepreciationUseCase
+            calculateDepreciationUseCase = calculateAssetDepreciationUseCase,
+            financialRepository = financialRepository
         )
     }
 

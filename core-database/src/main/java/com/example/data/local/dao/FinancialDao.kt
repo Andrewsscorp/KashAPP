@@ -74,7 +74,7 @@ interface FinancialDao {
     @Query("UPDATE accounts SET balance = COALESCE(balance, 0.0) - :amount, availableBalance = CASE WHEN availableBalance IS NOT NULL THEN availableBalance - :amount ELSE COALESCE(balance, 0.0) - :amount END WHERE id = :accountId")
     suspend fun deductAccountBalance(accountId: String, amount: Double): Int
 
-    @Query("UPDATE accounts SET balance = COALESCE(balance, 0.0) + :amount, availableBalance = CASE WHEN availableBalance IS NOT NULL THEN availableBalance + :amount ELSE COALESCE(balance, 0.0) + :amount END WHERE id = :accountId")
+    @Query("UPDATE accounts SET balance = COALESCE(balance, 0.0) + :amount, availableBalance = CASE WHEN availableBalance IS NOT NULL THEN (CASE WHEN overdraftLimit > 0 AND (availableBalance + :amount) > overdraftLimit THEN overdraftLimit ELSE (availableBalance + :amount) END) ELSE COALESCE(balance, 0.0) + :amount END WHERE id = :accountId")
     suspend fun addAccountBalance(accountId: String, amount: Double): Int
 
     @Query("UPDATE accounts SET hasOverdraft = :allowNegative WHERE id = :accountId")
@@ -626,7 +626,7 @@ interface FinancialDao {
     """)
     fun getAccountCreditCardsByUserFlow(userId: String): kotlinx.coroutines.flow.Flow<List<com.example.data.local.entity.AccountCreditCardEntity>>
 
-    @Query("UPDATE account_credit_cards SET quota_used = quota_used + :amount, quota_available = quota_total - (quota_used + :amount) WHERE account_id = :accountId")
+    @Query("UPDATE account_credit_cards SET quota_used = CASE WHEN (quota_used + :amount) > quota_total THEN quota_total ELSE (quota_used + :amount) END, quota_available = CASE WHEN (quota_used + :amount) > quota_total THEN 0.0 ELSE quota_total - (quota_used + :amount) END WHERE account_id = :accountId")
     suspend fun updateCardQuotaOnExpense(accountId: String, amount: Double): Int
 
     @Query("UPDATE account_credit_cards SET quota_used = CASE WHEN (quota_used - :amount) < 0.0 THEN 0.0 ELSE (quota_used - :amount) END, quota_available = CASE WHEN (quota_used - :amount) < 0.0 THEN quota_total ELSE quota_total - (quota_used - :amount) END WHERE account_id = :accountId")

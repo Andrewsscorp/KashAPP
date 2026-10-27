@@ -132,7 +132,8 @@ fun CreateExpenseScreen(
     initialAmount: Double? = null,
     financialRepository: FinancialRepository? = null,
     userId: String = "user_default",
-    onOpenSharedExpenseSplitter: ((Double) -> Unit)? = null
+    onOpenSharedExpenseSplitter: ((Double) -> Unit)? = null,
+    isInitialCreditCardPaymentMode: Boolean = false
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -148,7 +149,8 @@ fun CreateExpenseScreen(
         mutableStateOf(
             ExpenseFormState(
                 rawAmountInput = if (initialAmount != null && initialAmount > 0) initialAmount.toString() else "",
-                currencyCode = lastUsedCurrency
+                currencyCode = lastUsedCurrency,
+                isCreditCardPaymentMode = isInitialCreditCardPaymentMode
             )
         )
     }
@@ -171,6 +173,12 @@ fun CreateExpenseScreen(
 
     var selectedAccountEntity by remember { mutableStateOf<AccountEntity?>(null) }
     var selectedCreditCardToPay by remember(creditCardAccounts) { mutableStateOf<AccountEntity?>(creditCardAccounts.firstOrNull()) }
+
+    LaunchedEffect(creditCardAccounts) {
+        if (selectedCreditCardToPay == null && creditCardAccounts.isNotEmpty()) {
+            selectedCreditCardToPay = creditCardAccounts.first()
+        }
+    }
 
     LaunchedEffect(roomAccounts) {
         if (selectedAccountEntity == null && roomAccounts.isNotEmpty()) selectedAccountEntity = roomAccounts.first()
@@ -252,12 +260,11 @@ fun CreateExpenseScreen(
                     try {
                         if (targetAccount != null && financialRepository != null) {
                             if (formState.isCreditCardPaymentMode && selectedCreditCardToPay != null) {
-                                financialRepository.recordTransfer(
+                                financialRepository.payCreditCard(
                                     userId = userId, sourceAccountId = targetAccount.id, sourceAccountName = targetAccount.name,
-                                    destinationAccountId = selectedCreditCardToPay!!.id, destinationAccountName = selectedCreditCardToPay!!.name,
+                                    creditCardAccountId = selectedCreditCardToPay!!.id, creditCardAccountName = selectedCreditCardToPay!!.name,
                                     amount = amount, currency = formState.currencyCode, dateFormatted = formState.selectedDate.toString(),
-                                    concept = finalConcept, note = "Estrategia: $strategyLabel", receiptUrl = formState.receiptUri?.toString(),
-                                    saveAsTemplate = false, tags = listOf("Pago Tarjeta", "Abono Capital")
+                                    concept = finalConcept, note = "Estrategia: $strategyLabel", receiptUrl = formState.receiptUri?.toString()
                                 )
                                 paymentVoucherData = CardPaymentVoucher(
                                     transactionId = "TX-${UUID.randomUUID().toString().take(8).uppercase()}",

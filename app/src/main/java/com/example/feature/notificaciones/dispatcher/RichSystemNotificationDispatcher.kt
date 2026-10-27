@@ -101,8 +101,7 @@ class RichSystemNotificationDispatcher(private val context: Context) {
      * Sanitiza montos y dígitos sensibles para la pantalla de bloqueo (OWASP Shoulder Surfing protection).
      */
     fun sanitizeForLockScreen(text: String): String {
-        val currencyOrNumberRegex = Regex("""(\$\s?[\d.,]+(\s?COP)?)|\b\d{4,}\b""")
-        return text.replace(currencyOrNumberRegex, "$ ••••••")
+        return Companion.sanitizeForLockScreen(text)
     }
 
     fun dispatchSystemNotification(entity: NotificationEntity, maskOnLockScreen: Boolean = true) {
