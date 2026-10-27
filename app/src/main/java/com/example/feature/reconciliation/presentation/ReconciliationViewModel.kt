@@ -35,11 +35,16 @@ class ReconciliationViewModel(
     fun selectAccount(account: AccountEntity) {
         _uiState.update { current ->
             val prevBalance = account.balance
+            val formattedDefault = if (prevBalance % 1.0 == 0.0) {
+                prevBalance.toLong().toString()
+            } else {
+                prevBalance.toString()
+            }
             val real = current.realBalanceInput.toDoubleOrNull() ?: prevBalance
             val disc = calculateDiscrepancyUseCase(prevBalance, real)
             current.copy(
                 selectedAccount = account,
-                realBalanceInput = current.realBalanceInput.ifBlank { prevBalance.toString() },
+                realBalanceInput = current.realBalanceInput.ifBlank { formattedDefault },
                 calculatedDiscrepancy = disc,
                 errorMessage = null,
                 executionSuccessMessage = null

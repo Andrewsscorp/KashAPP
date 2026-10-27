@@ -44,9 +44,9 @@ class FirebaseVersionDataSource(
 
             if (snapshot.exists()) {
                 val policy = VersionGatePolicy(
-                    minSupportedVersionCode = snapshot.getLong("minSupportedVersionCode")?.toInt() ?: 1,
-                    latestVersionCode = snapshot.getLong("latestVersionCode")?.toInt() ?: 1,
-                    latestVersionName = snapshot.getString("latestVersionName") ?: "1.0.0",
+                    minSupportedVersionCode = snapshot.getLong("minSupportedVersionCode")?.toInt() ?: 936,
+                    latestVersionCode = snapshot.getLong("latestVersionCode")?.toInt() ?: 936,
+                    latestVersionName = snapshot.getString("latestVersionName") ?: "9.3.6",
                     forceUpdateTitle = snapshot.getString("forceUpdateTitle") ?: "Actualización Obligatoria de Seguridad",
                     forceUpdateMessage = snapshot.getString("forceUpdateMessage") ?: "Tu versión actual ya no es compatible. Por favor actualiza la aplicación.",
                     updateUrl = snapshot.getString("updateUrl") ?: "https://github.com/Andrewsscorp/KashAPP/releases",
@@ -98,9 +98,9 @@ class FirebaseVersionDataSource(
     override fun getCachedPolicy(): VersionGatePolicy? {
         if (!prefs.contains(KEY_MIN_VERSION)) return null
         return VersionGatePolicy(
-            minSupportedVersionCode = prefs.getInt(KEY_MIN_VERSION, 1),
-            latestVersionCode = prefs.getInt(KEY_LATEST_VERSION, 1),
-            latestVersionName = prefs.getString(KEY_LATEST_NAME, "1.0.0") ?: "1.0.0",
+            minSupportedVersionCode = prefs.getInt(KEY_MIN_VERSION, 936),
+            latestVersionCode = prefs.getInt(KEY_LATEST_VERSION, 936),
+            latestVersionName = prefs.getString(KEY_LATEST_NAME, "9.3.6") ?: "9.3.6",
             forceUpdateTitle = prefs.getString(KEY_UPDATE_TITLE, "Actualización Obligatoria de Seguridad") ?: "Actualización Obligatoria de Seguridad",
             forceUpdateMessage = prefs.getString(KEY_UPDATE_MESSAGE, "Por favor actualiza la aplicación.") ?: "Por favor actualiza la aplicación.",
             updateUrl = prefs.getString(KEY_UPDATE_URL, "https://github.com/Andrewsscorp/KashAPP/releases") ?: "https://github.com/Andrewsscorp/KashAPP/releases",
