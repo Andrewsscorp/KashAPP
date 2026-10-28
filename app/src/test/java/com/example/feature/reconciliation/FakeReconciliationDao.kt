@@ -14,6 +14,10 @@ class FakeReconciliationDao : ReconciliationDao {
         return logs.asStateFlow().map { list -> list.filter { it.userId == userId } }
     }
 
+    override suspend fun getReconciliations(userId: String): List<AccountReconciliationLogEntity> {
+        return logs.value.filter { it.userId == userId }
+    }
+
     override fun observeReconciliationsForAccount(userId: String, accountId: String): Flow<List<AccountReconciliationLogEntity>> {
         return logs.asStateFlow().map { list -> list.filter { it.userId == userId && it.accountId == accountId } }
     }

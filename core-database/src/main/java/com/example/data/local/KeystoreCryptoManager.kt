@@ -268,7 +268,7 @@ class KeystoreCryptoManager(private val allowSoftwareFallbackForTests: Boolean =
      * Garantiza resiliencia total frente a desinstalación de la app o cambio de dispositivo.
      */
     fun deriveCloudKey(userSeed: String): SecretKey {
-        val cleanSeed = userSeed.trim()
+        val cleanSeed = userSeed.trim().lowercase(java.util.Locale.ROOT)
         val saltPreimage = "KashApp_Cloud_Vault_Salt_v2_$cleanSeed".toByteArray(Charsets.UTF_8)
         val salt = MessageDigest.getInstance("SHA-256").digest(saltPreimage)
         val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
@@ -298,10 +298,10 @@ class KeystoreCryptoManager(private val allowSoftwareFallbackForTests: Boolean =
     }
 
     /**
-     * Descifra un payload de la nube utilizando derivación de clave por identidad de usuario,
-     * con fallback automático a la clave de Keystore local.
+     * Descifra un payload de la nube probando secuencialmente una lista de semillas (seeds),
+     * con fallback automático a la clave de hardware Keystore local.
      */
-    fun decryptCloudPayload(cipherTextBase64: String, userSeed: String): String? {
+    fun decryptCloudPayloadWithFallbacks(cipherTextBase64: String, candidateSeeds: List<String>): String? {
         val combined = try {
             java.util.Base64.getDecoder().decode(cipherTextBase64)
         } catch (_: Throwable) {
@@ -317,19 +317,29 @@ class KeystoreCryptoManager(private val allowSoftwareFallbackForTests: Boolean =
         System.arraycopy(combined, 0, iv, 0, GCM_IV_LENGTH)
         System.arraycopy(combined, GCM_IV_LENGTH, encrypted, 0, encrypted.size)
 
-        // Intento 1: Descifrado con clave determinística derivada del userSeed
-        try {
-            val key = deriveCloudKey(userSeed)
-            val cipher = Cipher.getInstance(TRANSFORMATION)
-            val spec = GCMParameterSpec(GCM_TAG_LENGTH, iv)
-            cipher.init(Cipher.DECRYPT_MODE, key, spec)
-            val decryptedBytes = cipher.doFinal(encrypted)
-            return String(decryptedBytes, Charsets.UTF_8)
-        } catch (_: Exception) {
-            // Continuar con fallback
+        // Probar cada semilla candidata (normalizada y cruda para compatibilidad)
+        for (seed in candidateSeeds) {
+            if (seed.isBlank()) continue
+            val seedsToTry = listOf(
+                seed.trim().lowercase(java.util.Locale.ROOT),
+                seed.trim()
+            ).distinct()
+
+            for (trySeed in seedsToTry) {
+                try {
+                    val key = deriveCloudKey(trySeed)
+                    val cipher = Cipher.getInstance(TRANSFORMATION)
+                    val spec = GCMParameterSpec(GCM_TAG_LENGTH, iv)
+                    cipher.init(Cipher.DECRYPT_MODE, key, spec)
+                    val decryptedBytes = cipher.doFinal(encrypted)
+                    return String(decryptedBytes, Charsets.UTF_8)
+                } catch (_: Exception) {
+                    // Probar siguiente seed
+                }
+            }
         }
 
-        // Intento 2: Fallback a clave local de hardware Keystore (por si el respaldo se generó en la misma sesión previa)
+        // Fallback a clave local de hardware Keystore
         try {
             val key = getOrCreateSecretKey()
             val cipher = Cipher.getInstance(TRANSFORMATION)
@@ -342,5 +352,13 @@ class KeystoreCryptoManager(private val allowSoftwareFallbackForTests: Boolean =
         }
 
         return null
+    }
+
+    /**
+     * Descifra un payload de la nube utilizando derivación de clave por identidad de usuario,
+     * con fallback automático a la clave de Keystore local.
+     */
+    fun decryptCloudPayload(cipherTextBase64: String, userSeed: String): String? {
+        return decryptCloudPayloadWithFallbacks(cipherTextBase64, listOf(userSeed))
     }
 }

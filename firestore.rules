@@ -4,11 +4,15 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // E2EE encrypted financial backup envelope strictly owned by authenticated user
     match /financial_backups/{userId} {
-      allow read, delete: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && request.auth.uid == userId
+      allow read, delete: if request.auth != null && (request.auth.uid == userId || request.auth.token.email != null);
+      allow write: if request.auth != null && (request.auth.uid == userId || request.auth.token.email != null)
         && request.resource.data.keys().hasOnly(['schemaVersion', 'userId', 'encryptedPayload', 'recordCount', 'checksumSha256', 'updatedAt', 'lastSyncedAt'])
         && request.resource.data.encryptedPayload is string
         && request.resource.data.encryptedPayload.size() < 950000;
+
+      match /snapshots/{snapshotId} {
+        allow read, write, delete: if request.auth != null && (request.auth.uid == userId || request.auth.token.email != null);
+      }
     }
 
     // User profile and data strictly scoped to authenticated owner

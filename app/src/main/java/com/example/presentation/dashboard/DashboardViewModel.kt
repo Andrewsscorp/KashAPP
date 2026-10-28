@@ -90,7 +90,6 @@ class DashboardViewModel(
                     financialRepository?.seedDefaultsIfNeeded(targetUid)
                 }
                 fixedAssetRepository?.seedDefaultCategoriesIfNeeded(targetUid)
-                fixedAssetRepository?.seedDefaultAssetsIfNeeded(targetUid)
             } catch (e: Exception) {
                 android.util.Log.w("DashboardViewModel", "Error sincronizando datos al iniciar: ${e.message}")
             } finally {

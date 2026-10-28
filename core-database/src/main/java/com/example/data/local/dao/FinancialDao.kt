@@ -565,6 +565,12 @@ interface FinancialDao {
     @Query("SELECT * FROM account_cdts")
     suspend fun getAllAccountCdts(): List<com.example.data.local.entity.AccountCdtEntity>
 
+    @Query("SELECT * FROM account_cdts WHERE account_id IN (SELECT id FROM accounts WHERE userId = :userId AND :userId != '')")
+    suspend fun getAccountCdtsByUser(userId: String): List<com.example.data.local.entity.AccountCdtEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAccountCdts(cdts: List<com.example.data.local.entity.AccountCdtEntity>)
+
     /**
      * ACID Atomic Transaction: Creates the Account (type=CDT), registers the CDT metadata,
      * updates source account if funding from existing account, and logs the transfer or initial transaction.
@@ -658,6 +664,9 @@ interface FinancialDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertGoal(goal: com.example.data.local.entity.FinancialGoalEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertGoals(goals: List<com.example.data.local.entity.FinancialGoalEntity>)
 
     @Query("SELECT * FROM financial_goals WHERE userId = :userId AND :userId != '' ORDER BY createdAt DESC")
     fun getAllGoalsFlow(userId: String): kotlinx.coroutines.flow.Flow<List<com.example.data.local.entity.FinancialGoalEntity>>
@@ -757,6 +766,9 @@ interface FinancialDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBudget(budget: com.example.data.local.entity.BudgetEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertBudgets(budgets: List<com.example.data.local.entity.BudgetEntity>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBudgetItems(items: List<com.example.data.local.entity.BudgetItemEntity>)
@@ -922,8 +934,14 @@ interface FinancialDao {
     @Query("SELECT * FROM scheduled_payments WHERE user_id = :userId AND :userId != '' AND is_paid = 0 ORDER BY due_date ASC")
     suspend fun getPendingScheduledPayments(userId: String): List<com.example.data.local.entity.ScheduledPaymentEntity>
 
+    @Query("SELECT * FROM scheduled_payments WHERE user_id = :userId AND :userId != '' ORDER BY due_date ASC")
+    suspend fun getScheduledPayments(userId: String): List<com.example.data.local.entity.ScheduledPaymentEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertScheduledPayment(payment: com.example.data.local.entity.ScheduledPaymentEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertScheduledPayments(payments: List<com.example.data.local.entity.ScheduledPaymentEntity>)
 
     @Update
     suspend fun updateScheduledPayment(payment: com.example.data.local.entity.ScheduledPaymentEntity)

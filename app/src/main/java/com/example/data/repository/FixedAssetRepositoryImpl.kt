@@ -53,7 +53,7 @@ class FixedAssetRepositoryImpl(
             fixedAssetDao.updateAsset(asset)
         }
 
-        // Garantizar que SIEMPRE exista el movimiento contable inicial de ADQUISICIÓN
+        // Garantizar que SIEMPRE exista el movimiento contable inicial de ADQUISICIÃ“N
         val existingMovements = fixedAssetDao.getMovementsForAsset(asset.id)
         val hasAcquisition = existingMovements.any { it.type.equals("ACQUISITION", ignoreCase = true) }
         if (!hasAcquisition) {
@@ -62,16 +62,16 @@ class FixedAssetRepositoryImpl(
                 assetId = asset.id,
                 userId = asset.userId,
                 type = AssetMovementType.ACQUISITION.name,
-                title = "Alta y Adquisición: ${asset.name}",
+                title = "Alta y AdquisiciÃ³n: ${asset.name}",
                 date = asset.acquisitionDate,
                 amount = asset.acquisitionValue,
-                notes = "Registro inicial y capitalización de activo fijo (NIC 16). Categoría: ${asset.category}",
+                notes = "Registro inicial y capitalizaciÃ³n de activo fijo (NIC 16). CategorÃ­a: ${asset.category}",
                 financialImpact = "Capitalizable (+ Base depreciable)"
             )
             fixedAssetDao.insertMovement(acqMovement)
         }
 
-        // Registrar en Bitácora de Auditoría
+        // Registrar en BitÃ¡cora de AuditorÃ­a
         val now = System.currentTimeMillis()
         val formattedDate = LocalDateTime.now().format(auditDateFormatter)
         val isNew = existing == null
@@ -81,11 +81,11 @@ class FixedAssetRepositoryImpl(
             assetId = asset.id,
             assetName = asset.name,
             actionType = if (isNew) "CREACION" else "MODIFICACION",
-            actionTitle = if (isNew) "Alta de Activo Fijo: ${asset.name}" else "Modificación de Activo: ${asset.name}",
+            actionTitle = if (isNew) "Alta de Activo Fijo: ${asset.name}" else "ModificaciÃ³n de Activo: ${asset.name}",
             details = if (isNew) {
-                "Creación y capitalización de ${asset.name} (${asset.category}). Valor: $${asset.acquisitionValue} COP. Vida útil: ${asset.usefulLifeMonths} meses. Método: ${asset.depreciationMethod}."
+                "CreaciÃ³n y capitalizaciÃ³n de ${asset.name} (${asset.category}). Valor: $${asset.acquisitionValue} COP. Vida Ãºtil: ${asset.usefulLifeMonths} meses. MÃ©todo: ${asset.depreciationMethod}."
             } else {
-                "Actualización de parámetros contables en ${asset.name}. Método: ${asset.depreciationMethod}, Vida útil: ${asset.usefulLifeMonths} meses, Residual: $${asset.residualValue} COP."
+                "ActualizaciÃ³n de parÃ¡metros contables en ${asset.name}. MÃ©todo: ${asset.depreciationMethod}, Vida Ãºtil: ${asset.usefulLifeMonths} meses, Residual: $${asset.residualValue} COP."
             },
             financialImpact = if (isNew) "Alta patrimonial (+ $${asset.acquisitionValue} COP)" else "Ajuste prospectivo NIC 16",
             timestamp = now,
@@ -107,7 +107,7 @@ class FixedAssetRepositoryImpl(
                 assetName = asset.name,
                 actionType = "BAJA",
                 actionTitle = "Baja / Retiro de Activo: ${asset.name}",
-                details = "Desincorporación contable del inventario. Valor histórico: $${asset.acquisitionValue} COP.",
+                details = "DesincorporaciÃ³n contable del inventario. Valor histÃ³rico: $${asset.acquisitionValue} COP.",
                 financialImpact = "Baja de activo del patrimonio",
                 timestamp = now,
                 formattedDate = formattedDate
@@ -142,10 +142,10 @@ class FixedAssetRepositoryImpl(
                 assetId = asset.id,
                 userId = asset.userId,
                 type = AssetMovementType.ACQUISITION.name,
-                title = "Alta y Adquisición: ${asset.name}",
+                title = "Alta y AdquisiciÃ³n: ${asset.name}",
                 date = asset.acquisitionDate,
                 amount = asset.acquisitionValue,
-                notes = "Registro inicial del activo en libros contables NIIF. Categoría: ${asset.category}",
+                notes = "Registro inicial del activo en libros contables NIIF. CategorÃ­a: ${asset.category}",
                 financialImpact = "Capitalizable (+ Base depreciable)"
             )
         )
@@ -156,10 +156,10 @@ class FixedAssetRepositoryImpl(
                     assetId = asset.id,
                     userId = asset.userId,
                     type = AssetMovementType.DEPRECIATION.name,
-                    title = "Depreciación Acumulada Contable",
+                    title = "DepreciaciÃ³n Acumulada Contable",
                     date = asset.lastDepreciationDate ?: asset.acquisitionDate,
                     amount = asset.accumulatedDepreciation,
-                    notes = "Amortización histórica acumulada bajo NIIF / NIC 16",
+                    notes = "AmortizaciÃ³n histÃ³rica acumulada bajo NIIF / NIC 16",
                     financialImpact = "Gasto del Periodo (P&L)"
                 )
             )
@@ -185,12 +185,12 @@ class FixedAssetRepositoryImpl(
                     assetId = asset.id,
                     userId = asset.userId,
                     type = AssetMovementType.DISPOSAL.name,
-                    title = "Baja Definitiva y Desincorporación",
+                    title = "Baja Definitiva y DesincorporaciÃ³n",
                     date = asset.lastDepreciationDate ?: asset.acquisitionDate,
                     amount = 0.0,
                     notes = "Activo retirado del servicio y dado de baja contable.",
-                    disposalReason = "Obsolescencia o fin de vida útil",
-                    financialImpact = "Pérdida por Retiro de Activos"
+                    disposalReason = "Obsolescencia o fin de vida Ãºtil",
+                    financialImpact = "PÃ©rdida por Retiro de Activos"
                 )
             )
         }
@@ -209,15 +209,15 @@ class FixedAssetRepositoryImpl(
         val movementType = AssetMovementType.fromString(movement.type)
         val updated = when (movementType) {
             AssetMovementType.IMPROVEMENT -> {
-                // Mejora / Adición (Capitalizable NIIF NIC 16):
+                // Mejora / AdiciÃ³n (Capitalizable NIIF NIC 16):
                 // 1. El Monto no va al gasto, se suma al saldo del activo (Nueva Base Depreciable)
-                // 2. Aumento de vida útil (meses) si fue registrado
+                // 2. Aumento de vida Ãºtil (meses) si fue registrado
                 val newUsefulLife = if (movement.usefulLifeIncrementMonths > 0) {
                     asset.usefulLifeMonths + movement.usefulLifeIncrementMonths
                 } else {
                     asset.usefulLifeMonths
                 }
-                // 3. Ajuste al nuevo valor residual si se especificó
+                // 3. Ajuste al nuevo valor residual si se especificÃ³
                 val newResidual = movement.newResidualValue ?: asset.residualValue
                 asset.copy(
                     acquisitionValue = asset.acquisitionValue + movement.amount,
@@ -228,7 +228,7 @@ class FixedAssetRepositoryImpl(
                 )
             }
             AssetMovementType.REVALUATION -> {
-                // Revalúo Técnico (Modelo de Revaluación NIIF NIC 16):
+                // RevalÃºo TÃ©cnico (Modelo de RevaluaciÃ³n NIIF NIC 16):
                 // El Monto reemplaza o ajusta la base al valor de mercado tasado por perito.
                 // Se reexpresa el activo y se actualiza el valor residual si fue reestimado.
                 val newResidual = movement.newResidualValue ?: asset.residualValue
@@ -242,7 +242,7 @@ class FixedAssetRepositoryImpl(
             }
             AssetMovementType.IMPAIRMENT -> {
                 // Deterioro de Valor (NIC 36):
-                // Reconoce pérdida por deterioro aumentando la amortización/deterioro acumulado,
+                // Reconoce pÃ©rdida por deterioro aumentando la amortizaciÃ³n/deterioro acumulado,
                 // reduciendo el valor neto en libros y ajustando prospectivamente las cuotas.
                 val newAccum = asset.accumulatedDepreciation + movement.amount
                 val newMarket = kotlin.math.max(asset.residualValue, asset.currentMarketValue - movement.amount)
@@ -260,7 +260,7 @@ class FixedAssetRepositoryImpl(
                         stateNotes = movement.notes,
                         updatedAt = System.currentTimeMillis()
                     )
-                } else if (movement.title.contains("Conclusión", ignoreCase = true) || movement.title.contains("finaliz", ignoreCase = true)) {
+                } else if (movement.title.contains("ConclusiÃ³n", ignoreCase = true) || movement.title.contains("finaliz", ignoreCase = true)) {
                     asset.copy(
                         status = "EN_USO",
                         stateNotes = movement.notes,
@@ -271,14 +271,14 @@ class FixedAssetRepositoryImpl(
                 }
             }
             AssetMovementType.SALE -> {
-                // Enajenación / Venta
+                // EnajenaciÃ³n / Venta
                 asset.copy(
                     status = "MANTENIDO_PARA_LA_VENTA",
                     updatedAt = System.currentTimeMillis()
                 )
             }
             AssetMovementType.DISPOSAL -> {
-                // Baja Definitiva / Desincorporación
+                // Baja Definitiva / DesincorporaciÃ³n
                 asset.copy(
                     status = "DADO_DE_BAJA",
                     stateNotes = movement.disposalReason ?: movement.notes,
@@ -347,10 +347,10 @@ class FixedAssetRepositoryImpl(
                 assetId = item.asset.id,
                 userId = userId,
                 type = AssetMovementType.DEPRECIATION.name,
-                title = "Depreciación Periódica: ${item.asset.name}",
+                title = "DepreciaciÃ³n PeriÃ³dica: ${item.asset.name}",
                 date = asOfDate,
                 amount = item.totalPendingAmount,
-                notes = "Cierre contable automático (${item.monthsToDepreciate} mes/es). Cuota mensual: ${"%.2f".format(item.monthlyAmount)}"
+                notes = "Cierre contable automÃ¡tico (${item.monthsToDepreciate} mes/es). Cuota mensual: ${"%.2f".format(item.monthlyAmount)}"
             )
             createdMovements.add(mov)
 
@@ -377,8 +377,8 @@ class FixedAssetRepositoryImpl(
                 assetId = null,
                 assetName = "Lote de ${updatedAssets.size} Activos",
                 actionType = "DEPRECIACION",
-                actionTitle = "Cierre Mensual de Depreciación Contable NIC 16",
-                details = "Ejecutado cierre al $asOfDate. Se aplicó cuota mensual de depreciación a ${updatedAssets.size} activos.",
+                actionTitle = "Cierre Mensual de DepreciaciÃ³n Contable NIC 16",
+                details = "Ejecutado cierre al $asOfDate. Se aplicÃ³ cuota mensual de depreciaciÃ³n a ${updatedAssets.size} activos.",
                 financialImpact = "Gasto del periodo (- $${"%,.0f".format(totalAmount)} COP)",
                 timestamp = now,
                 formattedDate = formattedDate
@@ -396,174 +396,15 @@ class FixedAssetRepositoryImpl(
             message = if (updatedAssets.isNotEmpty()) {
                 "Se depreciaron ${updatedAssets.size} activos exitosamente por un total de $${"%,.0f".format(totalAmount)}."
             } else {
-                "Todos los activos están al día con su depreciación contable."
+                "Todos los activos estÃ¡n al dÃ­a con su depreciaciÃ³n contable."
             }
         )
     }
 
     override suspend fun seedDefaultAssetsIfNeeded(userId: String) {
-        val existing = fixedAssetDao.observeAssets(userId).firstOrNull().orEmpty()
-        if (existing.isNotEmpty()) return
-
-        val recoveredAssets = listOf(
-            FixedAssetEntity(
-                id = "AF-24462",
-                userId = userId,
-                name = "CF 250 SR LITE",
-                type = "TANGIBLE",
-                category = "Vehículos y Transporte",
-                description = "Motocicleta deportiva CF Moto 250 SR Lite",
-                acquisitionDate = "2026-10-16",
-                acquisitionValue = 20_000_000.0,
-                currency = "COP",
-                hasDepreciation = true,
-                depreciationMethod = "STRAIGHT_LINE",
-                usefulLifeMonths = 60,
-                residualValue = 0.0,
-                currentMarketValue = 20_000_000.0,
-                accumulatedDepreciation = 0.0,
-                status = "ACTIVE",
-                colorHex = "#0284C7"
-            ),
-            FixedAssetEntity(
-                id = "AF-04771",
-                userId = userId,
-                name = "TV HISENSE 57\"",
-                type = "TANGIBLE",
-                category = "Muebles y Enseres",
-                description = "Televisor Smart TV Hisense 57 pulgadas",
-                acquisitionDate = "2026-10-16",
-                acquisitionValue = 1_850_000.0,
-                currency = "COP",
-                hasDepreciation = true,
-                depreciationMethod = "STRAIGHT_LINE",
-                usefulLifeMonths = 60,
-                residualValue = 0.0,
-                currentMarketValue = 1_850_000.0,
-                accumulatedDepreciation = 0.0,
-                status = "ACTIVE",
-                colorHex = "#EC4899"
-            ),
-            FixedAssetEntity(
-                id = "AF-44557",
-                userId = userId,
-                name = "PORTÁTIL HP VICTUS",
-                type = "TANGIBLE",
-                category = "Tecnología y Cómputo",
-                description = "Computador portátil Gaming HP Victus",
-                acquisitionDate = "2026-10-16",
-                acquisitionValue = 1_500_000.0,
-                currency = "COP",
-                hasDepreciation = true,
-                depreciationMethod = "STRAIGHT_LINE",
-                usefulLifeMonths = 36,
-                residualValue = 0.0,
-                currentMarketValue = 1_500_000.0,
-                accumulatedDepreciation = 0.0,
-                status = "ACTIVE",
-                colorHex = "#6366F1"
-            ),
-            FixedAssetEntity(
-                id = "AF-57433",
-                userId = userId,
-                name = "TABLE HONOR PAD 9",
-                type = "TANGIBLE",
-                category = "Tecnología y Cómputo",
-                description = "Tablet Honor Pad 9 con pantalla 12 pulgadas",
-                acquisitionDate = "2026-10-16",
-                acquisitionValue = 1_500_000.0,
-                currency = "COP",
-                hasDepreciation = true,
-                depreciationMethod = "STRAIGHT_LINE",
-                usefulLifeMonths = 36,
-                residualValue = 0.0,
-                currentMarketValue = 1_500_000.0,
-                accumulatedDepreciation = 0.0,
-                status = "ACTIVE",
-                colorHex = "#6366F1"
-            ),
-            FixedAssetEntity(
-                id = "AF-38755",
-                userId = userId,
-                name = "INFINIX NOTE 40",
-                type = "TANGIBLE",
-                category = "Tecnología y Cómputo",
-                description = "Smartphone Infinix Note 40 Pro",
-                acquisitionDate = "2026-10-16",
-                acquisitionValue = 1_000_000.0,
-                currency = "COP",
-                hasDepreciation = true,
-                depreciationMethod = "STRAIGHT_LINE",
-                usefulLifeMonths = 36,
-                residualValue = 0.0,
-                currentMarketValue = 1_000_000.0,
-                accumulatedDepreciation = 0.0,
-                status = "ACTIVE",
-                colorHex = "#6366F1"
-            ),
-            FixedAssetEntity(
-                id = "AF-01328",
-                userId = userId,
-                name = "ASUS VIVABOOK",
-                type = "TANGIBLE",
-                category = "Tecnología y Cómputo",
-                description = "Computador portátil Asus Vivabook",
-                acquisitionDate = "2026-10-16",
-                acquisitionValue = 800_000.0,
-                currency = "COP",
-                hasDepreciation = true,
-                depreciationMethod = "STRAIGHT_LINE",
-                usefulLifeMonths = 36,
-                residualValue = 0.0,
-                currentMarketValue = 800_000.0,
-                accumulatedDepreciation = 0.0,
-                status = "ACTIVE",
-                colorHex = "#6366F1"
-            ),
-            FixedAssetEntity(
-                id = "AF-02112",
-                userId = userId,
-                name = "DISCO DURO PORTÁTIL",
-                type = "TANGIBLE",
-                category = "Tecnología y Cómputo",
-                description = "Disco duro externo de respaldo portátil",
-                acquisitionDate = "2026-10-16",
-                acquisitionValue = 650_000.0,
-                currency = "COP",
-                hasDepreciation = true,
-                depreciationMethod = "STRAIGHT_LINE",
-                usefulLifeMonths = 36,
-                residualValue = 0.0,
-                currentMarketValue = 650_000.0,
-                accumulatedDepreciation = 0.0,
-                status = "ACTIVE",
-                colorHex = "#6366F1"
-            ),
-            FixedAssetEntity(
-                id = "AF-64695",
-                userId = userId,
-                name = "CASCO MOTO",
-                type = "TANGIBLE",
-                category = "Otros Activos Fijos",
-                description = "Casco integral de protección para motocicleta",
-                acquisitionDate = "2026-10-16",
-                acquisitionValue = 340_000.0,
-                currency = "COP",
-                hasDepreciation = true,
-                depreciationMethod = "STRAIGHT_LINE",
-                usefulLifeMonths = 24,
-                residualValue = 0.0,
-                currentMarketValue = 340_000.0,
-                accumulatedDepreciation = 0.0,
-                status = "ACTIVE",
-                colorHex = "#64748B"
-            )
-        )
-
-        for (asset in recoveredAssets) {
-            saveAsset(asset)
-        }
-        financialRepository?.backupFullPortfolioToCloud(userId)
+        // Extirpado definitivamente para prevenir contaminación de datos y sobrescritura destructiva de Firestore.
+        // Los activos fijos son administrados exclusivamente por el usuario o restaurados desde la nube.
+        android.util.Log.i("FixedAssetRepository", "seedDefaultAssetsIfNeeded desactivado: preservando integridad de datos.")
     }
 
     override fun observeCategories(userId: String): Flow<List<AssetCategoryEntity>> {
@@ -586,9 +427,9 @@ class FixedAssetRepositoryImpl(
         if (count > 0) return
 
         val defaults = listOf(
-            AssetCategoryEntity("cat_inmuebles", userId, "Bienes Raíces e Inmuebles", "INM", "apartment", "#10B981", true),
-            AssetCategoryEntity("cat_vehiculos", userId, "Vehículos y Transporte", "VEH", "directions_car", "#0284C7", true),
-            AssetCategoryEntity("cat_tecnologia", userId, "Tecnología y Cómputo", "TEC", "laptop_chromebook", "#6366F1", true),
+            AssetCategoryEntity("cat_inmuebles", userId, "Bienes RaÃ­ces e Inmuebles", "INM", "apartment", "#10B981", true),
+            AssetCategoryEntity("cat_vehiculos", userId, "VehÃ­culos y Transporte", "VEH", "directions_car", "#0284C7", true),
+            AssetCategoryEntity("cat_tecnologia", userId, "TecnologÃ­a y CÃ³mputo", "TEC", "laptop_chromebook", "#6366F1", true),
             AssetCategoryEntity("cat_maquinaria", userId, "Maquinaria y Equipo", "MAQ", "precision_manufacturing", "#F59E0B", true),
             AssetCategoryEntity("cat_muebles", userId, "Muebles y Enseres", "MUE", "chair", "#EC4899", true),
             AssetCategoryEntity("cat_software", userId, "Software y Licencias", "SOF", "terminal", "#8B5CF6", true),

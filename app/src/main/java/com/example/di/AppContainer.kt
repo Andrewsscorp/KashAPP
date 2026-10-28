@@ -89,7 +89,8 @@ class AppContainer(private val context: Context) {
             merchantDao = securityDatabase.merchantDao(),
             outboxDao = securityDatabase.outboxDao(),
             keystoreCryptoManager = keystoreCryptoManager,
-            fixedAssetDao = securityDatabase.fixedAssetDao()
+            fixedAssetDao = securityDatabase.fixedAssetDao(),
+            reconciliationDao = securityDatabase.reconciliationDao()
         )
     }
 

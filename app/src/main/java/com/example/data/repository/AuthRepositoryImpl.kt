@@ -169,9 +169,10 @@ class AuthRepositoryImpl(
                 userSessionDao?.getActiveSession() ?: userSessionDao?.getLastActiveSession()
             }
             val currentFbUser = firebaseDataSource.getCurrentUser()
-            val userId = targetSession?.userId ?: boundUserId ?: currentFbUser?.uid ?: DEFAULT_LOCAL_USER_ID
-            val displayName = targetSession?.displayName ?: currentFbUser?.displayName ?: "Usuario KashApp"
             val email = targetSession?.email ?: currentFbUser?.email
+            val emailUid = email?.let { com.example.core.id.EmailDeterministicUidGenerator.fromEmail(it) }
+            val userId = emailUid ?: targetSession?.userId ?: boundUserId ?: currentFbUser?.uid ?: DEFAULT_LOCAL_USER_ID
+            val displayName = targetSession?.displayName ?: currentFbUser?.displayName ?: "Usuario KashApp"
             ensureLocalSession(userId, displayName, email, "local_pin")
             logSecurityEvent(
                 eventType = "AUTH_PIN_SUCCESS",
@@ -345,9 +346,10 @@ class AuthRepositoryImpl(
             userSessionDao?.getActiveSession() ?: userSessionDao?.getLastActiveSession()
         }
         val currentFbUser = firebaseDataSource.getCurrentUser()
-        val userId = targetSession?.userId ?: boundUserId ?: currentFbUser?.uid ?: DEFAULT_LOCAL_USER_ID
-        val displayName = targetSession?.displayName ?: currentFbUser?.displayName ?: "Usuario KashApp"
         val email = targetSession?.email ?: currentFbUser?.email
+        val emailUid = email?.let { com.example.core.id.EmailDeterministicUidGenerator.fromEmail(it) }
+        val userId = emailUid ?: targetSession?.userId ?: boundUserId ?: currentFbUser?.uid ?: DEFAULT_LOCAL_USER_ID
+        val displayName = targetSession?.displayName ?: currentFbUser?.displayName ?: "Usuario KashApp"
         ensureLocalSession(userId, displayName, email, "biometric")
         logSecurityEvent(
             eventType = "AUTH_SUCCESS",
@@ -390,8 +392,9 @@ class AuthRepositoryImpl(
             )
         }
         val fbUser = userResult.getOrThrow()
-        finalUserId = fbUser.uid
         finalEmail = fbUser.email ?: finalEmail
+        val emailUid = finalEmail?.let { com.example.core.id.EmailDeterministicUidGenerator.fromEmail(it) }
+        finalUserId = emailUid ?: fbUser.uid
         finalDisplayName = fbUser.displayName ?: finalDisplayName
         photoUrl = fbUser.photoUrl?.toString()
         isEmailVerified = fbUser.isEmailVerified
@@ -569,8 +572,10 @@ class AuthRepositoryImpl(
             if (fbUser != null) {
                 val now = System.currentTimeMillis()
                 val token = firebaseDataSource.getIdToken(false).getOrNull()
+                val emailUid = fbUser.email?.let { com.example.core.id.EmailDeterministicUidGenerator.fromEmail(it) }
+                val targetUserId = emailUid ?: fbUser.uid
                 val sessionEntity = UserSessionEntity(
-                    userId = fbUser.uid,
+                    userId = targetUserId,
                     email = fbUser.email,
                     displayName = fbUser.displayName ?: "Usuario Firebase",
                     photoUrl = fbUser.photoUrl?.toString(),
@@ -621,9 +626,11 @@ class AuthRepositoryImpl(
             val fbUser = fbResult.getOrThrow()
             val now = System.currentTimeMillis()
             val token = firebaseDataSource.getIdToken(false).getOrNull()
+            val targetEmail = fbUser.email ?: email
+            val emailUid = com.example.core.id.EmailDeterministicUidGenerator.fromEmail(targetEmail)
             val session = UserSessionEntity(
-                userId = fbUser.uid,
-                email = fbUser.email ?: email,
+                userId = emailUid,
+                email = targetEmail,
                 displayName = fbUser.displayName ?: email.substringBefore("@"),
                 photoUrl = fbUser.photoUrl?.toString(),
                 authProvider = "firebase_password",
@@ -661,9 +668,11 @@ class AuthRepositoryImpl(
             val fbUser = fbResult.getOrThrow()
             val now = System.currentTimeMillis()
             val token = firebaseDataSource.getIdToken(false).getOrNull()
+            val targetEmail = fbUser.email ?: email
+            val emailUid = com.example.core.id.EmailDeterministicUidGenerator.fromEmail(targetEmail)
             val session = UserSessionEntity(
-                userId = fbUser.uid,
-                email = fbUser.email ?: email,
+                userId = emailUid,
+                email = targetEmail,
                 displayName = displayName.ifBlank { fbUser.displayName ?: email.substringBefore("@") },
                 photoUrl = fbUser.photoUrl?.toString(),
                 authProvider = "firebase_password",

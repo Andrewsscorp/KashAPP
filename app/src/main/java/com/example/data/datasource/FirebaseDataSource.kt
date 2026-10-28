@@ -207,16 +207,39 @@ open class FirebaseDataSource(private val context: Context? = null) {
         return try {
             initFirebaseIfNeeded()
             val currentFbUid = getCurrentUserId()
-            val targetId = if (!currentFbUid.isNullOrBlank()) currentFbUid else userId
+            val currentEmail = getCurrentUserEmail()
+            val emailUid = if (!currentEmail.isNullOrBlank()) {
+                com.example.core.id.EmailDeterministicUidGenerator.fromEmail(currentEmail)
+            } else null
+
+            val targetId = when {
+                !emailUid.isNullOrBlank() -> emailUid
+                !userId.isBlank() && userId != "user_default" && userId != "kash_user_01" -> userId
+                !currentFbUid.isNullOrBlank() -> currentFbUid
+                else -> "usr_local"
+            }
 
             val enrichedPayload = HashMap(backupPayload)
             enrichedPayload["userId"] = targetId
             enrichedPayload["lastSyncedAt"] = System.currentTimeMillis()
 
+            // 1. Persistir documento activo principal
             firestore.collection("financial_backups")
                 .document(targetId)
                 .set(enrichedPayload)
                 .await()
+
+            // 2. Persistir snapshot histórico de seguridad (recuperación ante desastres)
+            try {
+                val snapshotId = "${System.currentTimeMillis()}"
+                firestore.collection("financial_backups")
+                    .document(targetId)
+                    .collection("snapshots")
+                    .document(snapshotId)
+                    .set(enrichedPayload)
+            } catch (snapEx: Exception) {
+                Log.d("FirebaseDataSource", "Notice saving backup snapshot: ${snapEx.message}")
+            }
 
             Log.i("FirebaseDataSource", "✓ Respaldo financiero E2EE guardado exitosamente en Firestore para $targetId (colección: financial_backups)")
             true
@@ -228,41 +251,36 @@ open class FirebaseDataSource(private val context: Context? = null) {
 
     /**
      * Downloads user financial backup snapshot from Firebase Firestore.
-     * Strictly scopes retrieval to the authenticated user's UID.
-     * Prevents cross-account data leaks.
+     * Evaluates deterministic email UID first, then Firebase Auth UID, then local fallback.
      */
     open suspend fun getFinancialBackup(userId: String): Map<String, Any>? {
         return try {
             initFirebaseIfNeeded()
             val currentFbUid = getCurrentUserId()
-            val targetId = if (!currentFbUid.isNullOrBlank()) currentFbUid else userId
+            val currentEmail = getCurrentUserEmail()
+            val emailUid = if (!currentEmail.isNullOrBlank()) {
+                com.example.core.id.EmailDeterministicUidGenerator.fromEmail(currentEmail)
+            } else null
 
-            // 1. Direct document retrieval in financial_backups for target UID
-            try {
-                val snapshot = firestore.collection("financial_backups")
-                    .document(targetId)
-                    .get()
-                    .await()
-                if (snapshot.exists() && snapshot.data != null && snapshot.data!!.isNotEmpty()) {
-                    Log.i("FirebaseDataSource", "✓ Respaldo encontrado en Firestore doc financial_backups/$targetId")
-                    return snapshot.data
-                }
-            } catch (e: Exception) {
-                Log.d("FirebaseDataSource", "No direct doc in financial_backups/$targetId: ${e.message}")
-            }
+            val candidateIds = listOfNotNull(
+                emailUid,
+                currentFbUid,
+                userId.takeIf { it.isNotBlank() && it != "user_default" && it != "kash_user_bio" && it != "kash_user_01" }
+            ).distinct()
 
-            // 2. Fallback check for local userId if different
-            if (userId.isNotBlank() && userId != targetId && userId != "user_default" && userId != "kash_user_bio") {
+            for (cid in candidateIds) {
                 try {
                     val snapshot = firestore.collection("financial_backups")
-                        .document(userId)
+                        .document(cid)
                         .get()
                         .await()
                     if (snapshot.exists() && snapshot.data != null && snapshot.data!!.isNotEmpty()) {
-                        Log.i("FirebaseDataSource", "✓ Respaldo encontrado en fallback doc financial_backups/$userId")
+                        Log.i("FirebaseDataSource", "✓ Respaldo encontrado en Firestore doc financial_backups/$cid")
                         return snapshot.data
                     }
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    Log.d("FirebaseDataSource", "Notice retrieving financial_backups/$cid: ${e.message}")
+                }
             }
 
             null

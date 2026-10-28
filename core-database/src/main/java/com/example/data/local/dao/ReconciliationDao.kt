@@ -16,6 +16,9 @@ interface ReconciliationDao {
     @Query("SELECT * FROM account_reconciliation_logs WHERE userId = :userId ORDER BY reconciliationTimestamp DESC")
     fun observeReconciliations(userId: String): Flow<List<AccountReconciliationLogEntity>>
 
+    @Query("SELECT * FROM account_reconciliation_logs WHERE userId = :userId ORDER BY reconciliationTimestamp DESC")
+    suspend fun getReconciliations(userId: String): List<AccountReconciliationLogEntity>
+
     @Query("SELECT * FROM account_reconciliation_logs WHERE userId = :userId AND accountId = :accountId ORDER BY reconciliationTimestamp DESC")
     fun observeReconciliationsForAccount(userId: String, accountId: String): Flow<List<AccountReconciliationLogEntity>>
 

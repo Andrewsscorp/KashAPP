@@ -39,6 +39,7 @@ class FinancialRepositoryImpl(
     private val outboxDao: com.example.data.local.dao.OutboxDao? = null,
     private val keystoreCryptoManager: com.example.data.local.KeystoreCryptoManager? = null,
     private val fixedAssetDao: com.example.data.local.dao.FixedAssetDao? = null,
+    private val reconciliationDao: com.example.data.local.dao.ReconciliationDao? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : FinancialRepository {
 
@@ -2716,8 +2717,10 @@ class FinancialRepositoryImpl(
 
     private suspend fun restoreFinancialBackupInternal(userId: String, force: Boolean): Result<Boolean> {
         return try {
+            val fbEmail = firebaseDataSource.getCurrentUserEmail()
+            val emailUid = fbEmail?.let { com.example.core.id.EmailDeterministicUidGenerator.fromEmail(it) }
             val currentFbUid = firebaseDataSource.getCurrentUserId()
-            val targetId = if (!currentFbUid.isNullOrBlank()) currentFbUid else userId
+            val targetId = emailUid ?: currentFbUid ?: userId
             val activeUserId = if (targetId.isNotBlank() && targetId != "user_default" && targetId != "kash_user_01") targetId else userId
 
             if (!force) {
@@ -2770,21 +2773,15 @@ class FinancialRepositoryImpl(
             if (backupData.containsKey("encryptedPayload")) {
                 val encryptedPayload = backupData["encryptedPayload"] as? String
                 if (!encryptedPayload.isNullOrBlank()) {
-                    // Intento 1: Descifrado determinístico con targetId (UID activo de Firebase)
-                    decryptedContent = cryptoManager.decryptCloudPayload(encryptedPayload, targetId)
+                    val candidateSeeds = listOfNotNull(
+                        emailUid,
+                        targetId,
+                        currentFbUid,
+                        userId,
+                        fbEmail
+                    ).distinct()
 
-                    // Intento 2: Con userId local si difiere
-                    if (decryptedContent.isNullOrBlank() && userId.isNotBlank() && userId != targetId) {
-                        decryptedContent = cryptoManager.decryptCloudPayload(encryptedPayload, userId)
-                    }
-
-                    // Intento 3: Con el correo electrónico de Firebase si está disponible
-                    val fbEmail = firebaseDataSource.getCurrentUserEmail()
-                    if (decryptedContent.isNullOrBlank() && !fbEmail.isNullOrBlank()) {
-                        decryptedContent = cryptoManager.decryptCloudPayload(encryptedPayload, fbEmail)
-                    }
-
-                    // Intento 4: Fallback con la clave de hardware Keystore local
+                    decryptedContent = cryptoManager.decryptCloudPayloadWithFallbacks(encryptedPayload, candidateSeeds)
                     if (decryptedContent.isNullOrBlank()) {
                         decryptedContent = cryptoManager.decryptData(encryptedPayload)
                     }
@@ -2977,6 +2974,193 @@ class FinancialRepositoryImpl(
                             minimumPaymentAmount = obj.optDouble("minimumPaymentAmount", quotaUsed)
                         )
                         financialDao.insertAccountCreditCard(cardEntity)
+                    }
+                }
+
+                val goalsArr = rootObj.optJSONArray("goals")
+                if (goalsArr != null) {
+                    val goalsToInsert = mutableListOf<com.example.data.local.entity.FinancialGoalEntity>()
+                    for (i in 0 until goalsArr.length()) {
+                        val obj = goalsArr.getJSONObject(i)
+                        goalsToInsert.add(
+                            com.example.data.local.entity.FinancialGoalEntity(
+                                id = obj.optString("id", UUID.randomUUID().toString()),
+                                userId = activeUserId,
+                                name = obj.optString("name", "Meta"),
+                                categoryId = obj.optString("categoryId").ifBlank { null },
+                                categoryName = obj.optString("categoryName", "Educación"),
+                                description = obj.optString("description").ifBlank { null },
+                                colorHex = obj.optString("colorHex", "#8B5CF6"),
+                                iconName = obj.optString("iconName", "school"),
+                                targetAmount = obj.optDouble("targetAmount", 0.0),
+                                savedAmount = obj.optDouble("savedAmount", 0.0),
+                                hasDeadline = obj.optBoolean("hasDeadline", true),
+                                startDate = obj.optString("startDate").ifBlank { null },
+                                deadlineDate = obj.optString("deadlineDate").ifBlank { null },
+                                targetAccountId = obj.optString("targetAccountId"),
+                                targetAccountName = obj.optString("targetAccountName", "Cuenta"),
+                                sourceAccountId = obj.optString("sourceAccountId").ifBlank { null },
+                                sourceAccountName = obj.optString("sourceAccountName").ifBlank { null },
+                                autoContribute = obj.optBoolean("autoContribute", false),
+                                monthlyContribution = obj.optDouble("monthlyContribution", 0.0).takeIf { it > 0.0 },
+                                contributionDay = obj.optInt("contributionDay", 15),
+                                contributionFrequency = obj.optString("contributionFrequency", "Mensual"),
+                                contributionMethod = obj.optString("contributionMethod", "Transferencia"),
+                                virtualPocketEnabled = obj.optBoolean("virtualPocketEnabled", false),
+                                isActive = obj.optBoolean("isActive", true),
+                                createdAt = obj.optLong("createdAt", System.currentTimeMillis())
+                            )
+                        )
+                    }
+                    if (goalsToInsert.isNotEmpty()) {
+                        financialDao.insertGoals(goalsToInsert)
+                        restoredAny = true
+                    }
+                }
+
+                val budgetsArr = rootObj.optJSONArray("budgets")
+                if (budgetsArr != null) {
+                    for (i in 0 until budgetsArr.length()) {
+                        val bObj = budgetsArr.getJSONObject(i)
+                        val budgetId = bObj.optString("id", UUID.randomUUID().toString())
+                        val budget = com.example.data.local.entity.BudgetEntity(
+                            id = budgetId,
+                            userId = activeUserId,
+                            name = bObj.optString("name", "Presupuesto"),
+                            period = bObj.optString("period", "MONTHLY"),
+                            startDate = bObj.optString("startDate", java.time.LocalDate.now().withDayOfMonth(1).toString()),
+                            endDate = bObj.optString("endDate", java.time.LocalDate.now().plusMonths(1).withDayOfMonth(1).minusDays(1).toString()),
+                            totalAmount = bObj.optDouble("totalAmount", 0.0),
+                            description = bObj.optString("description").ifBlank { null },
+                            colorHex = bObj.optString("colorHex", "#10B981"),
+                            isActive = bObj.optBoolean("isActive", true),
+                            createdAt = bObj.optLong("createdAt", System.currentTimeMillis())
+                        )
+                        val itemsArr = bObj.optJSONArray("items")
+                        val itemsToInsert = mutableListOf<com.example.data.local.entity.BudgetItemEntity>()
+                        if (itemsArr != null) {
+                            for (j in 0 until itemsArr.length()) {
+                                val itm = itemsArr.getJSONObject(j)
+                                itemsToInsert.add(
+                                    com.example.data.local.entity.BudgetItemEntity(
+                                        id = itm.optString("id", UUID.randomUUID().toString()),
+                                        budgetId = budgetId,
+                                        categoryId = itm.optString("categoryId", "cat_otros"),
+                                        categoryName = itm.optString("categoryName", "Varios"),
+                                        categoryIcon = itm.optString("categoryIcon", "category"),
+                                        categoryColorHex = itm.optString("categoryColorHex", "#10B981"),
+                                        allocatedAmount = itm.optDouble("allocatedAmount", 0.0),
+                                        spentAmount = itm.optDouble("spentAmount", 0.0)
+                                    )
+                                )
+                            }
+                        }
+                        financialDao.insertBudget(budget)
+                        if (itemsToInsert.isNotEmpty()) {
+                            financialDao.insertBudgetItems(itemsToInsert)
+                        }
+                        restoredAny = true
+                    }
+                }
+
+                val scheduledArr = rootObj.optJSONArray("scheduledPayments")
+                if (scheduledArr != null) {
+                    val paymentsToInsert = mutableListOf<com.example.data.local.entity.ScheduledPaymentEntity>()
+                    for (i in 0 until scheduledArr.length()) {
+                        val spObj = scheduledArr.getJSONObject(i)
+                        paymentsToInsert.add(
+                            com.example.data.local.entity.ScheduledPaymentEntity(
+                                id = spObj.optString("id", UUID.randomUUID().toString()),
+                                userId = activeUserId,
+                                entityName = spObj.optString("entityName", "Pago Programado"),
+                                category = spObj.optString("category", "SERVICIOS"),
+                                amount = spObj.optDouble("amount", 0.0),
+                                currency = spObj.optString("currency", "COP"),
+                                dueDate = spObj.optString("dueDate", java.time.LocalDate.now().toString()),
+                                recurrence = spObj.optString("recurrence", "MONTHLY"),
+                                isIncome = spObj.optBoolean("isIncome", false),
+                                isPaid = spObj.optBoolean("isPaid", false),
+                                paidDate = spObj.optString("paidDate").ifBlank { null },
+                                sourceAccountId = spObj.optString("sourceAccountId").ifBlank { null },
+                                sourceAccountName = spObj.optString("sourceAccountName").ifBlank { null },
+                                notes = spObj.optString("notes").ifBlank { null },
+                                reminderDaysBefore = spObj.optInt("reminderDaysBefore", 3),
+                                notificationEnabled = spObj.optBoolean("notificationEnabled", true),
+                                createdAt = spObj.optLong("createdAt", System.currentTimeMillis())
+                            )
+                        )
+                    }
+                    if (paymentsToInsert.isNotEmpty()) {
+                        financialDao.insertScheduledPayments(paymentsToInsert)
+                        restoredAny = true
+                    }
+                }
+
+                val cdtsArr = rootObj.optJSONArray("cdts")
+                if (cdtsArr != null) {
+                    val cdtsToInsert = mutableListOf<com.example.data.local.entity.AccountCdtEntity>()
+                    for (i in 0 until cdtsArr.length()) {
+                        val cObj = cdtsArr.getJSONObject(i)
+                        cdtsToInsert.add(
+                            com.example.data.local.entity.AccountCdtEntity(
+                                id = cObj.optString("id", UUID.randomUUID().toString()),
+                                accountId = cObj.optString("accountId"),
+                                certificateNumber = cObj.optString("certificateNumber").ifBlank { null },
+                                interestRateEa = cObj.optDouble("interestRateEa", 10.5),
+                                rateType = cObj.optString("rateType", "EA"),
+                                payoutFrequency = cObj.optString("payoutFrequency", "AT_MATURITY"),
+                                compounding = cObj.optBoolean("compounding", true),
+                                issueDate = cObj.optString("issueDate", java.time.LocalDate.now().toString()),
+                                termDays = cObj.optInt("termDays", 180),
+                                maturityDate = cObj.optString("maturityDate", java.time.LocalDate.now().plusMonths(6).toString()),
+                                actionAtMaturity = cObj.optString("actionAtMaturity", "ASK"),
+                                destinationAccountId = cObj.optString("destinationAccountId").ifBlank { null },
+                                sourceAccountId = cObj.optString("sourceAccountId").ifBlank { null },
+                                allowsEarlyWithdrawal = cObj.optBoolean("allowsEarlyWithdrawal", false),
+                                alertDaysBefore = cObj.optInt("alertDaysBefore", 15),
+                                hasAlert = cObj.optBoolean("hasAlert", true),
+                                initialAmount = cObj.optDouble("initialAmount", 0.0),
+                                estimatedYield = cObj.optDouble("estimatedYield", 0.0),
+                                createdAt = cObj.optLong("createdAt", System.currentTimeMillis())
+                            )
+                        )
+                    }
+                    if (cdtsToInsert.isNotEmpty()) {
+                        financialDao.insertAccountCdts(cdtsToInsert)
+                        restoredAny = true
+                    }
+                }
+
+                val recsArr = rootObj.optJSONArray("reconciliations")
+                if (recsArr != null && reconciliationDao != null) {
+                    val recsToInsert = mutableListOf<com.example.data.local.entity.AccountReconciliationLogEntity>()
+                    for (i in 0 until recsArr.length()) {
+                        val rObj = recsArr.getJSONObject(i)
+                        recsToInsert.add(
+                            com.example.data.local.entity.AccountReconciliationLogEntity(
+                                id = rObj.optString("id", UUID.randomUUID().toString()),
+                                userId = activeUserId,
+                                accountId = rObj.optString("accountId"),
+                                accountName = rObj.optString("accountName", "Cuenta"),
+                                previousSystemBalance = rObj.optDouble("previousSystemBalance", 0.0),
+                                reconciledRealBalance = rObj.optDouble("reconciledRealBalance", 0.0),
+                                discrepancyAmount = rObj.optDouble("discrepancyAmount", 0.0),
+                                adjustmentTransactionId = rObj.optString("adjustmentTransactionId").ifBlank { null },
+                                reconciliationDate = rObj.optString("reconciliationDate", java.time.LocalDate.now().toString()),
+                                reconciliationTime = rObj.optString("reconciliationTime", "00:00:00"),
+                                reconciledByUserId = rObj.optString("reconciledByUserId", activeUserId),
+                                reconciledByUserName = rObj.optString("reconciledByUserName", "Usuario"),
+                                notes = rObj.optString("notes").ifBlank { null },
+                                status = rObj.optString("status", "BALANCED"),
+                                deviceModel = rObj.optString("deviceModel", "Android"),
+                                syncStatus = "SYNCED",
+                                reconciliationTimestamp = rObj.optLong("reconciliationTimestamp", System.currentTimeMillis())
+                            )
+                        )
+                    }
+                    if (recsToInsert.isNotEmpty()) {
+                        reconciliationDao.insertReconciliations(recsToInsert)
+                        restoredAny = true
                     }
                 }
             } else {
@@ -3207,16 +3391,45 @@ class FinancialRepositoryImpl(
 
     override suspend fun backupFullPortfolioToCloud(userId: String): Result<Boolean> = withContext(ioDispatcher) {
         try {
+            val currentUserEmail = firebaseDataSource.getCurrentUserEmail()
+            val emailUid = currentUserEmail?.let { com.example.core.id.EmailDeterministicUidGenerator.fromEmail(it) }
+            val currentFbUid = firebaseDataSource.getCurrentUserId()
+            val effectiveSeed = emailUid ?: currentFbUid ?: userId
+
             val allAccounts = financialDao.getAccounts(userId)
             val allTransactions = financialDao.getTransactions(userId)
             val creditCards = financialDao.getAccountCreditCardsByUser(userId)
             val fixedAssets = fixedAssetDao?.getAssets(userId).orEmpty()
             val assetMovements = fixedAssetDao?.getAllMovements(userId).orEmpty()
+            val goals = financialDao.getGoals(userId)
+            val budgetsWithItems = financialDao.getAllBudgetsWithItems(userId)
+            val scheduledPayments = financialDao.getScheduledPayments(userId)
+            val cdts = financialDao.getAccountCdtsByUser(userId)
+            val reconciliations = reconciliationDao?.getReconciliations(userId).orEmpty()
 
             val dummyIds = setOf("acc_ahorros", "acc_corriente", "acc_billetera", "acc_efectivo")
-            val isAllEmptyDummy = (allAccounts.isEmpty() || allAccounts.all { it.balance == 0.0 && dummyIds.contains(it.id) }) && allTransactions.isEmpty() && fixedAssets.isEmpty()
-            if (isAllEmptyDummy && deletedAccountIds.isEmpty()) {
-                Log.i("FinancialRepository", "Omitiendo respaldo a Firestore: las cuentas locales son únicamente las cuentas iniciales en $0 y sin activos.")
+            val hasNonDummyData = allAccounts.any { !dummyIds.contains(it.id) || it.balance > 0.0 } ||
+                allTransactions.isNotEmpty() || fixedAssets.isNotEmpty() || goals.isNotEmpty() ||
+                budgetsWithItems.isNotEmpty() || scheduledPayments.isNotEmpty() || cdts.isNotEmpty() ||
+                reconciliations.isNotEmpty()
+
+            val localTotalRecords = allAccounts.size + allTransactions.size + creditCards.size +
+                fixedAssets.size + assetMovements.size + goals.size +
+                budgetsWithItems.size + scheduledPayments.size + cdts.size + reconciliations.size
+
+            if (!hasNonDummyData && deletedAccountIds.isEmpty()) {
+                val existingRemoteBackup = firebaseDataSource.getFinancialBackup(effectiveSeed)
+                if (existingRemoteBackup != null) {
+                    val remoteCount = (existingRemoteBackup["recordCount"] as? Number)?.toInt() ?: 0
+                    val remotePayload = existingRemoteBackup["encryptedPayload"] as? String
+                    if (remoteCount > 0 || !remotePayload.isNullOrBlank()) {
+                        Log.w("FinancialRepository", "ALERTA DE SEGURIDAD (Zero-Overwrite Guard): " +
+                            "El dispositivo local no contiene registros reales ($localTotalRecords registros), pero en Firebase existe un respaldo con " +
+                            "$remoteCount registros. Se cancela el respaldo para prevenir pérdida de datos.")
+                        return@withContext Result.failure(IllegalStateException("Zero-overwrite guard: Cannot overwrite populated cloud backup with empty local database"))
+                    }
+                }
+                Log.i("FinancialRepository", "Omitiendo respaldo a Firestore: las cuentas locales son únicamente las cuentas iniciales en $0 y sin datos adicionales.")
                 return@withContext Result.success(true)
             }
 
@@ -3353,10 +3566,147 @@ class FinancialRepositoryImpl(
                     })
                 }
                 put("creditCards", cardsArr)
-            }
 
-            val currentFbUid = firebaseDataSource.getCurrentUserId()
-            val effectiveSeed = if (!currentFbUid.isNullOrBlank()) currentFbUid else userId
+                val goalsArr = org.json.JSONArray()
+                for (g in goals) {
+                    goalsArr.put(org.json.JSONObject().apply {
+                        put("id", g.id)
+                        put("userId", userId)
+                        put("name", g.name)
+                        put("categoryId", g.categoryId ?: "")
+                        put("categoryName", g.categoryName)
+                        put("description", g.description ?: "")
+                        put("colorHex", g.colorHex)
+                        put("iconName", g.iconName)
+                        put("targetAmount", g.targetAmount)
+                        put("savedAmount", g.savedAmount)
+                        put("hasDeadline", g.hasDeadline)
+                        put("startDate", g.startDate ?: "")
+                        put("deadlineDate", g.deadlineDate ?: "")
+                        put("targetAccountId", g.targetAccountId)
+                        put("targetAccountName", g.targetAccountName)
+                        put("sourceAccountId", g.sourceAccountId ?: "")
+                        put("sourceAccountName", g.sourceAccountName ?: "")
+                        put("autoContribute", g.autoContribute)
+                        put("monthlyContribution", g.monthlyContribution ?: 0.0)
+                        put("contributionDay", g.contributionDay ?: 15)
+                        put("contributionFrequency", g.contributionFrequency)
+                        put("contributionMethod", g.contributionMethod)
+                        put("virtualPocketEnabled", g.virtualPocketEnabled)
+                        put("isActive", g.isActive)
+                        put("createdAt", g.createdAt)
+                    })
+                }
+                put("goals", goalsArr)
+
+                val budgetsArr = org.json.JSONArray()
+                for (bwi in budgetsWithItems) {
+                    val b = bwi.budget
+                    val bObj = org.json.JSONObject().apply {
+                        put("id", b.id)
+                        put("userId", userId)
+                        put("name", b.name)
+                        put("period", b.period)
+                        put("startDate", b.startDate)
+                        put("endDate", b.endDate)
+                        put("totalAmount", b.totalAmount)
+                        put("description", b.description ?: "")
+                        put("colorHex", b.colorHex)
+                        put("isActive", b.isActive)
+                        put("createdAt", b.createdAt)
+                        val itemsArr = org.json.JSONArray()
+                        for (item in bwi.items) {
+                            itemsArr.put(org.json.JSONObject().apply {
+                                put("id", item.id)
+                                put("budgetId", item.budgetId)
+                                put("categoryId", item.categoryId)
+                                put("categoryName", item.categoryName)
+                                put("categoryIcon", item.categoryIcon)
+                                put("categoryColorHex", item.categoryColorHex)
+                                put("allocatedAmount", item.allocatedAmount)
+                                put("spentAmount", item.spentAmount)
+                            })
+                        }
+                        put("items", itemsArr)
+                    }
+                    budgetsArr.put(bObj)
+                }
+                put("budgets", budgetsArr)
+
+                val scheduledArr = org.json.JSONArray()
+                for (sp in scheduledPayments) {
+                    scheduledArr.put(org.json.JSONObject().apply {
+                        put("id", sp.id)
+                        put("userId", userId)
+                        put("entityName", sp.entityName)
+                        put("category", sp.category)
+                        put("amount", sp.amount)
+                        put("currency", sp.currency)
+                        put("dueDate", sp.dueDate)
+                        put("recurrence", sp.recurrence)
+                        put("isIncome", sp.isIncome)
+                        put("isPaid", sp.isPaid)
+                        put("paidDate", sp.paidDate ?: "")
+                        put("sourceAccountId", sp.sourceAccountId ?: "")
+                        put("sourceAccountName", sp.sourceAccountName ?: "")
+                        put("notes", sp.notes ?: "")
+                        put("reminderDaysBefore", sp.reminderDaysBefore)
+                        put("notificationEnabled", sp.notificationEnabled)
+                        put("createdAt", sp.createdAt)
+                    })
+                }
+                put("scheduledPayments", scheduledArr)
+
+                val cdtsArr = org.json.JSONArray()
+                for (cdt in cdts) {
+                    cdtsArr.put(org.json.JSONObject().apply {
+                        put("id", cdt.id)
+                        put("accountId", cdt.accountId)
+                        put("certificateNumber", cdt.certificateNumber ?: "")
+                        put("interestRateEa", cdt.interestRateEa)
+                        put("rateType", cdt.rateType)
+                        put("payoutFrequency", cdt.payoutFrequency)
+                        put("compounding", cdt.compounding)
+                        put("issueDate", cdt.issueDate)
+                        put("termDays", cdt.termDays)
+                        put("maturityDate", cdt.maturityDate)
+                        put("actionAtMaturity", cdt.actionAtMaturity)
+                        put("destinationAccountId", cdt.destinationAccountId ?: "")
+                        put("sourceAccountId", cdt.sourceAccountId ?: "")
+                        put("allowsEarlyWithdrawal", cdt.allowsEarlyWithdrawal)
+                        put("alertDaysBefore", cdt.alertDaysBefore)
+                        put("hasAlert", cdt.hasAlert)
+                        put("initialAmount", cdt.initialAmount)
+                        put("estimatedYield", cdt.estimatedYield)
+                        put("createdAt", cdt.createdAt)
+                    })
+                }
+                put("cdts", cdtsArr)
+
+                val recsArr = org.json.JSONArray()
+                for (rec in reconciliations) {
+                    recsArr.put(org.json.JSONObject().apply {
+                        put("id", rec.id)
+                        put("userId", userId)
+                        put("accountId", rec.accountId)
+                        put("accountName", rec.accountName)
+                        put("previousSystemBalance", rec.previousSystemBalance)
+                        put("reconciledRealBalance", rec.reconciledRealBalance)
+                        put("discrepancyAmount", rec.discrepancyAmount)
+                        put("adjustmentTransactionId", rec.adjustmentTransactionId ?: "")
+                        put("reconciliationDate", rec.reconciliationDate)
+                        put("reconciliationTime", rec.reconciliationTime)
+                        put("reconciledByUserId", rec.reconciledByUserId)
+                        put("reconciledByUserName", rec.reconciledByUserName)
+                        put("notes", rec.notes ?: "")
+                        put("status", rec.status)
+                        put("deviceModel", rec.deviceModel)
+                        put("syncStatus", "SYNCED")
+                        put("reconciliationTimestamp", rec.reconciliationTimestamp)
+                    })
+                }
+                put("reconciliations", recsArr)
+            }
 
             val rawJson = rootJson.toString()
             val compressedBase64 = compressGzip(rawJson)
@@ -3366,7 +3716,7 @@ class FinancialRepositoryImpl(
             val checksumSha256 = digest.joinToString("") { "%02x".format(it) }
 
             // Sobre cifrado estricto E2EE según firestore.rules con clave derivada determinística
-            val totalRecordCount = allAccounts.size + allTransactions.size + fixedAssets.size + assetMovements.size + creditCards.size
+            val totalRecordCount = localTotalRecords
             val envelope = hashMapOf<String, Any>(
                 "schemaVersion" to 2,
                 "userId" to effectiveSeed,
