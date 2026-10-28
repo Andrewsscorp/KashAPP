@@ -197,6 +197,12 @@ class SettingsViewModel(
         }
     }
 
+    fun setAutoLockTimeoutMinutes(minutes: Int) {
+        viewModelScope.launch {
+            repository.setAutoLockTimeoutMinutes(userId, minutes)
+        }
+    }
+
     fun toggleBudgetAlerts(enabled: Boolean) {
         viewModelScope.launch {
             repository.setBudgetAlertsEnabled(userId, enabled)

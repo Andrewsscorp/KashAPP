@@ -78,7 +78,12 @@ class PassphraseManager(
     }
 
     private val prefs: SharedPreferences by lazy {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        try {
+            SecurePreferencesVault.getEncryptedVaultPreferences(context)
+        } catch (t: Throwable) {
+            Log.w(TAG, "Fallback a preferencias locales ante error de inicialización criptográfica: ${t.message}")
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        }
     }
 
     /**

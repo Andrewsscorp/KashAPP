@@ -16,7 +16,12 @@ class SettingsRepositoryImpl(
 ) : SettingsRepository {
 
     private val prefs: SharedPreferences by lazy {
-        context.getSharedPreferences("kashapp_enterprise_settings_prefs", Context.MODE_PRIVATE)
+        try {
+            com.example.data.local.SecurePreferencesVault.getEncryptedSettingsPreferences(context)
+        } catch (t: Throwable) {
+            android.util.Log.w("SettingsRepository", "Fallback a preferencias locales: ${t.message}")
+            context.getSharedPreferences("kashapp_enterprise_settings_prefs", Context.MODE_PRIVATE)
+        }
     }
 
     private val _userPreferencesFlows = java.util.concurrent.ConcurrentHashMap<String, MutableStateFlow<UserPreferencesDomain>>()
@@ -130,6 +135,8 @@ class SettingsRepositoryImpl(
             privacyPolicyAccepted = accepted,
             privacyPolicyVersion = version,
             privacyPolicyAcceptedTimestamp = timestamp,
+            autoLockTimeoutMinutes = prefs.getInt(k(uId, "auto_lock_timeout_minutes"), prefs.getInt("auto_lock_timeout_minutes", 1)),
+            hasPinEnabled = prefs.getBoolean(k(uId, "has_pin_enabled"), prefs.getBoolean("has_pin_enabled", false)),
             version = prefs.getLong(k(uId, "version"), prefs.getLong("version", 1L))
         )
     }
@@ -142,6 +149,11 @@ class SettingsRepositoryImpl(
     override suspend fun getPreferences(userId: String): UserPreferencesDomain {
         val uId = if (userId.isBlank()) "user_default" else userId
         return _userPreferencesFlows.getOrPut(uId) { MutableStateFlow(loadPreferences(uId)) }.value
+    }
+
+    override fun getPreferencesSnapshot(userId: String): UserPreferencesDomain {
+        val uId = if (userId.isBlank()) "user_default" else userId
+        return _userPreferencesFlows[uId]?.value ?: loadPreferences(uId)
     }
 
     override suspend fun updatePreferences(preferences: UserPreferencesDomain): Result<UserPreferencesDomain> {
@@ -201,6 +213,8 @@ class SettingsRepositoryImpl(
             .putBoolean(k(uId, "privacy_policy_accepted"), updated.privacyPolicyAccepted)
             .putString(k(uId, "privacy_policy_version"), updated.privacyPolicyVersion)
             .putLong(k(uId, "privacy_policy_accepted_timestamp"), updated.privacyPolicyAcceptedTimestamp)
+            .putInt(k(uId, "auto_lock_timeout_minutes"), updated.autoLockTimeoutMinutes)
+            .putBoolean(k(uId, "has_pin_enabled"), updated.hasPinEnabled)
             .putLong(k(uId, "version"), nextVersion)
             .apply()
 

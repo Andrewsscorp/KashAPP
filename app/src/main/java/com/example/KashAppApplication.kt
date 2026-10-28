@@ -17,12 +17,25 @@ class KashAppApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        // Install graceful uncaught exception handler to log fatal issues cleanly
-        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
-        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            Log.e("KashAppFatal", "Uncaught exception on thread ${thread.name}: ${throwable.message}", throwable)
-            defaultHandler?.uncaughtException(thread, throwable)
+        // Si el proceso actual es el proceso aislado :crash, omitir inicialización de base de datos y contenedores
+        val isCrashProcess = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            getProcessName().endsWith(":crash")
+        } else {
+            val pid = android.os.Process.myPid()
+            val am = getSystemService(ACTIVITY_SERVICE) as? android.app.ActivityManager
+            am?.runningAppProcesses?.firstOrNull { it.pid == pid }?.processName?.endsWith(":crash") == true
         }
+        if (isCrashProcess) return
+
+        // Instalar manejador global de excepciones fatales con aislamiento en proceso :crash y sanitización de PII
+        com.example.core.crash.KashCrashHandler.install(this) {
+            try {
+                appContainer.securityDatabase.close()
+            } catch (_: Throwable) {}
+        }
+
+        // Registrar coordinador de cerrojo de ciclo de vida con reloj monotónico
+        registerActivityLifecycleCallbacks(appContainer.appLockLifecycleCoordinator)
 
         // 1. Inicializar Guardián Zero-Trust Firebase App Check para proteger llamadas a Firebase AI y Firestore
         try {

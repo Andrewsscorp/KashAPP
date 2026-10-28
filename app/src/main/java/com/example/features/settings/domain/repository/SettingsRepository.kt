@@ -6,6 +6,9 @@ import kotlinx.coroutines.flow.Flow
 interface SettingsRepository {
     fun observePreferences(userId: String): Flow<UserPreferencesDomain>
     suspend fun getPreferences(userId: String): UserPreferencesDomain
+    fun getPreferencesSnapshot(userId: String): UserPreferencesDomain = kotlinx.coroutines.runBlocking {
+        getPreferences(userId)
+    }
     suspend fun updatePreferences(preferences: UserPreferencesDomain): Result<UserPreferencesDomain>
     suspend fun togglePrivacyMode(userId: String, enabled: Boolean): Result<Unit>
     suspend fun setBaseCurrency(userId: String, currency: String): Result<Unit>
@@ -15,6 +18,10 @@ interface SettingsRepository {
     suspend fun setAllowScreenshots(userId: String, allowed: Boolean): Result<Unit> {
         val current = getPreferences(userId)
         return updatePreferences(current.copy(allowScreenshots = allowed)).map { }
+    }
+    suspend fun setAutoLockTimeoutMinutes(userId: String, minutes: Int): Result<Unit> {
+        val current = getPreferences(userId)
+        return updatePreferences(current.copy(autoLockTimeoutMinutes = minutes)).map { }
     }
     suspend fun setBudgetAlertsEnabled(userId: String, enabled: Boolean): Result<Unit>
     suspend fun setPaymentRemindersEnabled(userId: String, enabled: Boolean): Result<Unit>

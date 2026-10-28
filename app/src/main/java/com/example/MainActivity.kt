@@ -150,6 +150,21 @@ class MainActivity : FragmentActivity() {
             }
         }
 
+        val lockState by appContainer.appLockLifecycleCoordinator.state.collectAsStateWithLifecycle()
+        LaunchedEffect(uiState.authenticatedUser) {
+            val authenticated = uiState.authenticatedUser
+            if (authenticated != null) {
+                appContainer.appLockLifecycleCoordinator.bindActiveUser(authenticated.userId)
+                appContainer.appLockLifecycleCoordinator.onUserAuthenticated()
+            }
+        }
+
+        LaunchedEffect(lockState.isLocked) {
+            if (lockState.isLocked && uiState.authenticatedUser != null) {
+                viewModel.lockSession()
+            }
+        }
+
         LaunchedEffect(uiState.statusMessage) {
             uiState.statusMessage?.let { msg ->
                 snackbarHostState.showSnackbar(msg)

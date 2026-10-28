@@ -109,6 +109,8 @@ fun SettingsSecurityScreen(
     onBack: () -> Unit,
     allowScreenshots: Boolean = false,
     onToggleAllowScreenshots: (Boolean) -> Unit = {},
+    autoLockTimeoutMinutes: Int = 1,
+    onChangeAutoLockTimeout: ((Int) -> Unit)? = null,
     authRepository: AuthRepository? = null,
     onChangePin: (suspend (currentPin: String, newPin: String) -> Result<Unit>)? = null,
     modifier: Modifier = Modifier
@@ -146,6 +148,7 @@ fun SettingsSecurityScreen(
     // Estados de modales
     var showPinDialog by remember { mutableStateOf(false) }
     var showVaultPassphraseDialog by remember { mutableStateOf(false) }
+    var showAutoLockDialog by remember { mutableStateOf(false) }
 
     // Campos de PIN
     var currentPinInput by remember { mutableStateOf("") }
@@ -450,6 +453,50 @@ fun SettingsSecurityScreen(
                             },
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp
+                        )
+                    }
+                }
+
+                HorizontalDivider(color = Color(0xFFF1F5F9))
+
+                // 5. Tiempo de Bloqueo Automático en Segundo Plano (Estilo iOS / Cupertino)
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Tiempo de Bloqueo Automático",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp,
+                        color = KashNavy
+                    )
+                    Text(
+                        text = "Tiempo de inactividad o minimizado antes de solicitar PIN o biometría para proteger la sesión.",
+                        fontSize = 12.sp,
+                        color = Color(0xFF64748B)
+                    )
+
+                    val currentOption = com.example.features.settings.security.AutoLockTimeoutOption.fromMinutes(autoLockTimeoutMinutes)
+
+                    OutlinedButton(
+                        onClick = { showAutoLockDialog = true },
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("security_btn_autolock_timeout")
+                    ) {
+                        Icon(Icons.Default.History, contentDescription = null, tint = KashNavy, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = currentOption.displayLabel,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp,
+                            color = KashNavy,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "Cambiar",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = KashBlue
                         )
                     }
                 }
@@ -954,6 +1001,80 @@ fun SettingsSecurityScreen(
             },
             containerColor = Color.White,
             shape = RoundedCornerShape(24.dp)
+        )
+    }
+
+    if (showAutoLockDialog) {
+        AlertDialog(
+            onDismissRequest = { showAutoLockDialog = false },
+            title = {
+                Text(
+                    text = "Bloqueo Automático",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = KashNavy
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Selecciona el tiempo de espera tras minimizar la app para bloquear la sesión:",
+                        fontSize = 13.sp,
+                        color = Color(0xFF64748B)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    com.example.features.settings.security.AutoLockTimeoutOption.entries.forEach { option ->
+                        val isSelected = option.minutes == autoLockTimeoutMinutes
+                        Surface(
+                            onClick = {
+                                onChangeAutoLockTimeout?.invoke(option.minutes)
+                                showAutoLockDialog = false
+                                val msg = "Tiempo de bloqueo actualizado: ${option.displayLabel}"
+                                bannerFeedback = msg
+                                onShowMessage(msg)
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) Color(0xFFEFF6FF) else Color(0xFFF8FAFC),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isSelected) KashBlue else Color(0xFFE2E8F0)
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = option.displayLabel,
+                                    fontSize = 13.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) KashBlue else KashNavy
+                                )
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = "Seleccionado",
+                                        tint = KashBlue,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showAutoLockDialog = false }) {
+                    Text("Cancelar", color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+                }
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = Color.White
         )
     }
 }

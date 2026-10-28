@@ -28,6 +28,8 @@ data class UserPreferencesDomain(
     val privacyPolicyAccepted: Boolean = false,
     val privacyPolicyVersion: String = "1.0-LEY-1581-2012",
     val privacyPolicyAcceptedTimestamp: Long = 0L,
+    val autoLockTimeoutMinutes: Int = 1,
+    val hasPinEnabled: Boolean = false,
     val updatedAt: Long = System.currentTimeMillis(),
     val version: Long = 1L
 )

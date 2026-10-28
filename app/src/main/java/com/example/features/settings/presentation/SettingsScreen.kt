@@ -214,6 +214,8 @@ fun SettingsScreen(
                             onToggleBiometrics = { viewModel.toggleBiometrics(it) },
                             allowScreenshots = uiState.preferences.allowScreenshots,
                             onToggleAllowScreenshots = { viewModel.toggleAllowScreenshots(it) },
+                            autoLockTimeoutMinutes = uiState.preferences.autoLockTimeoutMinutes,
+                            onChangeAutoLockTimeout = { viewModel.setAutoLockTimeoutMinutes(it) },
                             authRepository = appContainer.authRepository,
                             onShowMessage = { viewModel.showStatusMessage(it) },
                             onChangePin = { current, new -> viewModel.changePin(current, new) },

@@ -214,6 +214,12 @@ class AppContainer(private val context: Context) {
         )
     }
 
+    val appLockLifecycleCoordinator: com.example.features.settings.security.AppLockLifecycleCoordinator by lazy {
+        com.example.features.settings.security.AppLockLifecycleCoordinator(settingsRepository = settingsRepository).also {
+            it.bindActiveUser("user_default")
+        }
+    }
+
     val frankfurterApiService: com.example.data.remote.FrankfurterApiService by lazy {
         com.example.data.remote.FrankfurterApiService()
     }

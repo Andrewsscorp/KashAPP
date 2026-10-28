@@ -3258,8 +3258,21 @@ class FinancialRepositoryImpl(
                 }
             }
 
-            // Inserción de cuentas restauradas y depuración de dummies
-            val validAccountsToInsert = accountsToInsert.filter { !deletedAccountIds.contains(it.id) }
+            // Inserción de cuentas restauradas y depuración de dummies con sanitización defensiva
+            val sanitizedBatch = com.example.data.backup.BackupEntitySanitizer.sanitizePortfolioBatch(
+                targetUserId = activeUserId,
+                rawAccounts = accountsToInsert,
+                rawCategories = emptyList(),
+                rawTransactions = transactionsToInsert,
+                rawFixedAssets = emptyList()
+            )
+            val accountsReady = sanitizedBatch.accounts
+            val transactionsReady = sanitizedBatch.transactions
+            if (sanitizedBatch.repairedFieldsCount > 0 || sanitizedBatch.discardedOrphanTransactions > 0) {
+                Log.i("FinancialRepository", "Sanitizador de respaldo: ${sanitizedBatch.repairedFieldsCount} campo(s) reparados, ${sanitizedBatch.discardedOrphanTransactions} transacción(es) huérfana(s) descartadas.")
+            }
+
+            val validAccountsToInsert = accountsReady.filter { !deletedAccountIds.contains(it.id) }
             if (validAccountsToInsert.isNotEmpty()) {
                 financialDao.insertAccounts(validAccountsToInsert)
                 restoredAny = true
@@ -3314,8 +3327,8 @@ class FinancialRepositoryImpl(
                 }
 
                 // Inserción de transacciones (V2 o legado)
-                if (transactionsToInsert.isNotEmpty()) {
-                    for (tx in transactionsToInsert) {
+                if (transactionsReady.isNotEmpty()) {
+                    for (tx in transactionsReady) {
                         financialDao.insertTransaction(tx)
                     }
                     restoredAny = true

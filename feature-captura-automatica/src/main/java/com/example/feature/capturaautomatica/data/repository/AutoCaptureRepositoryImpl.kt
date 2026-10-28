@@ -94,6 +94,11 @@ class AutoCaptureRepositoryImpl(
             val userCategories = fetchCategories()
             val (matchedCategoryId, matchedCategoryName) = resolveCategory(userId, parsed.merchantOrCounterparty, parsed.transactionType, userCategories)
 
+            val sanitizedMerchant = com.example.core.security.ColombianPiiRedactor.redactFinancialText(parsed.merchantOrCounterparty)
+            val sanitizedLast4 = parsed.lastFourDigits?.let {
+                com.example.core.security.ColombianPiiRedactor.maskAccountOrCardSuffix(it, 4).removePrefix("****")
+            } ?: parsed.lastFourDigits
+
             val captureEntity = PendingAutoCaptureEntity(
                 id = "cap_${UUID.randomUUID().toString().take(12)}",
                 userId = userId,
@@ -102,8 +107,8 @@ class AutoCaptureRepositoryImpl(
                 transactionType = parsed.transactionType,
                 amount = parsed.amount,
                 currency = parsed.currency,
-                merchantOrCounterparty = parsed.merchantOrCounterparty,
-                lastFourDigits = parsed.lastFourDigits,
+                merchantOrCounterparty = sanitizedMerchant,
+                lastFourDigits = sanitizedLast4,
                 matchedAccountId = matchedAccount?.id,
                 matchedAccountName = matchedAccount?.name,
                 matchedCategoryId = matchedCategoryId,
@@ -226,11 +231,12 @@ class AutoCaptureRepositoryImpl(
             // Marcar la captura como confirmada
             autoCaptureDao.updateCaptureStatus(captureId, userId, "CONFIRMED", txId)
 
+            val sanitizedMerchantForAudit = com.example.core.security.ColombianPiiRedactor.redactFinancialText(capture.merchantOrCounterparty)
             auditSecurityLogDao?.insertLog(
                 AuditSecurityLog(
                     eventType = "AUTO_CAPTURE_CONFIRMED",
                     authMethod = "BANK_NOTIFICATION",
-                    details = "Confirmado ${capture.transactionType} por $${capture.amount.toLong()} en ${capture.merchantOrCounterparty} (Tx: $txId)"
+                    details = "Confirmado ${capture.transactionType} por $${capture.amount.toLong()} en $sanitizedMerchantForAudit (Tx: $txId)"
                 )
             )
 

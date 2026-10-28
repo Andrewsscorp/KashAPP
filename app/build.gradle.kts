@@ -57,7 +57,7 @@ android {
   testOptions { unitTests { isIncludeAndroidResources = true } }
   dependenciesInfo {
     includeInApk = false
-    includeInBundle = true
+    includeInBundle = false
   }
 }
 
@@ -120,6 +120,7 @@ dependencies {
   implementation(libs.androidx.credentials.play.services)
   implementation(libs.googleid)
   implementation(libs.androidx.biometric)
+  implementation(libs.androidx.security.crypto)
   implementation(libs.androidx.work.runtime.ktx)
   implementation(libs.androidx.sqlite)
   implementation(libs.sqlcipher.android)
