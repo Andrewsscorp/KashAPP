@@ -50,4 +50,13 @@ class DeterministicEmailUidGeneratorTest {
     fun testBlankEmailThrowsException() {
         EmailDeterministicUidGenerator.fromEmail("   ")
     }
+
+    @Test
+    fun testFromEmailOrNullHandlesEdgeCasesSafely() {
+        org.junit.Assert.assertNull(EmailDeterministicUidGenerator.fromEmailOrNull(null))
+        org.junit.Assert.assertNull(EmailDeterministicUidGenerator.fromEmailOrNull(""))
+        org.junit.Assert.assertNull(EmailDeterministicUidGenerator.fromEmailOrNull("   "))
+        org.junit.Assert.assertNull(EmailDeterministicUidGenerator.fromEmailOrNull("notanemail"))
+        org.junit.Assert.assertNotNull(EmailDeterministicUidGenerator.fromEmailOrNull("andres@gmail.com"))
+    }
 }

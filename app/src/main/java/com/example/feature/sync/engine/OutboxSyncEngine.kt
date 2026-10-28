@@ -166,7 +166,9 @@ class OutboxSyncEngine(
 
         try {
             val currentFbUid = firebaseDataSource.getCurrentUserId()
-            val targetId = if (!currentFbUid.isNullOrBlank()) currentFbUid else userId
+            val fbEmail = firebaseDataSource.getCurrentUserEmail()
+            val emailUid = fbEmail?.let { com.example.core.id.EmailDeterministicUidGenerator.fromEmailOrNull(it) }
+            val targetId = emailUid ?: currentFbUid ?: userId
             val activeUserId = if (targetId.isNotBlank() && targetId != "user_default" && targetId != "kash_user_01") targetId else userId
 
             val backupData = firebaseDataSource.getFinancialBackup(targetId)
@@ -182,14 +184,15 @@ class OutboxSyncEngine(
             if (backupData.containsKey("encryptedPayload")) {
                 val encPayload = backupData["encryptedPayload"] as? String
                 if (!encPayload.isNullOrBlank() && cryptoManager != null) {
-                    decryptedContent = cryptoManager.decryptCloudPayload(encPayload, targetId)
-                    if (decryptedContent.isNullOrBlank() && userId.isNotBlank() && userId != targetId) {
-                        decryptedContent = cryptoManager.decryptCloudPayload(encPayload, userId)
-                    }
-                    val fbEmail = firebaseDataSource.getCurrentUserEmail()
-                    if (decryptedContent.isNullOrBlank() && !fbEmail.isNullOrBlank()) {
-                        decryptedContent = cryptoManager.decryptCloudPayload(encPayload, fbEmail)
-                    }
+                    val candidateSeeds = listOfNotNull(
+                        emailUid,
+                        targetId,
+                        currentFbUid,
+                        userId,
+                        fbEmail
+                    ).distinct()
+
+                    decryptedContent = cryptoManager.decryptCloudPayloadWithFallbacks(encPayload, candidateSeeds)
                     if (decryptedContent.isNullOrBlank()) {
                         decryptedContent = cryptoManager.decryptData(encPayload)
                     }

@@ -52,6 +52,20 @@ object EmailDeterministicUidGenerator {
     }
 
     /**
+     * Safely computes deterministic UID or returns null if email is null, blank or malformed.
+     */
+    fun fromEmailOrNull(email: String?): String? {
+        if (email.isNullOrBlank()) return null
+        val normalized = normalizeEmail(email)
+        if (!normalized.contains('@') || normalized.length < 5) return null
+        return try {
+            fromEmail(normalized)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
      * Computes the full 64-character SHA-256 hash representation of the email.
      */
     fun fullHashFromEmail(email: String): String {

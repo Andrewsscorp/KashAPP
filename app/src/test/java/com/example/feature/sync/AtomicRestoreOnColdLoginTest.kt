@@ -178,6 +178,14 @@ class AtomicRestoreOnColdLoginTest {
                     insertedCdts.addAll(args[0] as List<AccountCdtEntity>)
                     Unit
                 }
+                "insertAccounts" -> {
+                    @Suppress("UNCHECKED_CAST")
+                    insertedAccounts.addAll(args[0] as List<AccountEntity>)
+                    Unit
+                }
+                "getAccountCreditCard" -> null
+                "insertAccountCreditCard" -> Unit
+                "insertAccountCreditCards" -> Unit
                 "getCategories" -> emptyList<com.example.data.local.entity.CategoryEntity>()
                 "getAccountCreditCardsByUser" -> emptyList<AccountCreditCardEntity>()
                 "getAllBudgetsWithItems" -> emptyList<com.example.data.local.entity.BudgetWithItems>()
@@ -222,6 +230,10 @@ class AtomicRestoreOnColdLoginTest {
         // 4. Verification
         assertTrue("La restauración de respaldo en frío debe ser exitosa", restoreResult.isSuccess)
         assertTrue("Debe reportar que restauró registros", restoreResult.getOrNull() == true)
+
+        assertEquals(1, insertedAccounts.size)
+        assertEquals("acc_bancolombia", insertedAccounts[0].id)
+        assertEquals(7250000.0, insertedAccounts[0].balance, 0.001)
 
         assertEquals(1, insertedTransactions.size)
         assertEquals("tx_supermercado", insertedTransactions[0].id)

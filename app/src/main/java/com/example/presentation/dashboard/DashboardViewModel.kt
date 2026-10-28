@@ -72,8 +72,9 @@ class DashboardViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                val activeSessionUid = userSessionDao?.getActiveSession()?.userId?.takeIf { it.isNotBlank() && it != "user_default" }
-                val targetUid = activeSessionUid ?: userId
+                val activeSession = userSessionDao?.getActiveSession()
+                val emailUid = activeSession?.email?.let { com.example.core.id.EmailDeterministicUidGenerator.fromEmailOrNull(it) }
+                val targetUid = emailUid ?: activeSession?.userId?.takeIf { it.isNotBlank() && it != "user_default" } ?: userId
 
                 // 1. Rescate proactivo de cuentas legadas (user_default o kash_user_01) huérfanas
                 financialRepository?.migrateLegacyUserDefaultDataIfNeeded(targetUid)
@@ -741,8 +742,9 @@ class DashboardViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                val activeSessionUid = userSessionDao?.getActiveSession()?.userId?.takeIf { it.isNotBlank() && it != "user_default" }
-                val targetUid = activeSessionUid ?: userId
+                val activeSession = userSessionDao?.getActiveSession()
+                val emailUid = activeSession?.email?.let { com.example.core.id.EmailDeterministicUidGenerator.fromEmailOrNull(it) }
+                val targetUid = emailUid ?: activeSession?.userId?.takeIf { it.isNotBlank() && it != "user_default" } ?: userId
 
                 // Primero intentamos recuperar datos legados locales si las cuentas están vacías
                 financialRepository?.migrateLegacyUserDefaultDataIfNeeded(targetUid)

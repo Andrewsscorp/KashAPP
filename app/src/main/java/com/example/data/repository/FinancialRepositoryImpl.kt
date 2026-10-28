@@ -2767,6 +2767,8 @@ class FinancialRepositoryImpl(
             var restoredAny = false
             val accountsToInsert = mutableListOf<AccountEntity>()
             val transactionsToInsert = mutableListOf<TransactionEntity>()
+            val creditCardsToInsert = mutableListOf<com.example.data.local.entity.AccountCreditCardEntity>()
+            val cdtsToInsert = mutableListOf<com.example.data.local.entity.AccountCdtEntity>()
             var isLegacyBackup = false
 
             var decryptedContent: String? = null
@@ -2973,7 +2975,7 @@ class FinancialRepositoryImpl(
                             includeInNetWorth = obj.optBoolean("includeInNetWorth", true),
                             minimumPaymentAmount = obj.optDouble("minimumPaymentAmount", quotaUsed)
                         )
-                        financialDao.insertAccountCreditCard(cardEntity)
+                        creditCardsToInsert.add(cardEntity)
                     }
                 }
 
@@ -3098,7 +3100,6 @@ class FinancialRepositoryImpl(
 
                 val cdtsArr = rootObj.optJSONArray("cdts")
                 if (cdtsArr != null) {
-                    val cdtsToInsert = mutableListOf<com.example.data.local.entity.AccountCdtEntity>()
                     for (i in 0 until cdtsArr.length()) {
                         val cObj = cdtsArr.getJSONObject(i)
                         cdtsToInsert.add(
@@ -3124,10 +3125,6 @@ class FinancialRepositoryImpl(
                                 createdAt = cObj.optLong("createdAt", System.currentTimeMillis())
                             )
                         )
-                    }
-                    if (cdtsToInsert.isNotEmpty()) {
-                        financialDao.insertAccountCdts(cdtsToInsert)
-                        restoredAny = true
                     }
                 }
 
@@ -3267,6 +3264,19 @@ class FinancialRepositoryImpl(
                 financialDao.insertAccounts(validAccountsToInsert)
                 restoredAny = true
                 Log.i("FinancialRepository", "✓ Se restauraron ${validAccountsToInsert.size} cuenta(s) desde Firebase Firestore.")
+
+                val validAccountIds = validAccountsToInsert.map { it.id }.toSet()
+                val cardsToInsert = creditCardsToInsert.filter { validAccountIds.contains(it.accountId) }
+                if (cardsToInsert.isNotEmpty()) {
+                    financialDao.insertAccountCreditCards(cardsToInsert)
+                    restoredAny = true
+                }
+
+                val cdtsListToInsert = cdtsToInsert.filter { validAccountIds.contains(it.accountId) }
+                if (cdtsListToInsert.isNotEmpty()) {
+                    financialDao.insertAccountCdts(cdtsListToInsert)
+                    restoredAny = true
+                }
 
                 for (acc in validAccountsToInsert) {
                     if (acc.type == "CREDIT_CARD" || acc.id == "acc_nu_tc") {

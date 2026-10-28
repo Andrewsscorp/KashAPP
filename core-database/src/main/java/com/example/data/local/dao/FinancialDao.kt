@@ -609,6 +609,9 @@ interface FinancialDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAccountCreditCard(creditCard: com.example.data.local.entity.AccountCreditCardEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAccountCreditCards(creditCards: List<com.example.data.local.entity.AccountCreditCardEntity>)
+
     @Query("SELECT * FROM account_credit_cards WHERE account_id = :accountId LIMIT 1")
     suspend fun getAccountCreditCard(accountId: String): com.example.data.local.entity.AccountCreditCardEntity?
 
